@@ -99,6 +99,15 @@ new defaults.
 
 ---
 
+## TASK 7 — On-the-fly theme system
+**Full spec:** `workspace/CODEX_TASK_theme_system.md`. Do that file exactly.
+Can be done alongside Task 6 (both touch engine defaults and house-look values).
+Key outputs: `THEMES` array in the engine, `applyTheme(name)` function, theme
+dropdown + `[`/`]` keyboard cycle, cross-module persistence via
+`localStorage['noixzy_lab_theme']`. Replicate into both flagships after the engine.
+
+---
+
 ## STRETCH — Audio-reactive mode (only if everything above is done)
 Shared module: Web Audio `AnalyserNode` (mic or dropped audio file) → FFT bands mapped to a
 few params per piece (e.g. bass→height/extrude, mids→density, highs→glow). Add an "audio"

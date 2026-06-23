@@ -56,11 +56,12 @@ modules today, an expansion roadmap, and a unified-shell UI in progress.
 
 ## How to resume (pick the next move)
 
-- **Default:** do the top unfinished task in `CODEX_QUEUE.md` (tasks are ordered; some leave
-  helpers later tasks reuse — respect the order).
-- **Open task specs available now:** volumetric extrude, theme system, ranges+gradients, quick
-  wins, engine shell. Suggested build order: **theme system → ranges/gradients → quick wins →
-  engine shell** (shell reuses the theme bridge, so it goes last).
+- **Default:** do the top unfinished task in `CODEX_QUEUE.md` (tasks are strictly ordered;
+  Tasks 1 → 2 → 5 share `sampleField` — do not skip ahead). Current queue order:
+  **1 volumetric extrude → 2 PBR maps → 3 loop export → 4 batch render → 5 SVG export →
+  6 strong defaults → 7 theme system → STRETCH audio**.
+- Full specs for every task live in `workspace/CODEX_TASK_*.md` — always read the spec file
+  before touching code. Theme system spec: `CODEX_TASK_theme_system.md`.
 - **Idea menu / new modules:** `workspace/IDEAS_module_expansion.md` (32 new systems + per-module
   tuning + house-look recipe). Build what tuck has starred.
 - **Don't start a task you can't finish.** Stop after whatever is fully built and browser-verified.
