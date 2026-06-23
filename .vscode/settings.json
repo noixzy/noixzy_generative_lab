@@ -1,0 +1,17 @@
+{
+  "files.exclude": {
+    "**/.DS_Store": true
+  },
+  "search.exclude": {
+    "workspace/_archive_*": true,
+    "gallery/thumbs": true
+  },
+  "files.associations": {
+    "*.md": "markdown",
+    "*.html": "html",
+    "*.js": "javascript"
+  },
+  "editor.wordWrap": "on",
+  "markdown.preview.breaks": true,
+  "explorer.compactFolders": false
+}

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>noixzy — Planning Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #100c09; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    #__bundler_loading { position: fixed; bottom: 20px; right: 20px; font: 13px/1.4 -apple-system, BlinkMacSystemFont, sans-serif; color: #666; background: #fff; padding: 8px 14px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 10000; }
+    #__bundler_thumbnail { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #100c09; z-index: 9999; }
+    #__bundler_thumbnail svg { width: 100%; height: 100%; object-fit: contain; }
+    #__bundler_placeholder { color: #999; font-size: 14px; }
+  </style>
+  <noscript>
+    <style>#__bundler_loading { display: none; }</style>
+    <div style="position:fixed;bottom:12px;left:12px;font:13px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#999;background:rgba(255,255,255,0.9);padding:6px 12px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);z-index:10000;">
+      This page requires JavaScript to display.
+    </div>
+  </noscript>
+</head>
+<body>
+  <div id="__bundler_thumbnail">
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <rect x="220" y="250" width="300" height="170" rx="10" fill="#000000" stroke="#3a2e23" stroke-width="3"></rect>
+      <rect x="220" y="250" width="10" height="170" fill="#e8722c"></rect>
+      <rect x="680" y="250" width="300" height="170" rx="10" fill="#000000" stroke="#3a2e23" stroke-width="3"></rect>
+      <rect x="680" y="250" width="10" height="170" fill="#e0a93b"></rect>
+      <line x1="520" y1="335" x2="680" y2="335" stroke="#3a2e23" stroke-width="4"></line>
+      <text x="600" y="560" font-family="ui-monospace, Menlo, monospace" font-size="58" font-weight="700" fill="#e8722c" text-anchor="middle">noixzy //</text>
+      <text x="600" y="630" font-family="ui-monospace, Menlo, monospace" font-size="34" fill="#9a8d7d" text-anchor="middle">planning dashboard</text>
+    </svg>
+  </div>
+  <div id="__bundler_loading">Unpacking...</div>
+
+  <script>
+    
+document.addEventListener('DOMContentLoaded', async function() {
+  const loading = document.getElementById('__bundler_loading');
+  function setStatus(msg) { if (loading) loading.textContent = msg; }
+
+  // Error sink persists across replaceWith since it's on window, not the DOM.
+  window.addEventListener('error', function(e) {
+    var p = document.body || document.documentElement;
+    var d = document.getElementById('__bundler_err') || p.appendChild(document.createElement('div'));
+    d.id = '__bundler_err';
+    d.style.cssText = 'position:fixed;bottom:12px;left:12px;right:12px;font:12px/1.4 ui-monospace,monospace;background:#2a1215;color:#ff8a80;padding:10px 14px;border-radius:8px;border:1px solid #5c2b2e;z-index:99999;white-space:pre-wrap;max-height:40vh;overflow:auto';
+    d.textContent = (d.textContent ? d.textContent + String.fromCharCode(10) : '') +
+      '[bundle] ' + (e.message || e.type) +
+      (e.filename ? ' (' + e.filename.slice(0, 60) + ':' + e.lineno + ')' : '');
+  }, true);
+
+  try {
+    const manifestEl = document.querySelector('script[type="__bundler/manifest"]');
+    const templateEl = document.querySelector('script[type="__bundler/template"]');
+    if (!manifestEl || !templateEl) {
+      setStatus('Error: missing bundle data');
+      console.error('[bundler] Missing script tags — manifestEl:', !!manifestEl, 'templateEl:', !!templateEl);
+      return;
+    }
+
+    const manifest = JSON.parse(manifestEl.textContent);
+    const templateData = JSON.parse(templateEl.textContent);
+    const pages = templateData.pages;
+    const entryId = templateData.entry;
+    const pageIds = Object.keys(pages);
+
+    const extResEl = document.querySelector('script[type="__bundler/ext_resources"]');
+    const extResources = extResEl ? JSON.parse(extResEl.textContent) : {};
+
+    const uuids = Object.keys(manifest);
+    setStatus('Unpacking ' + uuids.length + ' assets...');
+
+    const blobUrls = {};
+    await Promise.all(uuids.map(async (uuid) => {
+      const entry = manifest[uuid];
+      try {
+        const binaryStr = atob(entry.data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+        let finalBytes = bytes;
+        if (entry.compressed) {
+          if (typeof DecompressionStream !== 'undefined') {
+            const ds = new DecompressionStream('gzip');
+            const writer = ds.writable.getWriter();
+            const reader = ds.readable.getReader();
+            writer.write(bytes);
+            writer.close();
+            const chunks = [];
+            let totalLen = 0;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              chunks.push(value);
+              totalLen += value.length;
+            }
+            finalBytes = new Uint8Array(totalLen);
+            let offset = 0;
+            for (const chunk of chunks) { finalBytes.set(chunk, offset); offset += chunk.length; }
+          } else {
+            console.warn('DecompressionStream not available, asset ' + uuid + ' may not render');
+          }
+        }
+
+        blobUrls[uuid] = URL.createObjectURL(new Blob([finalBytes], { type: entry.mime }));
+      } catch (err) {
+        console.error('Failed to decode asset ' + uuid + ':', err);
+        blobUrls[uuid] = URL.createObjectURL(new Blob([], { type: entry.mime }));
+      }
+    }));
+
+    // Per-page prep: substitute UUIDs, strip SRI/crossorigin (blob URLs from a
+    // file:// document inherit a null origin, so crossorigin forces a CORS
+    // fetch that SRI then rejects — the manifest bytes are ours; SRI protects
+    // against CDN compromise, not this), and inject the page's own
+    // window.__resources + the click interceptor into <head>. slice() rather
+    // than replace() keeps us clear of $-pattern substitution.
+    function resourcesFor(id) {
+      var map = {};
+      var list = extResources[id] || [];
+      for (var k = 0; k < list.length; k++) {
+        if (blobUrls[list[k].uuid]) map[list[k].id] = blobUrls[list[k].uuid];
+      }
+      return map;
+    }
+    for (const id of pageIds) {
+      let t = pages[id];
+      for (const uuid of uuids) t = t.split(uuid).join(blobUrls[uuid]);
+      t = t.replace(/\s+integrity="[^"]*"/gi, '').replace(/\s+crossorigin="[^"]*"/gi, '');
+      // The click interceptor owns every anchor click (not a <base target>):
+      // a blanket <base target="_parent"> would also redirect form submissions
+      // and tear down the wrapper. Non-# links navigate the parent to the
+      // anchor's resolved href; #/… routes forward to the parent's hash only
+      // when the id is one of this bundle's own pages (author #/… links from
+      // an in-page hash router are left to the scroll path so they don't yank
+      // the user to the entry page); plain #frag scrolls in place.
+      // composedPath + getAttribute('target') handle SVG <a> and shadow-DOM
+      // anchors, which closest()/IDL .target get wrong.
+      var headContent = 'window.__resources = ' + JSON.stringify(resourcesFor(id)) + ';' +
+        (pageIds.length > 1 ?
+          'window.__bundler_pages = ' + JSON.stringify(pageIds) + ';' +
+          'document.addEventListener("click", function(e){' +
+            'if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.defaultPrevented) return;' +
+            'var a = null, p = e.composedPath ? e.composedPath() : [e.target];' +
+            'for (var j = 0; j < p.length && !a; j++) {' +
+              'var n = p[j], tn = n && n.tagName;' +
+              'if (tn === "A" || tn === "a" || tn === "AREA") a = n;' +
+            '}' +
+            'if (!a && e.target.closest) a = e.target.closest("a, area");' +
+            'if (!a || a.hasAttribute("download")) return;' +
+            'var tg = a.getAttribute("target");' +
+            'if (tg && tg !== "_self") return;' +
+            'var h = a.getAttribute("href") || a.getAttribute("xlink:href");' +
+            'if (!h || /^javascript:/i.test(h)) return;' +
+            'if (h.charAt(0) !== "#") {' +
+              'if (!tg) { var b = document.querySelector("base[target]"); if (b && b.getAttribute("target") !== "_self") return; }' +
+              'e.preventDefault();' +
+              'if (/^(?:[a-z][a-z0-9+.-]*:|\\/\\/)/i.test(h)) parent.location.assign(h);' +
+              'return;' +
+            '}' +
+            'e.preventDefault();' +
+            'if (h.slice(0, 2) === "#/") {' +
+              'var c = h.indexOf(":", 2);' +
+              'var pid = c < 0 ? h.slice(2) : h.slice(2, c);' +
+              'try { pid = decodeURIComponent(pid); } catch(err) {}' +
+              'if (window.__bundler_pages.indexOf(pid) >= 0) { parent.location.hash = h; return; }' +
+            '}' +
+            'var t = h.length > 1 ? document.getElementById(h.slice(1)) : null;' +
+            'if (t) t.scrollIntoView({behavior:"smooth"});' +
+            'else scrollTo({top:0, behavior:"smooth"});' +
+          '});' : '');
+      // Defuse any script end-tag sequence in the content (resource ids, page
+      // ids) before wrapping — same escape level as every sibling JSON island.
+      var headScript = '<script>' +
+        headContent.split('</' + 'script').join('<\\/' + 'script') +
+        '</' + 'script>';
+      // Inject after <head> so the DOCTYPE stays first; prepending the script
+      // would push the parser into quirks mode. DOMParser always emits a <head>
+      // (synthesizing one if the source HTML omitted it) but may carry
+      // attributes through, so match the full opening tag.
+      var headOpen = t.match(/<head[^>]*>/i);
+      if (headOpen) {
+        var hi = headOpen.index + headOpen[0].length;
+        t = t.slice(0, hi) + headScript + t.slice(hi);
+      }
+      pages[id] = t;
+    }
+
+    setStatus('Rendering...');
+
+    if (pageIds.length === 1) {
+      // Single page: the pre-crawl render path. Parse the template and swap the
+      // root element. Scripts inserted via DOMParser/replaceWith are inert per
+      // spec — re-create each with createElement so they execute, awaiting
+      // onload for src scripts to preserve ordering (React before ReactDOM
+      // before Babel before text/babel).
+      var template = pages[entryId];
+      const doc = new DOMParser().parseFromString(template, 'text/html');
+      document.documentElement.replaceWith(doc.documentElement);
+      const dead = Array.from(document.scripts);
+      for (const old of dead) {
+        const s = document.createElement('script');
+        for (const a of old.attributes) s.setAttribute(a.name, a.value);
+        s.textContent = old.textContent;
+        // text/babel scripts with a src: fetch and inline. transformScriptTags
+        // does XHR against the src, but blob:null/ from a file:// origin is
+        // silently dropped. Inlining makes it a plain inline babel script,
+        // which transformScriptTags handles unconditionally.
+        if ((s.type === 'text/babel' || s.type === 'text/jsx') && s.src) {
+          try {
+            const r = await fetch(s.src);
+            s.textContent = await r.text();
+            s.removeAttribute('src');
+          } catch (e) {}
+        }
+        // Non-executable script types (text/babel, application/json, …) are
+        // data blocks per spec: the browser never fetches src and never fires
+        // load/error, so awaiting would hang forever.
+        const exec = !s.type || s.type === 'module' || /(java|ecma)script/i.test(s.type);
+        const p = (s.src && exec) ? new Promise(function(r) { s.onload = s.onerror = r; }) : null;
+        old.replaceWith(s);
+        if (p) await p;
+      }
+      // Babel standalone auto-transforms type=text/babel on DOMContentLoaded,
+      // which fired before we swapped the document. Trigger manually if present.
+      if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
+        window.Babel.transformScriptTags();
+      }
+      return;
+    }
+
+    // Multi-page: render into a full-viewport srcdoc iframe so each page runs
+    // in its own realm while staying same-origin with the parent (so asset
+    // blob URLs load and parent.location is writable).
+    var frame = document.createElement('iframe');
+    frame.id = '__bundler_frame';
+    frame.setAttribute('style', 'position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff');
+    document.body.appendChild(frame);
+
+    function decode(s) {
+      try { return decodeURIComponent(s); } catch (e) { return s; }
+    }
+    function route() {
+      var h = (location.hash || '');
+      if (h.slice(0, 2) !== '#/') return { id: entryId, anchor: '' };
+      h = h.slice(2);
+      var i = h.indexOf(':');
+      return i < 0 ? { id: decode(h), anchor: '' }
+                   : { id: decode(h.slice(0, i)), anchor: decode(h.slice(i + 1)) };
+    }
+
+    var current = null;
+    var navGen = 0;
+    function navigate() {
+      var r = route();
+      var id = Object.prototype.hasOwnProperty.call(pages, r.id) ? r.id : entryId;
+      if (current === id) {
+        // Same-page anchor change: the iframe's own hash handles this, so
+        // normally we don't reach here. If we do (e.g. a programmatic
+        // parent.location.hash change), nudge the iframe.
+        var cw = frame.contentWindow;
+        if (!cw) return;
+        var el = r.anchor && cw.document.getElementById(r.anchor);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        else cw.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      current = id;
+      var gen = ++navGen;
+      frame.onload = function() {
+        // One-shot: an iframe-internal navigation (form submit, page JS
+        // location.href=) re-fires onload with the same gen; after that the
+        // iframe may be cross-origin, and cw.* access would throw.
+        frame.onload = null;
+        if (gen !== navGen) return;
+        var cw = frame.contentWindow;
+        try { cw.document.title && (document.title = cw.document.title); } catch (e) {}
+        var splash = document.getElementById('__bundler_thumbnail') ||
+                     document.getElementById('__bundler_placeholder');
+        if (splash) splash.remove();
+        if (loading) loading.remove();
+        var el = r.anchor && cw.document.getElementById(r.anchor);
+        if (el) el.scrollIntoView();
+        else cw.scrollTo(0, 0);
+      };
+      frame.srcdoc = pages[id];
+    }
+
+    window.addEventListener('hashchange', navigate);
+    navigate();
+  } catch (err) {
+    setStatus('Error unpacking: ' + err.message);
+    console.error('Bundle unpack error:', err);
+  }
+});
+
+  </script>
+
+  <script type="__bundler/manifest">
+{"20d54a56-4a12-47e5-af3c-2418643b734b":{"mime":"application/javascript","compressed":true,"data":"H4sIAAAAAAAAE5WV0W7bRhBF3/UVF35qUllynDQNVPTBsZM2rVIYUfoUBMZwdyRuu9xhZ5eRmKJAP6JfmC8JlqJsRabh9JHkznDu4b3D6UNEqmrPV5YSTf6IIzzEgtnCWaaIpShSyQjiNh9b1J5CcGEFS7EshNROcsGlkknOkAdvum4REnyLT//+B+Xak2EULVxVi6Zc3kqjkHXYvmXqQkzkfcUhRSTepNx1Olq7YGU9WZy9vpy/uLo4e3uGH/FuBPw9AgBnZziKVX386Gjc3UgueZ7haHHxEkptRWpKGFFGJbbx3B+zHI26OjkJ+XCiwnn3kTudvHGxmzDa5dV1j235DNFwYKyU6nIMQxUrjbE94kXqCX5lruESmpCkMSXbLDv3vQaXRPykH8RQ4pVoO8PRFwPW6kRdyveDrHfi2jpriyVZ1msldZzh3fvt1WaGpydjtDM8OxkB/4xvkzo9IPWbuMj4FlYqcgFr0hreFUraDsJ6w02kwjN+mi/m2RSR8c2yqMZYi3puH4CC7bsdd91K9jVrRCxJ2YKMSuyuLGv8PyB4k+4n0dvhBsiT03uIPD4g8urGijh51Dl47v5qnEXFifwglZdOY0LdFN4Z7Hl5gje9g3hbXpD3WDr2FmuXSlBwUZJK7QyUl55N7jiEZa/r17C5ffxLQOOdHW5Iff/sHlJPDkg99xwsK1YsFSdtj4PYHKCc8b3vsg/qRffwoCJyauqIJKC8bipKXWI8FTAU+vXULaKc68hshwCtOJAOsPF0M0wPp9gOfo9z+ig9Pr2Lx3cHPC52KxFTGAlJxeP3V4McLkmp4sSKmgL7Tpx3H/g4rZn+7NZPZ240wWUkcYJLnwP689vX8+n5YjH9ZTHAILEpQ17DX4WhcXdtkV1o7tb+9ED7uXjJYjynxFCOnF0/qP1cfPZ59jsrB8O7su3PZv9XMMGFmKaLoilVKpp6typT4BihFFY8ZASjTMl9GFghAwxuTXpAYheKnsTo/Q+jz8atMCsyBwAA"},"35aba895-20dc-476b-81c8-c0d147589651":{"mime":"application/javascript","compressed":true,"data":"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"}}
+  </script>
+
+  <script type="__bundler/ext_resources">
+{"planning_dashboard/planning_dashboard":[]}
+  </script>
+
+  <script type="__bundler/template">
+{"pages":{"planning_dashboard/planning_dashboard":"<!DOCTYPE html>\n<html lang=\"en\"><head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>noixzy — Planning Dashboard<\u002Ftitle>\n  <style>/* planning_dashboard.css\n * Dark, clean planning tool for the noixzy generative lab.\n * Reskinned to match the noixzy // sdf raymarch look:\n * warm near-black, monospace, ember-orange accent, sharp corners, lowercase.\n * Plain CSS — no frameworks.\n */\n\n:root {\n  --bg:        #100c09;   /* warm near-black */\n  --bg-2:      #16110c;\n  --panel:     #000000;   /* flat black control panels */\n  --panel-2:   #1a140e;\n  --border:    #2a211a;\n  --border-2:  #3a2e23;\n  --text:      #e9e2d8;\n  --muted:     #9a8d7d;\n  --muted-2:   #6b5f51;\n\n  --accent:    #e8722c;   /* ember orange */\n  --accent-2:  #ff8a3d;\n  --accent-dim:#7a3f17;\n\n  /* priority */\n  --p-now:     #e8722c;   /* ember */\n  --p-next:    #e0a93b;   /* amber */\n  --p-later:   #8a8f9a;   /* cool grey */\n  --p-archive: #5b5247;\n\n  /* type — warm-leaning, all readable on black */\n  --t-shader:     #e8722c;\n  --t-blender:    #ff8a3d;\n  --t-ui:         #c79bff;\n  --t-installment:#5ec8ff;\n  --t-asset:      #e0a93b;\n  --t-research:   #9a8d7d;\n  --t-prompt:     #ff7ab8;\n  --t-system:     #79e07a;\n\n  --radius: 3px;\n  --shadow: 0 6px 24px rgba(0,0,0,0.6);\n  --mono: ui-monospace, \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", \"Berkeley Mono\", Menlo, Consolas, monospace;\n  --sans: var(--mono);\n}\n\n* { box-sizing: border-box; }\n\nhtml, body {\n  margin: 0;\n  height: 100%;\n}\n\nbody {\n  background: var(--bg);\n  color: var(--text);\n  font-family: var(--mono);\n  font-size: 13px;\n  line-height: 1.5;\n  letter-spacing: 0.2px;\n  -webkit-font-smoothing: antialiased;\n  display: flex;\n  flex-direction: column;\n  height: 100vh;\n  overflow: hidden;\n}\n\n/* ---------- Top bar ---------- */\n.topbar {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  padding: 12px 20px;\n  background: var(--bg-2);\n  border-bottom: 1px solid var(--border);\n  flex: none;\n}\n.brand { display: flex; align-items: baseline; gap: 10px; }\n.brand-mark {\n  font-family: var(--mono);\n  font-size: 16px;\n  font-weight: 700;\n  letter-spacing: 0.5px;\n  color: var(--accent);\n}\n.brand-mark::after { content: \" //\"; color: var(--accent-dim); }\n.brand-sub {\n  font-size: 13px;\n  color: var(--muted);\n  letter-spacing: 0.5px;\n  text-transform: lowercase;\n}\n\n.view-toggle {\n  display: inline-flex;\n  background: var(--panel);\n  border: 1px solid var(--border-2);\n  border-radius: var(--radius);\n  padding: 2px;\n  gap: 2px;\n}\n.vt-btn {\n  border: none;\n  background: transparent;\n  color: var(--muted);\n  font: inherit;\n  font-size: 12px;\n  text-transform: lowercase;\n  padding: 5px 16px;\n  border-radius: 2px;\n  cursor: pointer;\n}\n.vt-btn.active { background: var(--accent); color: #140a04; font-weight: 700; }\n.vt-btn:hover:not(.active) { color: var(--text); }\n\n.topbar-actions {\n  margin-left: auto;\n  display: flex;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\n/* ---------- Buttons ---------- */\n.btn {\n  border: 1px solid var(--border-2);\n  background: var(--panel);\n  color: var(--text);\n  font: inherit;\n  font-size: 12px;\n  text-transform: lowercase;\n  padding: 7px 13px;\n  border-radius: var(--radius);\n  cursor: pointer;\n  transition: background .12s, border-color .12s, color .12s;\n  white-space: nowrap;\n}\n.btn:hover { border-color: var(--accent); color: var(--accent); }\n.btn:active { transform: translateY(1px); }\n.btn-sm { padding: 5px 10px; font-size: 11px; }\n.btn-primary {\n  background: var(--accent);\n  border-color: var(--accent);\n  color: #140a04;\n  font-weight: 700;\n}\n.btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); color: #140a04; }\n.btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }\n.btn-ghost:hover { background: var(--panel); color: var(--accent); border-color: transparent; }\n.btn-danger { color: var(--p-now); border-color: transparent; background: transparent; }\n.btn-danger:hover { background: rgba(232,114,44,0.14); color: var(--accent-2); }\n\n/* ---------- Import drawer ---------- */\n.import-drawer {\n  background: var(--bg-2);\n  border-bottom: 1px solid var(--border);\n  padding: 16px 20px 18px;\n  flex: none;\n}\n.import-head h2 { margin: 0 0 4px; font-size: 13px; text-transform: lowercase; color: var(--accent); }\n.import-head p { margin: 0 0 12px; color: var(--muted); font-size: 12px; }\n.import-head strong { color: var(--text); }\n.import-body { display: flex; flex-direction: column; gap: 10px; }\n#importText {\n  width: 100%;\n  min-height: 150px;\n  resize: vertical;\n  background: var(--panel);\n  color: var(--text);\n  border: 1px solid var(--border-2);\n  border-radius: var(--radius);\n  padding: 12px 14px;\n  font-family: var(--mono);\n  font-size: 12.5px;\n  line-height: 1.6;\n}\n#importText:focus { outline: none; border-color: var(--accent); }\n.import-controls {\n  display: flex;\n  align-items: flex-end;\n  gap: 14px;\n  flex-wrap: wrap;\n}\n.import-controls label { font-size: 11px; color: var(--muted); text-transform: lowercase; display: flex; flex-direction: column; gap: 5px; }\n.import-controls label.chk { flex-direction: row; align-items: center; gap: 7px; }\n.import-hint { font-size: 12px; color: var(--accent); }\n\n.import-controls select {\n  background: var(--panel);\n  color: var(--text);\n  border: 1px solid var(--border-2);\n  border-radius: var(--radius);\n  padding: 7px 10px;\n  font-family: var(--mono);\n  font-size: 12px;\n}\n.import-controls select:focus { outline: none; border-color: var(--accent); }\n.import-controls input[type=\"checkbox\"] { accent-color: var(--accent); }\n\n/* ---------- Filter bar ---------- */\n.filterbar {\n  display: flex;\n  align-items: center;\n  gap: 18px;\n  padding: 10px 20px;\n  background: var(--bg-2);\n  border-bottom: 1px solid var(--border);\n  flex: none;\n  flex-wrap: wrap;\n}\n.filter-group { display: flex; align-items: center; gap: 9px; }\n.filter-label {\n  font-size: 10px;\n  text-transform: lowercase;\n  letter-spacing: 1px;\n  color: var(--muted-2);\n}\n.chips { display: flex; gap: 6px; flex-wrap: wrap; }\n.filter-spacer { flex: 1; }\n.count { font-size: 11px; color: var(--muted); font-family: var(--mono); }\n\n/* filter chip + tag chips share base */\n.chip {\n  border: 1px solid var(--border-2);\n  background: var(--panel);\n  color: var(--muted);\n  font-family: var(--mono);\n  font-size: 10px;\n  font-weight: 600;\n  letter-spacing: 0.5px;\n  padding: 4px 10px;\n  border-radius: 2px;\n  cursor: pointer;\n  user-select: none;\n  transition: all .12s;\n}\n.chip:hover { color: var(--text); border-color: var(--muted-2); }\n.chip.active { color: #140a04; }\n.chip[data-on=\"priority-now\"].active    { background: var(--p-now);    border-color: var(--p-now); }\n.chip[data-on=\"priority-next\"].active   { background: var(--p-next);   border-color: var(--p-next); }\n.chip[data-on=\"priority-later\"].active  { background: var(--p-later);  border-color: var(--p-later); color: #140a04; }\n.chip[data-on=\"priority-archive\"].active{ background: var(--p-archive);border-color: var(--p-archive); color: var(--text); }\n.chip[data-kind=\"type\"].active { background: var(--accent); border-color: var(--accent); }\n\n/* ---------- Views ---------- */\n.view { flex: 1; min-height: 0; position: relative; }\n\n/* Graph view */\n.view-graph { overflow: auto; background:\n  radial-gradient(circle at 1px 1px, rgba(232,114,44,0.05) 1px, transparent 0) 0 0 / 30px 30px,\n  var(--bg);\n}\n.graph-canvas { position: relative; width: 2400px; height: 1600px; }\n.graph-edges { position: absolute; top: 0; left: 0; width: 2400px; height: 1600px; pointer-events: none; z-index: 1; }\n.graph-edges line { stroke: var(--border-2); stroke-width: 1.5; }\n.graph-edges .edge-arrow { fill: var(--muted-2); }\n\n.graph-empty {\n  position: absolute;\n  top: 40%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  color: var(--muted);\n  font-size: 13px;\n  text-align: center;\n  text-transform: lowercase;\n}\n\n/* Node card */\n.node {\n  position: absolute;\n  width: 250px;\n  background: var(--panel);\n  border: 1px solid var(--border-2);\n  border-left: 3px solid var(--muted-2);\n  border-radius: var(--radius);\n  box-shadow: var(--shadow);\n  z-index: 2;\n  cursor: grab;\n  overflow: hidden;\n}\n.node.dragging { cursor: grabbing; z-index: 5; box-shadow: 0 14px 44px rgba(0,0,0,0.7); border-color: var(--accent); }\n.node[data-priority=\"now\"]     { border-left-color: var(--p-now); }\n.node[data-priority=\"next\"]    { border-left-color: var(--p-next); }\n.node[data-priority=\"later\"]   { border-left-color: var(--p-later); }\n.node[data-priority=\"archive\"] { border-left-color: var(--p-archive); opacity: 0.6; }\n\n.node-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 9px 11px 7px;\n}\n.node-title {\n  font-size: 13px;\n  font-weight: 700;\n  line-height: 1.35;\n  flex: 1;\n  word-break: break-word;\n}\n.node-body { padding: 0 11px 10px; }\n.node-desc {\n  font-size: 11.5px;\n  color: var(--muted);\n  margin: 0 0 9px;\n  display: -webkit-box;\n  -webkit-line-clamp: 3;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n.node-tags { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }\n.node-edit {\n  border: none;\n  background: transparent;\n  color: var(--muted-2);\n  cursor: pointer;\n  font-size: 13px;\n  padding: 2px 5px;\n  border-radius: 2px;\n  line-height: 1;\n}\n.node-edit:hover { background: var(--panel-2); color: var(--accent); }\n\n/* tag (priority + type badges on cards) */\n.tag {\n  font-family: var(--mono);\n  font-size: 9.5px;\n  font-weight: 600;\n  letter-spacing: 0.6px;\n  padding: 2px 7px;\n  border-radius: 2px;\n  border: 1px solid transparent;\n}\n.tag-p-now     { background: rgba(232,114,44,0.16); color: var(--p-now);    border-color: rgba(232,114,44,0.45); }\n.tag-p-next    { background: rgba(224,169,59,0.14);  color: var(--p-next);   border-color: rgba(224,169,59,0.4); }\n.tag-p-later   { background: rgba(138,143,154,0.14); color: var(--p-later);  border-color: rgba(138,143,154,0.35); }\n.tag-p-archive { background: rgba(91,82,71,0.2);     color: var(--p-archive);border-color: rgba(91,82,71,0.5); }\n\n.tag-type { background: var(--panel-2); border-color: var(--border-2); }\n.tag-type[data-type=\"shader\"]     { color: var(--t-shader); }\n.tag-type[data-type=\"blender\"]    { color: var(--t-blender); }\n.tag-type[data-type=\"ui\"]         { color: var(--t-ui); }\n.tag-type[data-type=\"installment\"]{ color: var(--t-installment); }\n.tag-type[data-type=\"asset\"]      { color: var(--t-asset); }\n.tag-type[data-type=\"research\"]   { color: var(--t-research); }\n.tag-type[data-type=\"prompt\"]     { color: var(--t-prompt); }\n.tag-type[data-type=\"system\"]     { color: var(--t-system); }\n\n.dep-count {\n  font-family: var(--mono);\n  font-size: 9.5px;\n  color: var(--muted-2);\n  margin-left: auto;\n}\n\n/* ---------- List view ---------- */\n.view-list { overflow: auto; }\n.list-container { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }\n.cat-group { margin-bottom: 30px; }\n.cat-head {\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n  margin: 0 0 12px;\n  padding-bottom: 8px;\n  border-bottom: 1px solid var(--border);\n}\n.cat-head h2 { margin: 0; font-size: 13px; letter-spacing: 0.5px; text-transform: lowercase; color: var(--accent); }\n.cat-head .cat-count { font-family: var(--mono); font-size: 11px; color: var(--muted-2); }\n\n.list-row {\n  display: grid;\n  grid-template-columns: 1fr auto auto auto;\n  gap: 14px;\n  align-items: center;\n  padding: 11px 14px;\n  background: var(--panel);\n  border: 1px solid var(--border);\n  border-radius: var(--radius);\n  margin-bottom: 7px;\n  cursor: pointer;\n  transition: border-color .12s, background .12s;\n}\n.list-row:hover { border-color: var(--accent-dim); background: var(--panel-2); }\n.lr-main { min-width: 0; }\n.lr-title { font-size: 13px; font-weight: 700; }\n.lr-desc {\n  font-size: 11.5px;\n  color: var(--muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.lr-deps { font-family: var(--mono); font-size: 10.5px; color: var(--muted-2); white-space: nowrap; }\n\n.list-empty { color: var(--muted); text-align: center; padding: 60px 0; text-transform: lowercase; }\n\n/* ---------- Editor modal ---------- */\n.editor-backdrop {\n  position: fixed;\n  inset: 0;\n  background: rgba(8,5,3,0.72);\n  backdrop-filter: blur(3px);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  z-index: 100;\n  padding: 24px;\n}\n.editor {\n  width: 560px;\n  max-width: 100%;\n  max-height: 90vh;\n  overflow: auto;\n  background: var(--bg-2);\n  border: 1px solid var(--border-2);\n  border-radius: var(--radius);\n  box-shadow: var(--shadow);\n  padding: 20px 22px 18px;\n}\n.editor-head { display: flex; align-items: center; margin-bottom: 14px; }\n.editor-head h3 { margin: 0; font-size: 14px; flex: 1; text-transform: lowercase; color: var(--accent); }\n.fld { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--muted); text-transform: lowercase; margin-bottom: 13px; }\n.fld input[type=\"text\"], .fld textarea, .fld select {\n  background: var(--panel);\n  color: var(--text);\n  border: 1px solid var(--border-2);\n  border-radius: var(--radius);\n  padding: 9px 11px;\n  font-family: var(--mono);\n  font-size: 13px;\n  text-transform: none;\n}\n.fld textarea { resize: vertical; line-height: 1.5; }\n.fld input:focus, .fld textarea:focus, .fld select:focus { outline: none; border-color: var(--accent); }\n.fld-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }\n\n.deps-list { display: flex; flex-direction: column; gap: 5px; max-height: 170px; overflow: auto; padding: 6px; background: var(--panel); border: 1px solid var(--border-2); border-radius: var(--radius); }\n.dep-opt { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); text-transform: none; padding: 3px 4px; border-radius: 2px; cursor: pointer; }\n.dep-opt:hover { background: var(--panel-2); }\n.dep-opt input { accent-color: var(--accent); }\n.deps-empty { color: var(--muted-2); font-size: 11px; padding: 4px; }\n\n.editor-foot { display: flex; align-items: center; gap: 10px; margin-top: 6px; }\n.editor-foot .spacer { flex: 1; }\n\n/* scrollbars */\n::-webkit-scrollbar { width: 11px; height: 11px; }\n::-webkit-scrollbar-track { background: transparent; }\n::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; border: 3px solid var(--bg); }\n::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }\n<\u002Fstyle>\n  \n<\u002Fhead>\n<body>\n  <header class=\"topbar\">\n    <div class=\"brand\">\n      <span class=\"brand-mark\">noixzy<\u002Fspan>\n      <span class=\"brand-sub\">Planning Dashboard<\u002Fspan>\n    <\u002Fdiv>\n\n    <div class=\"view-toggle\" id=\"viewToggle\">\n      <button class=\"vt-btn active\" data-view=\"graph\">Graph<\u002Fbutton>\n      <button class=\"vt-btn\" data-view=\"list\">List<\u002Fbutton>\n    <\u002Fdiv>\n\n    <div class=\"topbar-actions\">\n      <button class=\"btn\" id=\"addIdeaBtn\">+ Idea<\u002Fbutton>\n      <button class=\"btn\" id=\"importToggleBtn\">Import<\u002Fbutton>\n      <button class=\"btn\" id=\"exportJsonBtn\">Export JSON<\u002Fbutton>\n      <button class=\"btn\" id=\"exportMdBtn\">Export Markdown<\u002Fbutton>\n      <button class=\"btn btn-ghost\" id=\"resetBtn\" title=\"Clear all and reload samples\">Reset<\u002Fbutton>\n    <\u002Fdiv>\n  <\u002Fheader>\n\n  <!-- Import drawer -->\n  <section class=\"import-drawer\" id=\"importDrawer\" hidden=\"\">\n    <div class=\"import-head\">\n      <h2>Import ideas<\u002Fh2>\n      <p>Paste text from your <strong>ideas<\u002Fstrong> file or <strong>future installments<\u002Fstrong> file. Lines and bullets become cards; headings become categories.<\u002Fp>\n    <\u002Fdiv>\n    <div class=\"import-body\">\n      <textarea id=\"importText\" placeholder=\"# Modules\n- SDF raymarch core (now, shader)\n- Noise library (next)\n\n# Future installments\n- Installment 02: voronoi caverns (later, installment)\n...\"><\u002Ftextarea>\n      <div class=\"import-controls\">\n        <label>Default category\n          <select id=\"importCategory\">\n            <option value=\"module\">Modules<\u002Foption>\n            <option value=\"installment\">Installments<\u002Foption>\n            <option value=\"creative\">Creative directions<\u002Foption>\n            <option value=\"technical\">Technical tasks<\u002Foption>\n            <option value=\"genart\">Blender / shader / gen-art<\u002Foption>\n          <\u002Fselect>\n        <\u002Flabel>\n        <label class=\"chk\">\n          <input type=\"checkbox\" id=\"importReplace\">\n          Replace existing\n        <\u002Flabel>\n        <button class=\"btn btn-primary\" id=\"parseBtn\">Parse into cards<\u002Fbutton>\n        <button class=\"btn btn-ghost\" id=\"importCancelBtn\">Cancel<\u002Fbutton>\n        <span class=\"import-hint\" id=\"importHint\"><\u002Fspan>\n      <\u002Fdiv>\n    <\u002Fdiv>\n  <\u002Fsection>\n\n  <!-- Filter bar -->\n  <section class=\"filterbar\">\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Priority<\u002Fspan>\n      <div class=\"chips\" id=\"priorityFilters\"><\u002Fdiv>\n    <\u002Fdiv>\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Type<\u002Fspan>\n      <div class=\"chips\" id=\"typeFilters\"><\u002Fdiv>\n    <\u002Fdiv>\n    <div class=\"filter-spacer\"><\u002Fdiv>\n    <button class=\"btn btn-ghost btn-sm\" id=\"clearFiltersBtn\">Clear filters<\u002Fbutton>\n    <span class=\"count\" id=\"countLabel\"><\u002Fspan>\n  <\u002Fsection>\n\n  <!-- Graph view -->\n  <main class=\"view view-graph\" id=\"graphView\">\n    <svg class=\"graph-edges\" id=\"graphEdges\"><\u002Fsvg>\n    <div class=\"graph-canvas\" id=\"graphCanvas\"><\u002Fdiv>\n    <div class=\"graph-empty\" id=\"graphEmpty\" hidden=\"\">No ideas match. Add one, import text, or clear filters.<\u002Fdiv>\n  <\u002Fmain>\n\n  <!-- List view -->\n  <main class=\"view view-list\" id=\"listView\" hidden=\"\">\n    <div class=\"list-container\" id=\"listContainer\"><\u002Fdiv>\n  <\u002Fmain>\n\n  <!-- Card editor template -->\n  <template id=\"editorTemplate\">\n    <div class=\"editor-backdrop\">\n      <div class=\"editor\">\n        <div class=\"editor-head\">\n          <h3 id=\"editorTitle\">Edit idea<\u002Fh3>\n          <button class=\"btn btn-ghost btn-sm\" data-act=\"close\">Close<\u002Fbutton>\n        <\u002Fdiv>\n        <label class=\"fld\">Title\n          <input type=\"text\" data-fld=\"title\">\n        <\u002Flabel>\n        <label class=\"fld\">Description\n          <textarea data-fld=\"description\" rows=\"4\"><\u002Ftextarea>\n        <\u002Flabel>\n        <div class=\"fld-row\">\n          <label class=\"fld\">Category\n            <select data-fld=\"category\">\n              <option value=\"module\">Modules<\u002Foption>\n              <option value=\"installment\">Installments<\u002Foption>\n              <option value=\"creative\">Creative directions<\u002Foption>\n              <option value=\"technical\">Technical tasks<\u002Foption>\n              <option value=\"genart\">Blender / shader / gen-art<\u002Foption>\n            <\u002Fselect>\n          <\u002Flabel>\n          <label class=\"fld\">Priority\n            <select data-fld=\"priority\">\n              <option value=\"now\">NOW<\u002Foption>\n              <option value=\"next\">NEXT<\u002Foption>\n              <option value=\"later\">LATER<\u002Foption>\n              <option value=\"archive\">ARCHIVE<\u002Foption>\n            <\u002Fselect>\n          <\u002Flabel>\n          <label class=\"fld\">Type\n            <select data-fld=\"type\">\n              <option value=\"shader\">SHADER<\u002Foption>\n              <option value=\"blender\">BLENDER<\u002Foption>\n              <option value=\"ui\">UI<\u002Foption>\n              <option value=\"installment\">INSTALLMENT<\u002Foption>\n              <option value=\"asset\">ASSET<\u002Foption>\n              <option value=\"research\">RESEARCH<\u002Foption>\n              <option value=\"prompt\">PROMPT<\u002Foption>\n              <option value=\"system\">SYSTEM<\u002Foption>\n            <\u002Fselect>\n          <\u002Flabel>\n        <\u002Fdiv>\n        <label class=\"fld\">Depends on\n          <div class=\"deps-list\" data-fld=\"deps\"><\u002Fdiv>\n        <\u002Flabel>\n        <div class=\"editor-foot\">\n          <button class=\"btn btn-danger btn-sm\" data-act=\"delete\">Delete idea<\u002Fbutton>\n          <div class=\"spacer\"><\u002Fdiv>\n          <button class=\"btn btn-primary\" data-act=\"save\">Save<\u002Fbutton>\n        <\u002Fdiv>\n      <\u002Fdiv>\n    <\u002Fdiv>\n  <\u002Ftemplate>\n\n  <script src=\"20d54a56-4a12-47e5-af3c-2418643b734b\"><\u002Fscript>\n  <script src=\"35aba895-20dc-476b-81c8-c0d147589651\"><\u002Fscript>\n\n\n<\u002Fbody><\u002Fhtml>"},"entry":"planning_dashboard/planning_dashboard"}
+  </script>
+</body>
+</html>

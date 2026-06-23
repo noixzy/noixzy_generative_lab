@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>noixzy // sdf raymarch</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+  :root { --bg:#0e0e10; --panel:#1a1a1d; --ink:#e8e8ea; --accent:#ed5700; }
+  html,body { margin:0; overflow:hidden; background:var(--bg); color:var(--ink);
+              font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .stage { position:fixed; inset:0; background:#000; }
+  .stage canvas { display:block; width:100vw; height:100vh; }
+  .panel { position:fixed; top:14px; right:14px; width:248px;
+           max-height:calc(100vh - 28px); overflow-y:auto;
+           background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
+           border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px;
+           box-shadow:0 10px 34px rgba(0,0,0,0.45); }
+  .panel.hidden { opacity:0; pointer-events:none; }
+  .panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase;
+              margin:0 0 12px; color:var(--accent); }
+  .row { margin:10px 0; }
+  .row label { display:flex; justify-content:space-between; margin-bottom:4px; opacity:.85; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  .seed { display:flex; gap:8px; align-items:center; margin-top:14px; }
+  .seed input { width:110px; background:#000; color:var(--ink); border:1px solid #333;
+                padding:5px 6px; font:inherit; }
+  button { background:#000; color:var(--ink); border:1px solid #333; padding:6px 10px;
+           font:inherit; cursor:pointer; border-radius:4px; }
+  button:hover { border-color:var(--accent); color:var(--accent); }
+  select { width:100%; background:#000; color:var(--ink); border:1px solid #333;
+           padding:5px 6px; font:inherit; border-radius:4px; margin-top:2px; }
+  select:hover { border-color:var(--accent); }
+  .read { margin-top:12px; opacity:.6; }
+  .hint { margin-top:8px; opacity:.4; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="stage" class="stage"></div>
+  <div class="panel">
+    <h1>noixzy // sdf raymarch</h1>
+
+    <div class="row"><label>density <span id="v0">—</span></label>
+      <input id="p0" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+    <div class="row"><label>spread <span id="v7">—</span></label>
+      <input id="p7" type="range" min="0" max="1" step="0.01" value="0.42"></div>
+    <div class="row"><label>blob size <span id="v8">—</span></label>
+      <input id="p8" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+    <div class="row"><label>blend <span id="v1">—</span></label>
+      <input id="p1" type="range" min="0" max="1" step="0.01" value="0.55"></div>
+    <div class="row"><label>turbulence <span id="v2">—</span></label>
+      <input id="p2" type="range" min="0" max="1" step="0.01" value="0.35"></div>
+    <div class="row"><label>turb type</label>
+      <select id="turbType">
+        <option value="0">warp</option>
+        <option value="1">fbm</option>
+        <option value="2">curl</option>
+        <option value="3">ridged</option>
+      </select></div>
+    <div class="row"><label>palette <span id="v3">—</span></label>
+      <input id="p3" type="range" min="0" max="11" step="1" value="0"></div>
+    <div class="row"><label>ao <span id="v9">—</span></label>
+      <input id="p9" type="range" min="0" max="1" step="0.01" value="0.55"></div>
+
+    <div class="row"><label>spin <span id="v4">—</span></label>
+      <input id="p4" type="range" min="0" max="1" step="0.01" value="0.3"></div>
+    <div class="row"><label>extrude <span id="v5">—</span></label>
+      <input id="p5" type="range" min="0" max="1" step="0.01" value="0"></div>
+    <div class="row"><label>displace <span id="v6">—</span></label>
+      <input id="p6" type="range" min="0" max="1" step="0.01" value="0"></div>
+    <div class="row"><label>displace type</label>
+      <select id="displaceType">
+        <option value="0">sine</option>
+        <option value="1">noise</option>
+        <option value="2">radial</option>
+        <option value="3">twist</option>
+      </select></div>
+
+    <div class="seed">
+      <input id="seedField" type="number" value="1">
+      <button id="newSeed">new seed</button>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <button id="pause">pause</button>
+      <button id="save">save png</button>
+    </div>
+    <div class="read">seed: <span id="seedRead">1</span></div>
+    <div class="hint">density = object count · spread = primitive spacing<br>
+      blob size = primitive scale · blend = smooth-min gooeyness</div>
+  </div>
+</div>
+
+<!-- ===== vertex shader: fullscreen quad ===== -->
+<script id="vert" type="x-shader/x-vertex">
+attribute vec3 aPosition;
+varying vec2 vUv;
+void main() {
+  vUv = aPosition.xy;            // -1..1
+  gl_Position = vec4(aPosition.xy, 0.0, 1.0);
+}
+</script>
+
+<!-- ===== fragment shader: SDF ray-march with smooth booleans ===== -->
+<script id="frag" type="x-shader/x-fragment">
+precision highp float;
+varying vec2 vUv;
+
+#define MAXP 24
+
+uniform vec2  u_res;
+uniform float u_time;
+uniform int   u_count;
+uniform float u_blend;     // smooth-min k
+uniform float u_turb;      // domain warp amount
+uniform float u_spin;      // animation speed
+uniform vec4  u_prims[MAXP]; // xyz = center, w = radius
+uniform vec3  u_bg;
+uniform vec3  u_lo;
+uniform vec3  u_hi;
+uniform vec3  u_target;    // blob centroid (keeps form centered)
+uniform float u_extrude;   // stretch the form along Y (pillars)
+uniform float u_displace;  // sine ripple displacement
+uniform int   u_ttype;     // turbulence type: 0=warp 1=fbm 2=curl 3=ridged
+uniform int   u_dtype;     // displacement type: 0=sine 1=noise 2=radial 3=twist
+uniform float u_ao;        // ambient occlusion strength
+
+// polynomial smooth min
+float smin(float a, float b, float k){
+  float h = clamp(0.5 + 0.5*(b-a)/k, 0.0, 1.0);
+  return mix(b, a, h) - k*h*(1.0-h);
+}
+
+float hash(vec3 p){
+  p = fract(p*0.3183099 + 0.1);
+  p *= 17.0;
+  return fract(p.x*p.y*p.z*(p.x+p.y+p.z));
+}
+float vnoise(vec3 x){
+  vec3 i = floor(x); vec3 f = fract(x);
+  f = f*f*(3.0-2.0*f);
+  float n000=hash(i+vec3(0,0,0)), n100=hash(i+vec3(1,0,0));
+  float n010=hash(i+vec3(0,1,0)), n110=hash(i+vec3(1,1,0));
+  float n001=hash(i+vec3(0,0,1)), n101=hash(i+vec3(1,0,1));
+  float n011=hash(i+vec3(0,1,1)), n111=hash(i+vec3(1,1,1));
+  return mix(mix(mix(n000,n100,f.x),mix(n010,n110,f.x),f.y),
+             mix(mix(n001,n101,f.x),mix(n011,n111,f.x),f.y),f.z);
+}
+
+// FBM warp: 3-octave layered noise, richer wrinkled texture
+vec3 fbmWarp(vec3 p, float t){
+  vec3 r = vec3(0.0);
+  float amp = 0.5, freq = 1.3;
+  for(int i=0;i<3;i++){
+    r.x += amp*(vnoise(p*freq + t*0.15) - 0.5);
+    r.y += amp*(vnoise(p*freq + vec3(3.7,1.1,0.0) + t*0.15) - 0.5);
+    r.z += amp*(vnoise(p*freq + vec3(7.3,0.0,4.5) + t*0.15) - 0.5);
+    amp *= 0.5; freq *= 2.1;
+  }
+  return r * 1.5;
+}
+// Curl-like warp: pseudo-divergence-free, swirling flow
+vec3 curlWarp(vec3 p, float t){
+  float a = vnoise(p*1.2 + vec3(0.0,1.5,0.7) + t*0.15);
+  float b = vnoise(p*1.2 + vec3(1.5,0.0,1.2) + t*0.15);
+  float c = vnoise(p*1.2 + vec3(0.7,1.2,0.0) + t*0.15);
+  return vec3(b-c, c-a, a-b) * 1.2;
+}
+// Ridged warp: abs-folded noise, sharp creases
+vec3 ridgedWarp(vec3 p, float t){
+  float rx = (1.0-abs(vnoise(p*1.3+t*0.15)*2.0-1.0)) - 0.5;
+  float ry = (1.0-abs(vnoise(p*1.3+vec3(3.7,1.1,2.3)+t*0.15)*2.0-1.0)) - 0.5;
+  float rz = (1.0-abs(vnoise(p*1.3+vec3(7.3,4.5,8.1)+t*0.15)*2.0-1.0)) - 0.5;
+  return vec3(rx,ry,rz) * 1.4;
+}
+
+float map(vec3 p){
+  float t = u_time;
+  // DISPLACE: field displacement — type: 0=sine 1=noise 2=radial 3=twist
+  if(u_dtype==0){
+    p.x += u_displace * sin(p.y*2.5 + t*0.8) * 0.6;
+    p.z += u_displace * cos(p.x*2.5 + t*0.7) * 0.6;
+  } else if(u_dtype==1){
+    p.x += u_displace * (vnoise(p*2.1 + vec3(t*0.5,0.0,0.0)) - 0.5) * 1.2;
+    p.z += u_displace * (vnoise(p*2.1 + vec3(0.0,t*0.4,0.0)) - 0.5) * 1.2;
+  } else if(u_dtype==2){
+    float dr = length(p.xz) + 0.001;
+    float rs = sin(dr*4.5 - t*1.2) * u_displace * 0.65;
+    p.x += rs * (p.x/dr);
+    p.z += rs * (p.z/dr);
+  } else {
+    float ang = u_displace * p.y * 1.8 * (0.7 + 0.3*sin(t*0.35));
+    float ca = cos(ang), sa = sin(ang);
+    vec2 txz = vec2(ca*p.x - sa*p.z, sa*p.x + ca*p.z);
+    p.x = txz.x; p.z = txz.y;
+  }
+  // domain warp — type: 0=warp 1=fbm 2=curl 3=ridged
+  if(u_ttype==0)      p += u_turb*(vnoise(p*1.3+t*0.15)-0.5)*1.2;
+  else if(u_ttype==1) p += u_turb*fbmWarp(p,t);
+  else if(u_ttype==2) p += u_turb*curlWarp(p,t);
+  else                p += u_turb*ridgedWarp(p,t);
+  // EXTRUDE: compress Y so blobs elongate into pillars
+  float ey = 1.0 + u_extrude*2.5;
+  float k = mix(0.05, 0.9, u_blend);
+  float d = 1e5;
+  for(int i=0;i<MAXP;i++){
+    if(i>=u_count) break;
+    vec3 c = u_prims[i].xyz;
+    // slow orbital drift so the field loops (gentle, stays centered)
+    c.x += 0.16*sin(t*0.6 + float(i)*1.7);
+    c.y += 0.14*cos(t*0.5 + float(i)*2.3);
+    vec3 sp = p; sp.y /= ey;
+    vec3 sc = c; sc.y /= ey;
+    float sph = length(sp - sc) - u_prims[i].w;
+    d = smin(d, sph, k);
+  }
+  return d;
+}
+
+vec3 calcNormal(vec3 p){
+  vec2 e = vec2(0.0015, 0.0);
+  return normalize(vec3(
+    map(p+e.xyy)-map(p-e.xyy),
+    map(p+e.yxy)-map(p-e.yxy),
+    map(p+e.yyx)-map(p-e.yyx)));
+}
+
+float calcAO(vec3 pos, vec3 nor){
+  float occ = 0.0;
+  float d;
+  d=map(pos+nor*0.06); occ+=(0.06-d)*1.000;
+  d=map(pos+nor*0.13); occ+=(0.13-d)*0.780;
+  d=map(pos+nor*0.21); occ+=(0.21-d)*0.608;
+  d=map(pos+nor*0.30); occ+=(0.30-d)*0.474;
+  d=map(pos+nor*0.40); occ+=(0.40-d)*0.370;
+  return clamp(1.0 - 1.4*occ, 0.0, 1.0);
+}
+
+vec3 backgroundColor(vec2 ndc){
+  float y = ndc.y*0.5 + 0.5;
+  float radial = smoothstep(1.35, 0.04, length(ndc*vec2(0.82, 1.05) + vec2(-0.12, 0.04)));
+  float vertical = smoothstep(0.0, 1.0, y);
+  float haze = vnoise(vec3(ndc*1.05 + vec2(0.18, -0.07), 2.3));
+  vec3 lower = mix(u_bg, u_lo, 0.10);
+  vec3 upper = mix(u_bg, u_hi, 0.08);
+  vec3 glow = mix(u_lo, u_hi, 0.35);
+  vec3 bg = mix(lower*0.82, upper*1.03, vertical);
+  bg = mix(bg, mix(u_bg, glow, 0.18), radial*0.48);
+  bg += (haze - 0.5) * glow * 0.018;
+  return max(bg, vec3(0.0));
+}
+
+void main(){
+  vec2 uv = vUv;
+  uv.x *= u_res.x/u_res.y;
+  float frameShift = mix(0.02, 0.04, smoothstep(1.0, 1.8, u_res.x/u_res.y));
+  uv.x += frameShift;
+
+  // camera orbits the blob centroid while a ray offset composes the form left
+  float a = u_time * u_spin;
+  vec3 ro = u_target + vec3(sin(a)*5.0, 1.0, cos(a)*5.0);
+  vec3 ta = u_target;
+  vec3 fw = normalize(ta-ro);
+  vec3 rt = normalize(cross(vec3(0,1,0), fw));
+  vec3 up = cross(fw, rt);
+  vec3 rd = normalize(fw*1.6 + rt*uv.x + up*uv.y);
+
+  float tt = 0.0; float d = 0.0; bool hit=false;
+  for(int i=0;i<90;i++){
+    vec3 p = ro + rd*tt;
+    d = map(p);
+    if(d < 0.001){ hit=true; break; }
+    if(tt > 14.0) break;
+    tt += d*0.85;
+  }
+
+  vec3 bg = backgroundColor(vUv);
+  vec3 col = bg;
+  if(hit){
+    vec3 p = ro + rd*tt;
+    vec3 n = calcNormal(p);
+    float ao = calcAO(p, n);
+    vec3 lp = normalize(vec3(0.6, 0.9, 0.4));
+    float dif = clamp(dot(n, lp), 0.0, 1.0);
+    float rim = pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 2.5);
+    float ramp = clamp(dif*0.9 + 0.1, 0.0, 1.0);
+    col = mix(u_lo, u_hi, ramp);
+    col += rim * u_hi * 0.5;
+    col *= mix(1.0, ao, u_ao);
+    // depth fade into bg
+    col = mix(col, bg, clamp((tt-3.0)/9.0, 0.0, 0.85));
+  }
+  // subtle vignette
+  float vig = smoothstep(1.4, 0.2, length(vUv));
+  col *= mix(0.78, 1.0, vig);
+  // gentle filmic-ish curve
+  col = pow(col, vec3(0.85));
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<script>
+const PIECE = "sdf_raymarch";
+const MAX_PRIMS = 24;
+let seed = 1;
+let P = [0.5, 0.55, 0.35, 0, 0.3, 0, 0, 0.42, 0.5, 0.55]; // density, blend, turb, palette, spin, extrude, displace, spread, blob size, ao
+let theShader, prims, running = true, t0;
+let target = [0,0,0];
+let turbType = 0;
+let displaceType = 0;
+
+// controlled presets: [name, bg, lo, hi]  (hex)
+const PALETTES = [
+  ["ember",    "#0e0e10", "#5a2400", "#ed8a3a"],
+  ["mineral",  "#071414", "#0f403a", "#7fe0c2"],
+  ["violet",   "#100c18", "#2c2660", "#b7b0ff"],
+  ["amber",    "#140d06", "#5a3414", "#f0c890"],
+  ["graphite", "#0c0c0c", "#3a3a3a", "#f2f2f2"],
+  ["cyan",     "#071018", "#103f5a", "#72d8ff"],
+  ["acid",     "#0a1207", "#2d4f13", "#c7ff4a"],
+  ["magenta",  "#16070e", "#5a1232", "#ff6aa6"],
+  ["gold",     "#15100a", "#6b4514", "#ffe0a0"],
+  ["neutral",  "#0f1115", "#222b34", "#b7c1ca"],
+  ["copper",   "#140b0b", "#612626", "#ff9a7a"],
+  ["ice",      "#090d18", "#17305f", "#9bc8ff"],
+];
+
+function hexToRGB(h){
+  return [parseInt(h.slice(1,3),16)/255,
+          parseInt(h.slice(3,5),16)/255,
+          parseInt(h.slice(5,7),16)/255];
+}
+
+function mixValue(a, b, t){ return a + (b - a) * t; }
+function blobScaleFromSlider(t){
+  t = Math.max(0, Math.min(1, t));
+  if(t <= 0.5) return mixValue(0.3, 1.0, Math.pow(t / 0.5, 1.15));
+  return mixValue(1.0, 1.45, Math.pow((t - 0.5) / 0.5, 1.85));
+}
+
+function setup(){
+  const c = createCanvas(windowWidth, windowHeight, WEBGL);
+  c.parent("stage");
+  pixelDensity(1);
+  theShader = createShader(
+    document.getElementById("vert").textContent,
+    document.getElementById("frag").textContent);
+  bindUI();
+  buildPrims();
+  t0 = millis();
+}
+function windowResized(){ resizeCanvas(windowWidth, windowHeight); }
+function keyPressed(){
+  if(document.activeElement && document.activeElement.tagName==="INPUT") return;
+  if(key==="h"||key==="H") document.querySelector(".panel").classList.toggle("hidden");
+}
+
+// seed drives primitive layout — reproducible
+function buildPrims(){
+  randomSeed(seed);
+  noiseSeed(seed);
+  const densityCurve = Math.pow(P[0], 1.35);
+  const n = 1 + floor((MAX_PRIMS - 1) * densityCurve + 0.0001);
+  const spread = mixValue(0.6, 2.1, Math.pow(P[7], 1.65));
+  const densityRadius = mixValue(0.58, 1.0, constrain(P[0] / 0.5, 0, 1));
+  const blobScale = blobScaleFromSlider(P[8]);
+  const tmp = []; let cx=0, cy=0, cz=0;
+  for(let i=0;i<n;i++){
+    const px=random(-1.3,1.3), py=random(-1.15,1.15), pz=random(-1.3,1.3);
+    const r=random(0.55,1.1) * densityRadius * blobScale;
+    tmp.push([px,py,pz,r]); cx+=px; cy+=py; cz+=pz;
+  }
+  cx/=n; cy/=n; cz/=n;
+  // recenter cluster on the origin so the form is always centered in frame
+  prims = tmp.map(p=>[(p[0]-cx)*spread, (p[1]-cy)*spread, (p[2]-cz)*spread, p[3]]);
+  target = [0,0,0];
+  select("#seedRead").html(seed);
+}
+
+function draw(){
+  const t = running ? (millis()-t0)/1000 : pauseT;
+  const pal = PALETTES[P[3]];
+  shader(theShader);
+  theShader.setUniform("u_res", [width, height]);
+  theShader.setUniform("u_time", t);
+  theShader.setUniform("u_count", prims.length);
+  theShader.setUniform("u_blend", P[1]);
+  theShader.setUniform("u_turb", P[2]);
+  theShader.setUniform("u_spin", map(P[4], 0, 1, 0.0, 0.7));
+  // flatten prims into vec4 array
+  const flat = [];
+  for(let i=0;i<MAX_PRIMS;i++){
+    const p = prims[i] || [0,0,0,0];
+    flat.push(p[0], p[1], p[2], p[3]);
+  }
+  theShader.setUniform("u_prims", flat);
+  theShader.setUniform("u_bg", hexToRGB(pal[1]));
+  theShader.setUniform("u_lo", hexToRGB(pal[2]));
+  theShader.setUniform("u_hi", hexToRGB(pal[3]));
+  theShader.setUniform("u_target", target);
+  theShader.setUniform("u_extrude", P[5]);
+  theShader.setUniform("u_displace", P[6]);
+  theShader.setUniform("u_ttype", turbType);
+  theShader.setUniform("u_dtype", displaceType);
+  theShader.setUniform("u_ao", P[9]);
+  noStroke();
+  // explicit normalized-device fullscreen quad (aspect-independent)
+  quad(-1,-1, 1,-1, 1,1, -1,1);
+}
+
+let pauseT = 0;
+function bindUI(){
+  const ids = ["p0","p1","p2","p3","p4","p5","p6","p7","p8","p9"], outs = ["v0","v1","v2","v3","v4","v5","v6","v7","v8","v9"];
+  ids.forEach((id,i)=>{
+    const el = document.getElementById(id);
+    if(i===3) el.max = PALETTES.length - 1;
+    const sync = ()=>{
+      P[i] = parseFloat(el.value);
+      if(i===3){
+        P[i] = constrain(round(P[i]), 0, PALETTES.length - 1);
+        document.getElementById(outs[i]).textContent = `${P[i]} ${PALETTES[P[i]][0]}`;
+      } else {
+        document.getElementById(outs[i]).textContent = P[i].toFixed(2);
+      }
+      if(i===0 || i===7 || i===8) buildPrims();   // geometry controls rebuild primitives
+    };
+    el.addEventListener("input", sync); sync();
+  });
+  document.getElementById("turbType").addEventListener("change", e=>{
+    turbType = parseInt(e.target.value);
+  });
+  document.getElementById("displaceType").addEventListener("change", e=>{
+    displaceType = parseInt(e.target.value);
+  });
+  document.getElementById("seedField").addEventListener("change", e=>{
+    seed = parseInt(e.target.value)||0; buildPrims();
+  });
+  document.getElementById("newSeed").addEventListener("click", ()=>{
+    seed = floor(Math.random()*1e6);
+    document.getElementById("seedField").value = seed; buildPrims();
+  });
+  document.getElementById("pause").addEventListener("click", e=>{
+    if(running){ pauseT=(millis()-t0)/1000; running=false; e.target.textContent="play"; }
+    else { t0 = millis()-pauseT*1000; running=true; e.target.textContent="pause"; }
+  });
+  document.getElementById("save").addEventListener("click", ()=>{
+    saveCanvas(`noixzy_${PIECE}_${seed}`, "png");
+  });
+}
+</script>
+</body>
+</html>
