@@ -89,8 +89,13 @@ Plus: seed + **new seed**, **★ pin** (save a state), **reset**, **pause**, **s
 
 ## Open / next steps
 
-- Pin favorite states in `grid_extrude` (and others), **export ★**, hand back the JSON to bake
-  in defaults / named presets / trim unused controls per module.
-- Optional: true volumetric extrude for the field modules.
-- Optional: render the `sdf_raymarch` orbit as a seamless MP4 loop for music visuals.
-- Optional: tune per-module defaults so each opens on a strong look.
+See `workspace/CODEX_QUEUE.md` for the authoritative ordered task list. In brief:
+
+1. **True volumetric extrude** — real heightfield geometry on the 9 field modules (`sampleField` + `renderHeightfield`). Tasks 2 and 5 depend on this; do it first.
+2. **PBR / map export** — height + normal + albedo PNG pack for Blender (reuses `sampleField`).
+3. **Loop / video export** — `MediaRecorder` → WebM of one motion cycle.
+4. **Batch series render** — headless Node script, N seeds → PNG folder.
+5. **SVG export** — vector output for truchet, contour_field, l_system.
+6. **Strong default looks** — taste pass; each module opens on a striking frame.
+7. **Theme system** — global vibe bundles (palette + finish + material), live dropdown + `[`/`]` cycle, cross-module persistence via `localStorage['noixzy_lab_theme']`. Full spec: `CODEX_TASK_theme_system.md`.
+- **STRETCH:** audio-reactive mode (Web Audio FFT → params).
