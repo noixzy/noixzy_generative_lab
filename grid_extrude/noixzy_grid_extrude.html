@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>noixzy // grid extrude</title>
+<link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
   :root { --bg:#0e0e10; --panel:#1a1a1d; --ink:#e8e8ea; --accent:#ed5700; --dim:#7a7a7e; }
@@ -30,6 +31,9 @@
   .row { margin:7px 0; }
   .row label { display:flex; justify-content:space-between; margin-bottom:3px; opacity:.85; }
   input[type=range] { width:100%; accent-color:var(--accent); }
+  select { width:100%; background:#000; color:var(--ink); border:1px solid #333;
+           padding:6px 7px; font:inherit; border-radius:4px; }
+  select:hover { border-color:var(--accent); }
   .seed { display:flex; gap:8px; align-items:center; margin-top:10px; }
   .seed input { width:96px; background:#000; color:var(--ink); border:1px solid #333;
                 padding:5px 6px; font:inherit; }
@@ -54,6 +58,12 @@
   <div class="panel">
     <h1>noixzy // grid extrude</h1>
     <div id="groups"></div>
+    <details id="themeDet" open><summary>theme</summary>
+      <div style="display:flex;gap:8px;align-items:center;margin:8px 0">
+        <select id="themeSelect" style="flex:1"></select>
+        <span style="opacity:.45;font-size:11px">[ / ]</span>
+      </div>
+    </details>
     <div class="seed">
       <input id="seedField" type="number" value="1">
       <button id="newSeed">new seed</button>
@@ -77,6 +87,28 @@ let W=820,H=820; const PIECE="grid_extrude";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let scene, glowBuf, vigTex, grainTex, leaves=[];
 
+const SYMMETRY_MODES=[
+  {v:0, label:"none"},
+  {v:1, label:"mirror X"},
+  {v:3, label:"mirror Y"},
+  {v:2, label:"quad mirror"},
+  {v:4, label:"radial 4"},
+  {v:6, label:"radial 6"},
+];
+function normalizeSymmetryMode(v){
+  const n=Math.round(parseFloat(v));
+  if(n===1) return 1;       // old 2-fold mirror favorite
+  if(n===2) return 2;       // old 4-fold / quad favorite
+  if(n===3) return 3;
+  if(n===4) return 4;       // experimental radial 4
+  if(n===6) return 6;       // experimental radial 6
+  return 0;
+}
+function symmetryLabel(v){
+  const mode=SYMMETRY_MODES.find(m=>m.v===normalizeSymmetryMode(v));
+  return mode ? mode.label : "none";
+}
+
 // ---- parameter registry: the stacked layers ----
 const PARAMS=[
   // SYSTEM — the generative grid itself (rebuilds geometry)
@@ -98,7 +130,9 @@ const PARAMS=[
   // FRAME — composition / transform
   {k:"zoom",   g:"frame",  label:"zoom",      min:.4,max:2,step:.01,v:.9},
   {k:"rot",    g:"frame",  label:"rotate",    min:-1,max:1,step:.01,v:0},
-  {k:"mirror", g:"frame",  label:"symmetry",  min:0,max:2,step:1,  v:0},
+  {k:"cx",     g:"frame",  label:"center X",  min:-1,max:1,step:.01,v:0},
+  {k:"cy",     g:"frame",  label:"center Y",  min:-1,max:1,step:.01,v:0},
+  {k:"mirror", g:"frame",  label:"symmetry mode", options:SYMMETRY_MODES, v:0},
   // LOOK — post / finishing
   {k:"contrast",g:"look",  label:"contrast",  min:0,max:1,step:.01,v:.4},
   {k:"vig",    g:"look",   label:"vignette",  min:0,max:1,step:.01,v:.45},
@@ -125,6 +159,52 @@ const PALETTES=[
 const hx=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 const shade=(c,f)=>[c[0]*f,c[1]*f,c[2]*f];
 
+const THEME_NAMES=["ember","mineral","violet","amber","graphite","cyan","acid","magenta","gold","neutral"];
+const THEME_FINISH=[
+  {contrast:.50,vig:.40,grain:.18,glow:.30},
+  {contrast:.40,vig:.35,grain:.12,glow:.20},
+  {contrast:.45,vig:.50,grain:.15,glow:.40},
+  {contrast:.40,vig:.35,grain:.20,glow:.25},
+  {contrast:.55,vig:.45,grain:.20,glow:.15},
+  {contrast:.45,vig:.40,grain:.10,glow:.35},
+  {contrast:.50,vig:.30,grain:.25,glow:.20},
+  {contrast:.50,vig:.45,grain:.15,glow:.40},
+  {contrast:.40,vig:.35,grain:.18,glow:.25},
+  {contrast:.35,vig:.40,grain:.12,glow:.10},
+];
+const THEME_MAT=[
+  {metallic:.00,rough:.50,sheen:.00,alpha:1},
+  {metallic:.15,rough:.60,sheen:.10,alpha:1},
+  {metallic:.05,rough:.45,sheen:.05,alpha:1},
+  {metallic:.00,rough:.50,sheen:.00,alpha:1},
+  {metallic:.20,rough:.70,sheen:.00,alpha:1},
+  {metallic:.10,rough:.55,sheen:.15,alpha:1},
+  {metallic:.00,rough:.60,sheen:.00,alpha:1},
+  {metallic:.00,rough:.50,sheen:.05,alpha:1},
+  {metallic:.15,rough:.55,sheen:.10,alpha:1},
+  {metallic:.00,rough:.65,sheen:.00,alpha:1},
+];
+const THEMEKEY="noixzy_lab_theme";
+let activeTheme=null;
+function applyTheme(name){
+  const idx=THEME_NAMES.indexOf(name); if(idx<0) return;
+  activeTheme=name;
+  P.pal=idx;
+  const pe=document.getElementById('p_pal'); const ps=document.getElementById('v_pal');
+  if(pe)pe.value=idx; if(ps)ps.textContent=idx;
+  Object.assign(P,THEME_FINISH[idx],THEME_MAT[idx]);
+  ['contrast','vig','grain','glow','metallic','rough','sheen','alpha'].forEach(k=>{
+    const el=document.getElementById('p_'+k); const sp=document.getElementById('v_'+k);
+    if(el)el.value=P[k]; if(sp)sp.textContent=(+P[k]).toFixed(2); });
+  const sel=document.getElementById('themeSelect'); if(sel)sel.value=name;
+  try{localStorage.setItem(THEMEKEY,name);}catch(e){}
+  dirty=true;
+}
+function cycleTheme(dir){
+  const idx=THEME_NAMES.indexOf(activeTheme);
+  applyTheme(THEME_NAMES[((idx<0?0:idx)+dir+THEME_NAMES.length)%THEME_NAMES.length]);
+}
+
 function setup(){
   const c=createCanvas(windowWidth,windowHeight); c.parent("stage"); pixelDensity(1);
   W=width; H=height;
@@ -135,6 +215,7 @@ function setup(){
   buildLeaves();
   buildUI();        // p5 ready -> bind here (lesson: never DOMContentLoaded)
   loadFavs();       // restore pinned favorites from previous sessions
+  const savedTheme=localStorage.getItem(THEMEKEY); if(savedTheme) applyTheme(savedTheme);
 }
 function windowResized(){
   resizeCanvas(windowWidth,windowHeight);
@@ -156,8 +237,10 @@ function buildPostTextures(){
   grainTex.updatePixels();
 }
 function keyPressed(){
-  if(document.activeElement && document.activeElement.tagName==="INPUT") return;
-  if(key==="h"||key==="H") document.querySelector(".panel").classList.toggle("hidden");  // hide UI
+  const tag=document.activeElement&&document.activeElement.tagName;
+  if(tag==="INPUT"||tag==="SELECT") return;
+  if(key==="h"||key==="H") document.querySelector(".panel").classList.toggle("hidden");
+  if(key==="[") cycleTheme(-1); if(key==="]") cycleTheme(1);
 }
 
 // ---- SYSTEM layer: recursive subdivision -> leaf cells ----
@@ -186,7 +269,7 @@ function drawScene(time){
   const pal=PALETTES[P.pal].map(hx);
   scene.push();
   scene.clear(); scene.background(pal[0][0],pal[0][1],pal[0][2]);
-  scene.translate(W/2,H/2);
+  scene.translate(W/2 + P.cx*W*0.5, H/2 - P.cy*H*0.5);
   scene.scale(P.zoom);
   scene.rotate(P.rot*0.5 + (P.speed>0? Math.sin(time*0.15*P.speed)*0.06*P.speed:0));
   scene.translate(-W/2,-H/2);
@@ -237,18 +320,8 @@ function draw(){
   // LOOK: contrast via GPU canvas filter (wraps the scene composite)
   drawingContext.filter = P.contrast>0 ? `contrast(${(100+P.contrast*120)|0}%)` : "none";
 
-  // FRAME: symmetry compositing (reflect content into quadrants via clip)
-  const m=Math.round(P.mirror);
-  if(m===0){ wimg(); }
-  else if(m===1){
-    push(); clipRect(0,0,W/2,H); wimg(); pop();
-    push(); clipRect(W/2,0,W/2,H); translate(W,0); scale(-1,1); wimg(); pop();
-  } else {
-    push(); clipRect(0,0,W/2,H/2); wimg(); pop();
-    push(); clipRect(W/2,0,W/2,H/2); translate(W,0); scale(-1,1); wimg(); pop();
-    push(); clipRect(0,H/2,W/2,H/2); translate(0,H); scale(1,-1); wimg(); pop();
-    push(); clipRect(W/2,H/2,W/2,H/2); translate(W,H); scale(-1,-1); wimg(); pop();
-  }
+  // FRAME: named symmetry modes, still backed by numeric P.mirror for old favorites.
+  drawSymmetry(P.mirror);
   drawingContext.filter = "none";
 
   // LOOK: glow (cheap bloom from downscaled blur)
@@ -270,6 +343,53 @@ function draw(){
 function clipRect(x,y,w,h){
   drawingContext.beginPath(); drawingContext.rect(x,y,w,h); drawingContext.clip();
 }
+function clipWedge(cx,cy,angle){
+  const radius = Math.sqrt(W*W + H*H) * 1.1;
+  drawingContext.beginPath();
+  drawingContext.moveTo(cx,cy);
+  drawingContext.arc(cx,cy,radius,-angle/2,angle/2);
+  drawingContext.closePath();
+  drawingContext.clip();
+}
+function drawSymmetry(mode){
+  const m=normalizeSymmetryMode(mode);
+  if(m===0){ wimg(); return; }
+  if(m===1){
+    push(); clipRect(0,0,W/2,H); wimg(); pop();
+    push(); clipRect(W/2,0,W/2,H); translate(W,0); scale(-1,1); wimg(); pop();
+    return;
+  }
+  if(m===3){
+    push(); clipRect(0,0,W,H/2); wimg(); pop();
+    push(); clipRect(0,H/2,W,H/2); translate(0,H); scale(1,-1); wimg(); pop();
+    return;
+  }
+  if(m===2){
+    push(); clipRect(0,0,W/2,H/2); wimg(); pop();
+    push(); clipRect(W/2,0,W/2,H/2); translate(W,0); scale(-1,1); wimg(); pop();
+    push(); clipRect(0,H/2,W/2,H/2); translate(0,H); scale(1,-1); wimg(); pop();
+    push(); clipRect(W/2,H/2,W/2,H/2); translate(W,H); scale(-1,-1); wimg(); pop();
+    return;
+  }
+  if(m===4 || m===6){
+    const count = m;
+    const angle = TWO_PI / count;
+    const cx = W/2, cy = H/2;
+    push();
+    clipWedge(cx,cy,angle);
+    for(let i=0;i<count;i++){
+      push();
+      translate(cx,cy);
+      rotate(angle*i);
+      translate(-cx,-cy);
+      wimg();
+      pop();
+    }
+    pop();
+    return;
+  }
+  wimg();
+}
 // DISPLACE: draw the scene buffer with a noise/wave row warp
 function wimg(){
   if(P.displace>0.01){ const t=(running?(millis()-t0)/1000:pauseT), strips=64, amp=P.displace*44;
@@ -277,6 +397,16 @@ function wimg(){
       const dx=Math.sin(sy*0.012+t*0.6)*amp + (noise(sy*0.01,t*0.2)-0.5)*amp*1.4;
       image(scene,dx,sy,W,sh,0,sy,W,sh); } }
   else image(scene,0,0);
+}
+
+function normalizeParamValue(p, value){
+  if(p.k==="mirror") return normalizeSymmetryMode(value);
+  const v=parseFloat(value);
+  return Number.isFinite(v) ? v : p.v;
+}
+function formatParamValue(p){
+  if(p.k==="mirror") return symmetryLabel(P[p.k]);
+  return (p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
 }
 
 // ---- UI: build grouped, collapsible sliders from the registry ----
@@ -290,10 +420,22 @@ function buildUI(){
       const lab=document.createElement("label");
       const span=document.createElement("span"); span.id="v_"+p.k;
       lab.append(p.label+" ",span);
-      const inp=document.createElement("input"); inp.type="range";
-      inp.min=p.min; inp.max=p.max; inp.step=p.step; inp.value=p.v; inp.id="p_"+p.k;
-      const fmt=()=> span.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
-      inp.addEventListener("input",()=>{ P[p.k]=parseFloat(inp.value); fmt();
+      const inp=document.createElement(p.options ? "select" : "input");
+      inp.id="p_"+p.k;
+      if(p.options){
+        p.options.forEach(mode=>{
+          const opt=document.createElement("option");
+          opt.value=mode.v; opt.textContent=mode.label;
+          inp.appendChild(opt);
+        });
+        inp.value=normalizeSymmetryMode(p.v);
+      } else {
+        inp.type="range";
+        inp.min=p.min; inp.max=p.max; inp.step=p.step; inp.value=p.v;
+      }
+      const fmt=()=> span.textContent=formatParamValue(p);
+      const evt=p.options ? "change" : "input";
+      inp.addEventListener(evt,()=>{ P[p.k]=normalizeParamValue(p,inp.value); inp.value=P[p.k]; fmt();
         if(p.sys) buildLeaves(); else dirty=true; });
       fmt();
       row.append(lab,inp); det.appendChild(row);
@@ -314,6 +456,9 @@ function buildUI(){
     if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>flash("exportFavs","copied ✓"),()=>prompt("favorites:",txt));
     else prompt("favorites JSON:",txt); });
   document.getElementById("clearFavs").addEventListener("click",()=>{ if(confirm("clear all favorites?")){favs=[];saveFavs();renderFavs();} });
+  const tSel=document.getElementById('themeSelect');
+  if(tSel){ THEME_NAMES.forEach(n=>{ const opt=document.createElement('option'); opt.value=n; opt.textContent=n; tSel.appendChild(opt); });
+    tSel.addEventListener('change',e=>applyTheme(e.target.value)); }
 }
 
 // ---- favorites / presets: pin states you like, recall, export ----
@@ -324,10 +469,11 @@ function pinFav(){ favs.push({seed, P:JSON.parse(JSON.stringify(P))}); saveFavs(
 function flash(id,msg){ const b=document.getElementById(id); const o=b.textContent; b.textContent=msg; setTimeout(()=>{b.textContent=o;},1100); }
 function applyConfig(cfg){
   if(cfg.seed!==undefined){ seed=cfg.seed; document.getElementById("seedField").value=seed; }
-  PARAMS.forEach(p=>{ if(cfg.P && cfg.P[p.k]!==undefined){
-    P[p.k]=cfg.P[p.k];
+  PARAMS.forEach(p=>{ if(cfg.P){
+    const raw=cfg.P[p.k]!==undefined ? cfg.P[p.k] : p.v;
+    P[p.k]=normalizeParamValue(p,raw);
     const el=document.getElementById("p_"+p.k); if(el) el.value=P[p.k];
-    const sp=document.getElementById("v_"+p.k); if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
+    const sp=document.getElementById("v_"+p.k); if(sp) sp.textContent=formatParamValue(p);
   }});
   buildLeaves();
 }
@@ -336,9 +482,12 @@ function renderFavs(){
   document.getElementById("favBtns").style.display = favs.length? "flex":"none";
   favs.forEach((f,i)=>{
     const chip=document.createElement("div"); chip.className="chip";
-    const pal=PALETTES[Math.round(f.P.pal)||0];
+    const fp=f.P||{};
+    const palIdx=Math.min(PALETTES.length-1, Math.max(0, Math.round(parseFloat(fp.pal)||0)));
+    const pal=PALETTES[palIdx];
+    const height=Number.isFinite(+fp.height) ? (+fp.height).toFixed(2) : "n/a";
     chip.innerHTML=`<span class="sw" style="background:${pal[1]}"></span><b>★${i+1}</b><span class="x">×</span>`;
-    chip.title=`seed ${f.seed} · pal ${Math.round(f.P.pal)} · h ${(+f.P.height).toFixed(2)} · sym ${Math.round(f.P.mirror)}`;
+    chip.title=`seed ${f.seed} · pal ${palIdx} · h ${height} · sym ${symmetryLabel(fp.mirror)}`;
     chip.addEventListener("click",e=>{ if(e.target.classList.contains("x")) return; applyConfig(f); });
     chip.querySelector(".x").addEventListener("click",()=>{ favs.splice(i,1); saveFavs(); renderFavs(); });
     host.appendChild(chip);

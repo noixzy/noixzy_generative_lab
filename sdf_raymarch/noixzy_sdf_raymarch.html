@@ -4,35 +4,56 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>noixzy // sdf raymarch</title>
+<link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
-  :root { --bg:#0e0e10; --panel:#1a1a1d; --ink:#e8e8ea; --accent:#ed5700; }
+  :root { --bg:#0e0e10; --panel:#101316; --ink:#e8e8ea; --accent:#48dfff; --lime:#b7ff3c; --dim:#8b969c; }
   html,body { margin:0; overflow:hidden; background:var(--bg); color:var(--ink);
               font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
   .stage { position:fixed; inset:0; background:#000; }
   .stage canvas { display:block; width:100vw; height:100vh; }
-  .panel { position:fixed; top:14px; right:14px; width:248px;
+  .panel { position:fixed; top:14px; right:14px; width:316px; box-sizing:border-box;
            max-height:calc(100vh - 28px); overflow-y:auto;
-           background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
-           border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px;
+           background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
+           border:1px solid rgba(72,223,255,0.20); padding:14px; border-radius:9px;
            box-shadow:0 10px 34px rgba(0,0,0,0.45); }
   .panel.hidden { opacity:0; pointer-events:none; }
   .panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase;
               margin:0 0 12px; color:var(--accent); }
-  .row { margin:10px 0; }
-  .row label { display:flex; justify-content:space-between; margin-bottom:4px; opacity:.85; }
-  input[type=range] { width:100%; accent-color:var(--accent); }
-  .seed { display:flex; gap:8px; align-items:center; margin-top:14px; }
-  .seed input { width:110px; background:#000; color:var(--ink); border:1px solid #333;
-                padding:5px 6px; font:inherit; }
-  button { background:#000; color:var(--ink); border:1px solid #333; padding:6px 10px;
+  .row { margin:11px 0; padding:3px 0 5px 8px; border-left:2px solid transparent; }
+  .row.locked { border-left-color:var(--lime); background:rgba(183,255,60,0.045); }
+  .row label { display:flex; align-items:center; justify-content:space-between; gap:8px;
+               margin-bottom:5px; opacity:.9; }
+  input[type=range] { width:100%; height:30px; accent-color:var(--accent); }
+  .colorRow { display:grid; grid-template-columns:1fr 48px; gap:10px; align-items:end; }
+  input[type=color] { width:48px; height:36px; padding:0; border:1px solid #333;
+                      border-radius:4px; background:#000; cursor:pointer; }
+  input[type=color]:hover { border-color:var(--accent); }
+  .seed { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+  input[type=number], input[type=text], select {
+    box-sizing:border-box; min-height:36px; background:#000; color:var(--ink);
+    border:1px solid #333; padding:7px 8px; font:inherit; border-radius:4px;
+  }
+  input[type=number] { width:100%; }
+  button { min-height:36px; background:#000; color:var(--ink); border:1px solid #333; padding:7px 10px;
            font:inherit; cursor:pointer; border-radius:4px; }
   button:hover { border-color:var(--accent); color:var(--accent); }
-  select { width:100%; background:#000; color:var(--ink); border:1px solid #333;
-           padding:5px 6px; font:inherit; border-radius:4px; margin-top:2px; }
+  .lockBtn { min-height:32px; padding:5px 9px; color:var(--dim); border-color:#2b3337; font-size:11px; }
+  .lockBtn.locked { color:#081007; border-color:var(--lime); background:var(--lime); }
+  .tools { display:grid; grid-template-columns:1fr; gap:8px; margin:14px 0; }
+  .toolGrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .tools button, .presetBox button { min-height:40px; }
+  .presetBox { margin-top:12px; padding-top:12px; border-top:1px solid rgba(72,223,255,0.18); }
+  .presetLine { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:8px; }
+  .presetLine.triple { grid-template-columns:1fr auto auto; }
+  select { width:100%; margin-top:2px; }
   select:hover { border-color:var(--accent); }
   .read { margin-top:12px; opacity:.6; }
+  .status { min-height:18px; color:var(--dim); }
   .hint { margin-top:8px; opacity:.4; font-size:11px; }
+  @media (max-width: 520px) {
+    .panel { top:8px; right:8px; left:8px; width:auto; max-height:calc(100vh - 16px); }
+  }
 </style>
 </head>
 <body>
@@ -40,6 +61,13 @@
   <div id="stage" class="stage"></div>
   <div class="panel">
     <h1>noixzy // sdf raymarch</h1>
+    <div class="row" style="margin-bottom:10px">
+      <label>theme</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="themeSelect" style="flex:1;margin-top:2px"></select>
+        <span style="opacity:.45;font-size:11px;white-space:nowrap">[ / ]</span>
+      </div>
+    </div>
 
     <div class="row"><label>density <span id="v0">—</span></label>
       <input id="p0" type="range" min="0" max="1" step="0.01" value="0.5"></div>
@@ -59,7 +87,21 @@
         <option value="3">ridged</option>
       </select></div>
     <div class="row"><label>palette <span id="v3">—</span></label>
-      <input id="p3" type="range" min="0" max="11" step="1" value="0"></div>
+      <input id="p3" type="range" min="0" max="11" step="1" value="4"></div>
+    <div class="row colorRow"><label for="bgColor">background color</label>
+      <input id="bgColor" type="color" value="#0c0c0c"></div>
+    <div class="row"><label>bg value <span id="v10">—</span></label>
+      <input id="bgValue" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row colorRow"><label for="blobColor">blob color</label>
+      <input id="blobColor" type="color" value="#3a3a3a"></div>
+    <div class="row colorRow"><label for="hiColor">highlight/rim color</label>
+      <input id="hiColor" type="color" value="#f2f2f2"></div>
+    <div class="row"><label>blob saturation <span id="v11">—</span></label>
+      <input id="blobSat" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row"><label>blob value <span id="v12">—</span></label>
+      <input id="blobValue" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row"><label>highlight/rim <span id="v13">—</span></label>
+      <input id="rimStrength" type="range" min="0" max="2" step="0.01" value="1"></div>
     <div class="row"><label>ao <span id="v9">—</span></label>
       <input id="p9" type="range" min="0" max="1" step="0.01" value="0.55"></div>
 
@@ -77,15 +119,41 @@
         <option value="3">twist</option>
       </select></div>
 
-    <div class="seed">
-      <input id="seedField" type="number" value="1">
-      <button id="newSeed">new seed</button>
+    <div class="tools">
+      <button id="randomUnlocked" type="button">randomize unlocked</button>
+      <div class="toolGrid">
+        <button id="randomForm" type="button">randomize form</button>
+        <button id="randomColor" type="button">randomize color</button>
+      </div>
+    </div>
+
+    <div class="presetBox">
+      <div class="presetLine">
+        <select id="starterPreset"></select>
+        <button id="loadStarter" type="button">load starter</button>
+      </div>
+      <div class="presetLine">
+        <input id="presetName" type="text" placeholder="preset name">
+        <button id="savePreset" type="button">save preset</button>
+      </div>
+      <div class="presetLine triple">
+        <select id="localPreset"></select>
+        <button id="loadPreset" type="button">load</button>
+        <button id="deletePreset" type="button">delete</button>
+      </div>
+      <div id="presetStatus" class="read status"></div>
+    </div>
+
+    <div class="row"><label><span>seed <span id="seedRead">1</span></span></label>
+      <div class="seed">
+        <input id="seedField" type="number" value="1">
+        <button id="newSeed" type="button">new seed</button>
+      </div>
     </div>
     <div class="row" style="margin-top:12px;">
-      <button id="pause">pause</button>
-      <button id="save">save png</button>
+      <button id="pause" type="button">pause</button>
+      <button id="save" type="button">save png</button>
     </div>
-    <div class="read">seed: <span id="seedRead">1</span></div>
     <div class="hint">density = object count · spread = primitive spacing<br>
       blob size = primitive scale · blend = smooth-min gooeyness</div>
   </div>
@@ -115,9 +183,13 @@ uniform float u_blend;     // smooth-min k
 uniform float u_turb;      // domain warp amount
 uniform float u_spin;      // animation speed
 uniform vec4  u_prims[MAXP]; // xyz = center, w = radius
-uniform vec3  u_bg;
-uniform vec3  u_lo;
-uniform vec3  u_hi;
+uniform vec3  u_bgColor;
+uniform vec3  u_blobColor;
+uniform vec3  u_highlightColor;
+uniform float u_bgValue;
+uniform float u_blobSat;
+uniform float u_blobValue;
+uniform float u_rimStrength;
 uniform vec3  u_target;    // blob centroid (keeps form centered)
 uniform float u_extrude;   // stretch the form along Y (pillars)
 uniform float u_displace;  // sine ripple displacement
@@ -241,13 +313,19 @@ vec3 backgroundColor(vec2 ndc){
   float radial = smoothstep(1.35, 0.04, length(ndc*vec2(0.82, 1.05) + vec2(-0.12, 0.04)));
   float vertical = smoothstep(0.0, 1.0, y);
   float haze = vnoise(vec3(ndc*1.05 + vec2(0.18, -0.07), 2.3));
-  vec3 lower = mix(u_bg, u_lo, 0.10);
-  vec3 upper = mix(u_bg, u_hi, 0.08);
-  vec3 glow = mix(u_lo, u_hi, 0.35);
-  vec3 bg = mix(lower*0.82, upper*1.03, vertical);
-  bg = mix(bg, mix(u_bg, glow, 0.18), radial*0.48);
-  bg += (haze - 0.5) * glow * 0.018;
+  vec3 base = max(u_bgColor * u_bgValue, vec3(0.0));
+  vec3 lower = base * 0.66;
+  vec3 upper = mix(base * 1.12, vec3(0.08), 0.12);
+  vec3 glow = mix(base, vec3(0.12), 0.18);
+  vec3 bg = mix(lower, upper, vertical);
+  bg = mix(bg, glow, radial*0.44);
+  bg += (haze - 0.5) * (0.010 + base*0.012);
   return max(bg, vec3(0.0));
+}
+
+vec3 adjustBlobColor(vec3 c){
+  float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  return max(mix(vec3(luma), c, u_blobSat) * u_blobValue, vec3(0.0));
 }
 
 void main(){
@@ -284,11 +362,15 @@ void main(){
     float dif = clamp(dot(n, lp), 0.0, 1.0);
     float rim = pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 2.5);
     float ramp = clamp(dif*0.9 + 0.1, 0.0, 1.0);
-    col = mix(u_lo, u_hi, ramp);
-    col += rim * u_hi * 0.5;
+    vec3 baseCol = adjustBlobColor(u_blobColor);
+    vec3 highCol = max(u_highlightColor, vec3(0.0));
+    vec3 litBase = baseCol * mix(0.58, 1.12, ramp);
+    float hiAmt = clamp(smoothstep(0.18, 1.0, ramp) * 0.62 * u_rimStrength, 0.0, 0.95);
+    col = mix(litBase, highCol, hiAmt);
+    col += rim * highCol * 0.45 * u_rimStrength;
     col *= mix(1.0, ao, u_ao);
-    // depth fade into bg
-    col = mix(col, bg, clamp((tt-3.0)/9.0, 0.0, 0.85));
+    // depth falloff stays material-local so background controls do not tint the form.
+    col *= mix(1.0, 0.72, clamp((tt-3.0)/9.0, 0.0, 0.65));
   }
   // subtle vignette
   float vig = smoothstep(1.4, 0.2, length(vUv));
@@ -302,8 +384,9 @@ void main(){
 <script>
 const PIECE = "sdf_raymarch";
 const MAX_PRIMS = 24;
+const DEFAULT_PRESET = 4;
 let seed = 1;
-let P = [0.5, 0.55, 0.35, 0, 0.3, 0, 0, 0.42, 0.5, 0.55]; // density, blend, turb, palette, spin, extrude, displace, spread, blob size, ao
+let P = [0.5, 0.55, 0.35, DEFAULT_PRESET, 0.3, 0, 0, 0.42, 0.5, 0.55]; // density, blend, turb, palette, spin, extrude, displace, spread, blob size, ao
 let theShader, prims, running = true, t0;
 let target = [0,0,0];
 let turbType = 0;
@@ -325,10 +408,389 @@ const PALETTES = [
   ["ice",      "#090d18", "#17305f", "#9bc8ff"],
 ];
 
+let colorState = {
+  bg: PALETTES[DEFAULT_PRESET][1],
+  blob: PALETTES[DEFAULT_PRESET][2],
+  hi: PALETTES[DEFAULT_PRESET][3],
+  bgValue: 1,
+  blobSat: 1,
+  blobValue: 1,
+  rim: 1
+};
+
+const PRESET_STORAGE_KEY = "noixzy_sdf_raymarch_presets_v1";
+const P_CONTROLS = {
+  p0: { index:0, out:"v0", rebuild:true },
+  p1: { index:1, out:"v1" },
+  p2: { index:2, out:"v2" },
+  p3: { index:3, out:"v3", integer:true },
+  p4: { index:4, out:"v4" },
+  p5: { index:5, out:"v5" },
+  p6: { index:6, out:"v6" },
+  p7: { index:7, out:"v7", rebuild:true },
+  p8: { index:8, out:"v8", rebuild:true },
+  p9: { index:9, out:"v9" }
+};
+const COLOR_CONTROLS = { bgColor:"bg", blobColor:"blob", hiColor:"hi" };
+const VALUE_CONTROLS = { bgValue:"bgValue", blobSat:"blobSat", blobValue:"blobValue", rimStrength:"rim" };
+const LOCKABLE_KEYS = [
+  "p0","p7","p8","p1","p2","turbType","p3","bgColor","bgValue",
+  "blobColor","hiColor","blobSat","blobValue","rimStrength","p9",
+  "p4","p5","p6","displaceType","seed"
+];
+const FORM_RANDOM_KEYS = ["p0","p1","p2","p4","p5","p6","p7","p8","seed"];
+const TYPE_OPTIONS = { turbType:[0,1,2,3], displaceType:[0,1,2,3] };
+const FORM_RANGES = {
+  p0:[0.42,0.88],
+  p1:[0.22,0.58],
+  p2:[0.08,0.54],
+  p4:[0.04,0.46],
+  p5:[0.00,0.30],
+  p6:[0.00,0.34],
+  p7:[0.28,0.66],
+  p8:[0.38,0.76],
+  p9:[0.38,0.82]
+};
+const COLOR_RECIPES = [
+  { bg:"#050505", blob:"#626262", hi:"#e2e2e2", bgValue:[0.50,0.90], blobSat:[0.00,0.18], blobValue:[0.70,1.08], rim:[0.35,0.95] },
+  { bg:"#17120f", blob:"#7a6c5d", hi:"#d6c6ad", bgValue:[0.55,1.05], blobSat:[0.10,0.36], blobValue:[0.72,1.18], rim:[0.30,0.90] },
+  { bg:"#02151a", blob:"#10465a", hi:"#83efff", bgValue:[0.55,1.12], blobSat:[0.45,1.25], blobValue:[0.72,1.16], rim:[0.60,1.45] },
+  { bg:"#071107", blob:"#344f12", hi:"#d6ff56", bgValue:[0.45,0.95], blobSat:[0.55,1.35], blobValue:[0.70,1.22], rim:[0.50,1.35] },
+  { bg:"#071414", blob:"#0f403a", hi:"#7fe0c2", bgValue:[0.58,1.08], blobSat:[0.35,1.10], blobValue:[0.72,1.15], rim:[0.35,1.15] },
+  { bg:"#090d18", blob:"#17305f", hi:"#9bc8ff", bgValue:[0.55,1.08], blobSat:[0.45,1.25], blobValue:[0.72,1.18], rim:[0.45,1.30] }
+];
+
+function makeUnlockedLocks(){
+  const out = {};
+  LOCKABLE_KEYS.forEach(key=>{ out[key] = false; });
+  return out;
+}
+
+let locks = makeUnlockedLocks();
+
+const STARTER_PRESETS = [
+  {
+    name:"house graphite",
+    state:{
+      seed:1,
+      P:[0.5,0.55,0.35,4,0.3,0,0,0.42,0.5,0.55],
+      colorState:{ bg:"#0c0c0c", blob:"#3a3a3a", hi:"#f2f2f2", bgValue:1, blobSat:1, blobValue:1, rim:1 },
+      turbType:0,
+      displaceType:0,
+      locks:makeUnlockedLocks()
+    }
+  },
+  {
+    name:"clay gray",
+    state:{
+      seed:23,
+      P:[0.64,0.36,0.22,4,0.18,0.05,0.04,0.44,0.52,0.68],
+      colorState:{ bg:"#17120f", blob:"#776b61", hi:"#d8cbb9", bgValue:0.78, blobSat:0.18, blobValue:0.96, rim:0.62 },
+      turbType:1,
+      displaceType:0,
+      locks:makeUnlockedLocks()
+    }
+  },
+  {
+    name:"cyan scan",
+    state:{
+      seed:512,
+      P:[0.72,0.32,0.46,5,0.24,0.04,0.10,0.52,0.48,0.72],
+      colorState:{ bg:"#02151a", blob:"#124c62", hi:"#88f4ff", bgValue:0.88, blobSat:1.05, blobValue:0.96, rim:1.18 },
+      turbType:2,
+      displaceType:1,
+      locks:makeUnlockedLocks()
+    }
+  },
+  {
+    name:"lime signal",
+    state:{
+      seed:884,
+      P:[0.60,0.28,0.38,6,0.20,0.02,0.07,0.50,0.46,0.70],
+      colorState:{ bg:"#071107", blob:"#385718", hi:"#d6ff56", bgValue:0.70, blobSat:1.18, blobValue:0.95, rim:1.08 },
+      turbType:1,
+      displaceType:2,
+      locks:makeUnlockedLocks()
+    }
+  },
+  {
+    name:"dark mineral",
+    state:{
+      seed:77,
+      P:[0.66,0.42,0.30,1,0.16,0.08,0.03,0.46,0.54,0.74],
+      colorState:{ bg:"#071414", blob:"#0f403a", hi:"#7fe0c2", bgValue:0.82, blobSat:0.82, blobValue:0.98, rim:0.86 },
+      turbType:1,
+      displaceType:0,
+      locks:makeUnlockedLocks()
+    }
+  }
+];
+
 function hexToRGB(h){
   return [parseInt(h.slice(1,3),16)/255,
           parseInt(h.slice(3,5),16)/255,
           parseInt(h.slice(5,7),16)/255];
+}
+
+function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
+function rand(min, max){ return min + Math.random() * (max - min); }
+function randInt(min, max){ return Math.floor(rand(min, max + 1)); }
+function choose(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+function normHex(v){ return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : "#000000"; }
+
+function controlElement(key){
+  if(key === "seed") return document.getElementById("seedField");
+  return document.getElementById(key);
+}
+
+function updatePReadout(key){
+  const cfg = P_CONTROLS[key];
+  const out = document.getElementById(cfg.out);
+  if(!out) return;
+  if(key === "p3") out.textContent = `${P[cfg.index]} ${PALETTES[P[cfg.index]][0]}`;
+  else out.textContent = P[cfg.index].toFixed(2);
+}
+
+function setPControl(key, value, opts={}){
+  const cfg = P_CONTROLS[key];
+  const el = document.getElementById(key);
+  let v = parseFloat(value);
+  if(Number.isNaN(v)) v = P[cfg.index];
+  if(key === "p3"){
+    v = clamp(Math.round(v), 0, PALETTES.length - 1);
+  } else if(el) {
+    v = clamp(v, parseFloat(el.min), parseFloat(el.max));
+  }
+  P[cfg.index] = v;
+  if(el) el.value = String(v);
+  updatePReadout(key);
+  if(key === "p3" && opts.applyPalette !== false) applyPreset(v, !!opts.respectLocks);
+  if(cfg.rebuild && opts.rebuild !== false && prims) buildPrims();
+}
+
+function syncPControls(){
+  Object.keys(P_CONTROLS).forEach(key=>{
+    const cfg = P_CONTROLS[key];
+    const el = document.getElementById(key);
+    if(key === "p3" && el) el.max = PALETTES.length - 1;
+    if(el) el.value = String(P[cfg.index]);
+    updatePReadout(key);
+  });
+}
+
+function updateColorUI(){
+  document.getElementById("bgColor").value = colorState.bg;
+  document.getElementById("blobColor").value = colorState.blob;
+  document.getElementById("hiColor").value = colorState.hi;
+  document.getElementById("bgValue").value = colorState.bgValue;
+  document.getElementById("blobSat").value = colorState.blobSat;
+  document.getElementById("blobValue").value = colorState.blobValue;
+  document.getElementById("rimStrength").value = colorState.rim;
+  document.getElementById("v10").textContent = colorState.bgValue.toFixed(2);
+  document.getElementById("v11").textContent = colorState.blobSat.toFixed(2);
+  document.getElementById("v12").textContent = colorState.blobValue.toFixed(2);
+  document.getElementById("v13").textContent = colorState.rim.toFixed(2);
+}
+
+function setColorControl(id, value){
+  colorState[COLOR_CONTROLS[id]] = normHex(value);
+  updateColorUI();
+}
+
+function setValueControl(id, value){
+  const el = document.getElementById(id);
+  const key = VALUE_CONTROLS[id];
+  const min = parseFloat(el.min), max = parseFloat(el.max);
+  let v = parseFloat(value);
+  if(Number.isNaN(v)) v = colorState[key];
+  colorState[key] = clamp(v, min, max);
+  updateColorUI();
+}
+
+function applyPreset(idx, respectLocks=false){
+  const pal = PALETTES[idx];
+  if(!respectLocks || !locks.bgColor) colorState.bg = pal[1];
+  if(!respectLocks || !locks.blobColor) colorState.blob = pal[2];
+  if(!respectLocks || !locks.hiColor) colorState.hi = pal[3];
+  if(!respectLocks || !locks.bgValue) colorState.bgValue = 1;
+  if(!respectLocks || !locks.blobSat) colorState.blobSat = 1;
+  if(!respectLocks || !locks.blobValue) colorState.blobValue = 1;
+  if(!respectLocks || !locks.rimStrength) colorState.rim = 1;
+  updateColorUI();
+}
+
+function setTypeControl(key, value){
+  const values = TYPE_OPTIONS[key];
+  const v = values.includes(parseInt(value)) ? parseInt(value) : values[0];
+  if(key === "turbType") turbType = v;
+  else displaceType = v;
+  document.getElementById(key).value = String(v);
+}
+
+function setSeedValue(value, rebuild=true){
+  seed = Math.max(0, Math.floor(parseFloat(value) || 0));
+  document.getElementById("seedField").value = seed;
+  document.getElementById("seedRead").textContent = seed;
+  if(rebuild && prims) buildPrims();
+}
+
+function updateLockUI(key){
+  const btn = document.querySelector(`.lockBtn[data-lock="${key}"]`);
+  const row = controlElement(key)?.closest(".row");
+  const on = !!locks[key];
+  if(btn){
+    btn.textContent = on ? "locked" : "lock";
+    btn.classList.toggle("locked", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+  if(row) row.classList.toggle("locked", on);
+}
+
+function updateAllLockUI(){ LOCKABLE_KEYS.forEach(updateLockUI); }
+
+function wireLockButtons(){
+  LOCKABLE_KEYS.forEach(key=>{
+    const el = controlElement(key);
+    const row = el?.closest(".row");
+    const label = row?.querySelector("label");
+    if(!label || label.querySelector(`[data-lock="${key}"]`)) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "lockBtn";
+    btn.dataset.lock = key;
+    btn.addEventListener("click", e=>{
+      e.preventDefault();
+      locks[key] = !locks[key];
+      updateLockUI(key);
+    });
+    label.appendChild(btn);
+  });
+  updateAllLockUI();
+}
+
+function applyColorRecipe(recipe, respectLocks=true){
+  if(!respectLocks || !locks.bgColor) colorState.bg = recipe.bg;
+  if(!respectLocks || !locks.blobColor) colorState.blob = recipe.blob;
+  if(!respectLocks || !locks.hiColor) colorState.hi = recipe.hi;
+  if(!respectLocks || !locks.bgValue) colorState.bgValue = rand(recipe.bgValue[0], recipe.bgValue[1]);
+  if(!respectLocks || !locks.blobSat) colorState.blobSat = rand(recipe.blobSat[0], recipe.blobSat[1]);
+  if(!respectLocks || !locks.blobValue) colorState.blobValue = rand(recipe.blobValue[0], recipe.blobValue[1]);
+  if(!respectLocks || !locks.rimStrength) colorState.rim = rand(recipe.rim[0], recipe.rim[1]);
+  updateColorUI();
+}
+
+function randomizeFormControls(respectLocks=true){
+  FORM_RANDOM_KEYS.forEach(key=>{
+    if(respectLocks && locks[key]) return;
+    if(key === "seed") setSeedValue(randInt(1, 999999));
+    else setPControl(key, rand(FORM_RANGES[key][0], FORM_RANGES[key][1]));
+  });
+  setPresetStatus("form randomized");
+}
+
+function randomizeColorControls(respectLocks=true){
+  applyColorRecipe(choose(COLOR_RECIPES), respectLocks);
+  setPresetStatus("color randomized");
+}
+
+function randomizeUnlockedControls(){
+  randomizeFormControls(true);
+  if(!locks.p9) setPControl("p9", rand(FORM_RANGES.p9[0], FORM_RANGES.p9[1]));
+  if(!locks.turbType) setTypeControl("turbType", choose(TYPE_OPTIONS.turbType));
+  if(!locks.displaceType) setTypeControl("displaceType", choose(TYPE_OPTIONS.displaceType));
+  if(!locks.p3){
+    const idx = randInt(0, PALETTES.length - 1);
+    setPControl("p3", idx, { applyPalette:false });
+    applyPreset(idx, true);
+  }
+  randomizeColorControls(true);
+  setPresetStatus("unlocked randomized");
+}
+
+function captureState(){
+  return {
+    version:1,
+    seed,
+    P:P.slice(),
+    colorState:{ ...colorState },
+    turbType,
+    displaceType,
+    locks:{ ...locks }
+  };
+}
+
+function loadState(state){
+  if(!state) return;
+  if(Array.isArray(state.P)){
+    Object.keys(P_CONTROLS).forEach(key=>{
+      const cfg = P_CONTROLS[key];
+      if(state.P[cfg.index] !== undefined) setPControl(key, state.P[cfg.index], { applyPalette:false, rebuild:false });
+    });
+  }
+  if(state.colorState) colorState = { ...colorState, ...state.colorState };
+  if(state.turbType !== undefined) setTypeControl("turbType", state.turbType);
+  if(state.displaceType !== undefined) setTypeControl("displaceType", state.displaceType);
+  if(state.locks){
+    locks = makeUnlockedLocks();
+    LOCKABLE_KEYS.forEach(key=>{ locks[key] = !!state.locks[key]; });
+  }
+  setSeedValue(state.seed !== undefined ? state.seed : seed, false);
+  syncPControls();
+  updateColorUI();
+  updateAllLockUI();
+  buildPrims();
+}
+
+function readLocalPresets(){
+  try {
+    const raw = localStorage.getItem(PRESET_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch(e) {
+    return {};
+  }
+}
+
+function writeLocalPresets(presets){
+  localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets));
+}
+
+function populateStarterPresets(){
+  const sel = document.getElementById("starterPreset");
+  sel.innerHTML = "";
+  STARTER_PRESETS.forEach((preset, i)=>{
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = preset.name;
+    sel.appendChild(opt);
+  });
+}
+
+function renderLocalPresets(){
+  const sel = document.getElementById("localPreset");
+  const presets = readLocalPresets();
+  const names = Object.keys(presets).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = "";
+  if(!names.length){
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "no local presets";
+    sel.appendChild(opt);
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  names.forEach(name=>{
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function setPresetStatus(text){
+  const el = document.getElementById("presetStatus");
+  if(el) el.textContent = text || "";
 }
 
 function mixValue(a, b, t){ return a + (b - a) * t; }
@@ -336,6 +798,21 @@ function blobScaleFromSlider(t){
   t = Math.max(0, Math.min(1, t));
   if(t <= 0.5) return mixValue(0.3, 1.0, Math.pow(t / 0.5, 1.15));
   return mixValue(1.0, 1.45, Math.pow((t - 0.5) / 0.5, 1.85));
+}
+
+const THEME_NAMES=["ember","mineral","violet","amber","graphite","cyan","acid","magenta","gold","neutral"];
+const THEMEKEY="noixzy_lab_theme";
+let activeTheme=null;
+function applyTheme(name){
+  const idx=THEME_NAMES.indexOf(name); if(idx<0) return;
+  activeTheme=name;
+  setPControl('p3', idx, { applyPalette:true, rebuild:false });
+  const sel=document.getElementById('themeSelect'); if(sel)sel.value=name;
+  try{localStorage.setItem(THEMEKEY,name);}catch(e){}
+}
+function cycleTheme(dir){
+  const idx=THEME_NAMES.indexOf(activeTheme);
+  applyTheme(THEME_NAMES[((idx<0?0:idx)+dir+THEME_NAMES.length)%THEME_NAMES.length]);
 }
 
 function setup(){
@@ -348,11 +825,18 @@ function setup(){
   bindUI();
   buildPrims();
   t0 = millis();
+  // populate theme select + restore persisted theme
+  const tSel=document.getElementById('themeSelect');
+  if(tSel){ THEME_NAMES.forEach(n=>{ const opt=document.createElement('option'); opt.value=n; opt.textContent=n; tSel.appendChild(opt); });
+    tSel.addEventListener('change',e=>applyTheme(e.target.value)); }
+  const savedTheme=localStorage.getItem(THEMEKEY); if(savedTheme) applyTheme(savedTheme);
 }
 function windowResized(){ resizeCanvas(windowWidth, windowHeight); }
 function keyPressed(){
-  if(document.activeElement && document.activeElement.tagName==="INPUT") return;
+  const tag=document.activeElement&&document.activeElement.tagName;
+  if(tag==="INPUT"||tag==="SELECT") return;
   if(key==="h"||key==="H") document.querySelector(".panel").classList.toggle("hidden");
+  if(key==="[") cycleTheme(-1); if(key==="]") cycleTheme(1);
 }
 
 // seed drives primitive layout — reproducible
@@ -379,7 +863,6 @@ function buildPrims(){
 
 function draw(){
   const t = running ? (millis()-t0)/1000 : pauseT;
-  const pal = PALETTES[P[3]];
   shader(theShader);
   theShader.setUniform("u_res", [width, height]);
   theShader.setUniform("u_time", t);
@@ -394,9 +877,13 @@ function draw(){
     flat.push(p[0], p[1], p[2], p[3]);
   }
   theShader.setUniform("u_prims", flat);
-  theShader.setUniform("u_bg", hexToRGB(pal[1]));
-  theShader.setUniform("u_lo", hexToRGB(pal[2]));
-  theShader.setUniform("u_hi", hexToRGB(pal[3]));
+  theShader.setUniform("u_bgColor", hexToRGB(colorState.bg));
+  theShader.setUniform("u_blobColor", hexToRGB(colorState.blob));
+  theShader.setUniform("u_highlightColor", hexToRGB(colorState.hi));
+  theShader.setUniform("u_bgValue", colorState.bgValue);
+  theShader.setUniform("u_blobSat", colorState.blobSat);
+  theShader.setUniform("u_blobValue", colorState.blobValue);
+  theShader.setUniform("u_rimStrength", colorState.rim);
   theShader.setUniform("u_target", target);
   theShader.setUniform("u_extrude", P[5]);
   theShader.setUniform("u_displace", P[6]);
@@ -410,34 +897,85 @@ function draw(){
 
 let pauseT = 0;
 function bindUI(){
-  const ids = ["p0","p1","p2","p3","p4","p5","p6","p7","p8","p9"], outs = ["v0","v1","v2","v3","v4","v5","v6","v7","v8","v9"];
-  ids.forEach((id,i)=>{
+  populateStarterPresets();
+  syncPControls();
+  updateColorUI();
+  setTypeControl("turbType", turbType);
+  setTypeControl("displaceType", displaceType);
+  setSeedValue(seed, false);
+  wireLockButtons();
+  renderLocalPresets();
+
+  Object.keys(P_CONTROLS).forEach(id=>{
     const el = document.getElementById(id);
-    if(i===3) el.max = PALETTES.length - 1;
-    const sync = ()=>{
-      P[i] = parseFloat(el.value);
-      if(i===3){
-        P[i] = constrain(round(P[i]), 0, PALETTES.length - 1);
-        document.getElementById(outs[i]).textContent = `${P[i]} ${PALETTES[P[i]][0]}`;
-      } else {
-        document.getElementById(outs[i]).textContent = P[i].toFixed(2);
-      }
-      if(i===0 || i===7 || i===8) buildPrims();   // geometry controls rebuild primitives
-    };
-    el.addEventListener("input", sync); sync();
+    el.addEventListener("input", ()=>{
+      setPControl(id, el.value, { applyPalette:true, respectLocks:false });
+    });
+  });
+  Object.keys(COLOR_CONTROLS).forEach(id=>{
+    document.getElementById(id).addEventListener("input", e=>{
+      setColorControl(id, e.target.value);
+    });
+  });
+  Object.keys(VALUE_CONTROLS).forEach(id=>{
+    document.getElementById(id).addEventListener("input", e=>{
+      setValueControl(id, e.target.value);
+    });
   });
   document.getElementById("turbType").addEventListener("change", e=>{
-    turbType = parseInt(e.target.value);
+    setTypeControl("turbType", e.target.value);
   });
   document.getElementById("displaceType").addEventListener("change", e=>{
-    displaceType = parseInt(e.target.value);
+    setTypeControl("displaceType", e.target.value);
   });
   document.getElementById("seedField").addEventListener("change", e=>{
-    seed = parseInt(e.target.value)||0; buildPrims();
+    setSeedValue(e.target.value);
   });
   document.getElementById("newSeed").addEventListener("click", ()=>{
-    seed = floor(Math.random()*1e6);
-    document.getElementById("seedField").value = seed; buildPrims();
+    setSeedValue(randInt(1, 999999));
+  });
+  document.getElementById("randomUnlocked").addEventListener("click", randomizeUnlockedControls);
+  document.getElementById("randomForm").addEventListener("click", ()=>randomizeFormControls(true));
+  document.getElementById("randomColor").addEventListener("click", ()=>randomizeColorControls(true));
+  document.getElementById("loadStarter").addEventListener("click", ()=>{
+    const preset = STARTER_PRESETS[parseInt(document.getElementById("starterPreset").value)];
+    if(!preset) return;
+    loadState(preset.state);
+    setPresetStatus(`loaded ${preset.name}`);
+  });
+  document.getElementById("savePreset").addEventListener("click", ()=>{
+    const name = document.getElementById("presetName").value.trim();
+    if(!name){ setPresetStatus("name needed"); return; }
+    try {
+      const presets = readLocalPresets();
+      presets[name] = captureState();
+      writeLocalPresets(presets);
+      renderLocalPresets();
+      document.getElementById("localPreset").value = name;
+      setPresetStatus(`saved ${name}`);
+    } catch(e) {
+      setPresetStatus("save failed");
+    }
+  });
+  document.getElementById("loadPreset").addEventListener("click", ()=>{
+    const name = document.getElementById("localPreset").value;
+    const presets = readLocalPresets();
+    if(!name || !presets[name]){ setPresetStatus("preset missing"); return; }
+    loadState(presets[name]);
+    setPresetStatus(`loaded ${name}`);
+  });
+  document.getElementById("deletePreset").addEventListener("click", ()=>{
+    const name = document.getElementById("localPreset").value;
+    const presets = readLocalPresets();
+    if(!name || !presets[name]){ setPresetStatus("preset missing"); return; }
+    delete presets[name];
+    try {
+      writeLocalPresets(presets);
+      renderLocalPresets();
+      setPresetStatus(`deleted ${name}`);
+    } catch(e) {
+      setPresetStatus("delete failed");
+    }
   });
   document.getElementById("pause").addEventListener("click", e=>{
     if(running){ pauseT=(millis()-t0)/1000; running=false; e.target.textContent="play"; }
