@@ -1,0 +1,13 @@
+workspace/CODEX_QUEUE.md
+workspace/CODEX_TASK_engine_shell.md
+workspace/CODEX_TASK_quickwins.md
+workspace/CODEX_TASK_ranges_and_gradients.md
+workspace/CODEX_TASK_theme_system.md
+workspace/CODEX_TASK_volumetric_extrude.md
+workspace/FUTURE_INSTALLMENTS.md
+workspace/HANDOFF.md
+workspace/IDEAS_module_expansion.md
+workspace/MERGE_LOG_ranges_gradients_20260623_020226.md
+workspace/OVERVIEW.md
+workspace/READ_FIRST.md
+workspace/SESSION_BRIDGE.md

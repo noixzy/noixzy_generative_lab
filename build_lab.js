@@ -9,6 +9,7 @@ const ENGINE = (cfg) => `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>noixzy // ${cfg.title}</title>
+<link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
   :root { --bg:#0e0e10; --panel:#1a1a1d; --ink:#e8e8ea; --accent:#ed5700; --dim:#7a7a7e; }
@@ -31,7 +32,8 @@ const ENGINE = (cfg) => `<!doctype html>
   summary::before { content:"+ "; } details[open] summary::before { content:"– "; }
   .row { margin:7px 0; }
   .row label { display:flex; justify-content:space-between; margin-bottom:3px; opacity:.85; }
-  input[type=range] { width:100%; accent-color:var(--accent); }
+  input[type=range] { width:100%; height:22px; accent-color:var(--accent); cursor:pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height:4px; border-radius:2px; }
   .seed { display:flex; gap:8px; align-items:center; margin-top:10px; }
   .seed input { width:96px; background:#000; color:var(--ink); border:1px solid #333; padding:5px 6px; font:inherit; }
   button { background:#000; color:var(--ink); border:1px solid #333; padding:6px 9px; font:inherit; cursor:pointer; border-radius:4px; }
@@ -49,6 +51,17 @@ const ENGINE = (cfg) => `<!doctype html>
   input[type=color]:hover { border-color:var(--accent); }
   select { background:#000; color:var(--ink); border:1px solid #333; padding:5px 6px; font:inherit; border-radius:4px; cursor:pointer; }
   select:hover { border-color:var(--accent); }
+  #kbHelp { position:fixed; inset:0; background:rgba(0,0,0,0.72); display:none; align-items:center; justify-content:center; z-index:998; }
+  .kbCard { min-width:260px; max-width:min(420px,calc(100vw - 40px)); background:rgba(16,16,20,0.92); color:var(--ink); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:18px 20px; box-shadow:0 18px 48px rgba(0,0,0,0.5); }
+  .kbCard h2 { margin:0 0 14px; color:var(--accent); font-size:13px; letter-spacing:.12em; text-transform:lowercase; }
+  .kbGrid { display:grid; grid-template-columns:auto 1fr; gap:7px 18px; font-size:12px; }
+  .kbGrid b { color:var(--accent); font-weight:400; white-space:pre; }
+  .pbrOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:999; cursor:pointer; }
+  .pbrGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:18px; background:rgba(16,16,20,0.95); border:1px solid rgba(255,255,255,0.09); border-radius:9px; }
+  .pbrCell { display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .pbrCell img { width:220px; height:220px; object-fit:cover; border-radius:4px; border:1px solid #333; display:block; }
+  .pbrCell span { font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; }
+  .pbrHint { grid-column:1/-1; text-align:center; font-size:11px; opacity:.4; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -68,11 +81,12 @@ const ENGINE = (cfg) => `<!doctype html>
     <div class="colorRow"><label>ink</label><input type="color" id="p_ink"></div>
   </details>
   <div class="seed"><input id="seedField" type="number" value="1"><button id="newSeed">new seed</button></div>
-  <div class="btns"><button id="pin">★ pin</button><button id="reset">reset</button><button id="pause">pause</button><button id="save">save png</button><button id="savePBR">pbr pack</button></div>
+  <div class="btns"><button id="pin">★ pin</button><button id="reset">reset</button><button id="copyP">copy</button><button id="pasteP">paste</button><button id="pause">pause</button><button id="save">save png</button><button id="save2x">save 2x</button><button id="savePBR">pbr pack</button><button id="rec">rec</button><select id="recDur"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select></div>
   <div id="favs" class="favs"></div>
   <div class="btns" id="favBtns" style="display:none;"><button id="exportFavs">export ★</button><button id="clearFavs">clear ★</button></div>
   <div class="read">seed: <span id="seedRead">1</span> &nbsp; <span style="opacity:.5">[h] hide</span></div>
 </div>
+<div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
 let W=820,H=820; const PIECE="${cfg.id}", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
@@ -124,34 +138,29 @@ function syncColorUI(){
   if(b)b.value=colorState.bg; if(a)a.value=colorState.acc; if(k)k.value=colorState.ink;
 }
 const THEMES=[
-  {name:"ember",   palette:PALETTES[0], finish:{contrast:.50,vig:.40,grain:.18,glow:.30}, mat:{metallic:.00,rough:.50,sheen:.00,alpha:1}},
-  {name:"mineral", palette:PALETTES[1], finish:{contrast:.40,vig:.35,grain:.12,glow:.20}, mat:{metallic:.15,rough:.60,sheen:.10,alpha:1}},
-  {name:"violet",  palette:PALETTES[2], finish:{contrast:.45,vig:.50,grain:.15,glow:.40}, mat:{metallic:.05,rough:.45,sheen:.05,alpha:1}},
-  {name:"amber",   palette:PALETTES[3], finish:{contrast:.40,vig:.35,grain:.20,glow:.25}, mat:{metallic:.00,rough:.50,sheen:.00,alpha:1}},
-  {name:"graphite",palette:PALETTES[4], finish:{contrast:.55,vig:.45,grain:.20,glow:.15}, mat:{metallic:.20,rough:.70,sheen:.00,alpha:1}},
-  {name:"cyan",    palette:PALETTES[5], finish:{contrast:.45,vig:.40,grain:.10,glow:.35}, mat:{metallic:.10,rough:.55,sheen:.15,alpha:1}},
-  {name:"acid",    palette:PALETTES[6], finish:{contrast:.50,vig:.30,grain:.25,glow:.20}, mat:{metallic:.00,rough:.60,sheen:.00,alpha:1}},
-  {name:"magenta", palette:PALETTES[7], finish:{contrast:.50,vig:.45,grain:.15,glow:.40}, mat:{metallic:.00,rough:.50,sheen:.05,alpha:1}},
-  {name:"gold",    palette:PALETTES[8], finish:{contrast:.40,vig:.35,grain:.18,glow:.25}, mat:{metallic:.15,rough:.55,sheen:.10,alpha:1}},
-  {name:"neutral", palette:PALETTES[9], finish:{contrast:.35,vig:.40,grain:.12,glow:.10}, mat:{metallic:.00,rough:.65,sheen:.00,alpha:1}},
+  {name:"ember",   accent:"#ed5700", bg:"#0e0e10", ink:"#e8e8ea", dim:"#7a7a7e"},
+  {name:"teal",    accent:"#7fe0c2", bg:"#071414", ink:"#d8f4ee", dim:"#6a8a84"},
+  {name:"violet",  accent:"#b7b0ff", bg:"#100c18", ink:"#e0deff", dim:"#7a7490"},
+  {name:"amber",   accent:"#f0c890", bg:"#140d06", ink:"#f5e8d0", dim:"#8a7a60"},
+  {name:"graphite",accent:"#c8c8c8", bg:"#0c0c0c", ink:"#f2f2f2", dim:"#7a7a7a"},
+  {name:"cyan",    accent:"#72d8ff", bg:"#071018", ink:"#d0eeff", dim:"#5a7888"},
+  {name:"acid",    accent:"#c7ff4a", bg:"#0a1207", ink:"#e0ffc0", dim:"#6a8040"},
+  {name:"magenta", accent:"#ff6aa6", bg:"#16070e", ink:"#ffd0e4", dim:"#8a5068"},
+  {name:"gold",    accent:"#ffe0a0", bg:"#15100a", ink:"#fff0d0", dim:"#8a7850"},
+  {name:"neutral", accent:"#b7c1ca", bg:"#0f1115", ink:"#d8dde2", dim:"#6a7078"},
 ];
 const THEMEKEY="noixzy_lab_theme";
 let activeTheme=null;
 function applyTheme(name){
   const th=THEMES.find(t=>t.name===name); if(!th) return;
   activeTheme=name;
-  colorState={bg:th.palette[0],acc:th.palette[1],ink:th.palette[2]};
-  syncColorUI();
-  Object.assign(P,th.finish,th.mat);
-  const pi=PALETTES.indexOf(th.palette);
-  if(pi>=0){ P.pal=pi; const pe=document.getElementById('p_pal'); const ps=document.getElementById('v_pal');
-    if(pe)pe.value=pi; if(ps)ps.textContent=pi; }
-  ['contrast','vig','grain','glow','metallic','rough','sheen','alpha'].forEach(k=>{
-    const el=document.getElementById('p_'+k); const sp=document.getElementById('v_'+k);
-    if(el)el.value=P[k]; if(sp)sp.textContent=(+P[k]).toFixed(2); });
+  const r=document.documentElement.style;
+  r.setProperty('--accent',th.accent);
+  r.setProperty('--bg',th.bg);
+  r.setProperty('--ink',th.ink);
+  r.setProperty('--dim',th.dim);
   const sel=document.getElementById('themeSelect'); if(sel)sel.value=name;
   try{localStorage.setItem(THEMEKEY,name);}catch(e){}
-  dirty=true;
 }
 function cycleTheme(dir){
   const idx=THEMES.findIndex(t=>t.name===activeTheme);
@@ -203,7 +212,8 @@ function setup(){
   const c=createCanvas(windowWidth,windowHeight); c.parent("stage"); pixelDensity(1);
   W=width; H=height; allocBuffers(); t0=millis();
   buildSystem(); buildUI(); loadFavs();
-  const savedTheme=localStorage.getItem(THEMEKEY); if(savedTheme) applyTheme(savedTheme);
+  applyTheme(localStorage.getItem(THEMEKEY)||'graphite');
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggleKbHelp(false); });
 }
 function allocBuffers(){
   raw=createGraphics(W,H); scene=createGraphics(W,H);
@@ -223,9 +233,25 @@ function allocBuffers(){
   grainTex.updatePixels();
 }
 function windowResized(){ resizeCanvas(windowWidth,windowHeight); W=width; H=height; allocBuffers(); buildSystem(); }
+function toggleKbHelp(show){
+  const el=document.getElementById("kbHelp"); if(!el)return;
+  const on=show===undefined ? el.style.display!=="flex" : !!show;
+  el.style.display=on?"flex":"none";
+  el.setAttribute("aria-hidden",on?"false":"true");
+}
+function togglePause(){
+  const b=document.getElementById("pause");
+  if(running){pauseT=(millis()-t0)/1000;running=false;if(b)b.textContent="play";}
+  else{t0=millis()-pauseT*1000;running=true;if(b)b.textContent="pause";}
+}
+function triggerSavePNG(){ saveCanvas("noixzy_"+PIECE+"_"+seed,"png"); }
 function keyPressed(){ const tag=document.activeElement&&document.activeElement.tagName;
   if(tag==="INPUT"||tag==="SELECT")return;
+  if(key==="?"||(key==="/"&&keyIsDown(SHIFT))){ toggleKbHelp(); return false; }
+  if(key==="Escape"){ toggleKbHelp(false); return false; }
   if(key==="h"||key==="H") document.querySelector(".panel").classList.toggle("hidden");
+  if(key===" "||keyCode===32){ togglePause(); return false; }
+  if(key==="s"||key==="S"){ triggerSavePNG(); return false; }
   if(key==="[") cycleTheme(-1); if(key==="]") cycleTheme(1); }
 
 function buildSystem(){ randomSeed(seed); noiseSeed(seed); build(); dirty=true; }
@@ -276,6 +302,63 @@ function draw(){
   select("#seedRead").html(seed);
 }
 
+function normalizePastedP(src){
+  if(src===undefined||src===null) return null;
+  if(Array.isArray(src)){ const out={}; PARAMS.forEach((p,i)=>{ if(src[i]!==undefined) out[p.k]=src[i]; }); return out; }
+  if(typeof src==="object") return src;
+  return null;
+}
+function copyParams(){
+  const txt=JSON.stringify({seed:seed,P:P,theme:activeTheme});
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>flash("copyP","copied ✓"),()=>{prompt("params JSON:",txt);flash("copyP","copied ✓");});
+  }else{ prompt("params JSON:",txt); flash("copyP","copied ✓"); }
+}
+function pasteParams(){
+  const fail=()=>flash("pasteP","✗ invalid");
+  if(!(navigator.clipboard&&navigator.clipboard.readText)){fail();return;}
+  navigator.clipboard.readText().then(txt=>{
+    if(!txt){fail();return;}
+    let data; try{ data=JSON.parse(txt); }catch(e){ fail(); return; }
+    if(!data||typeof data!=="object"){fail();return;}
+    const cfg={}; let touched=false;
+    if(data.seed!==undefined){ const n=parseInt(data.seed,10); if(Number.isFinite(n)){ cfg.seed=n; touched=true; } }
+    const nextP=normalizePastedP(data.P);
+    if(nextP){ cfg.P=nextP; touched=true; }
+    if(data.theme!==undefined) applyTheme(data.theme);
+    if(!touched&&data.theme===undefined){ fail(); return; }
+    if(touched){
+      if(typeof applyConfig==="function") applyConfig(cfg);
+      else { if(cfg.seed!==undefined) seed=cfg.seed; if(cfg.P) Object.keys(cfg.P).forEach(k=>{ if(P[k]!==undefined) P[k]=cfg.P[k]; }); dirty=true; }
+    }
+    flash("pasteP","pasted ✓");
+  },fail);
+}
+function getRecDuration(){
+  const el=document.getElementById("recDur");
+  const v=el?parseInt(el.value,10):4;
+  return [2,4,8,16].includes(v)?v:4;
+}
+function save2xPNG(){
+  const btn=document.getElementById("save2x"), old=btn?btn.textContent:"save 2x";
+  if(btn){ btn.textContent="rendering…"; btn.disabled=true; }
+  setTimeout(()=>{
+    let g2=null;
+    try{
+      g2=createGraphics(W*2,H*2); if(g2.pixelDensity) g2.pixelDensity(1);
+      randomSeed(seed); noiseSeed(seed);
+      const pal=getPal();
+      g2.background(pal[0][0],pal[0][1],pal[0][2]);
+      if(typeof heightField==='function'&&Math.abs(P.extrude)>0.01){ const G=260, heights=heightField(G);
+        if(heights&&heights.length===G*G) renderHeightfield(g2,heights,G,pal,{});
+        else render(g2,pal);
+      }else{ render(g2,pal); }
+      pbrSave(g2,"noixzy_"+PIECE+"_"+seed+"_2x.png");
+      setTimeout(()=>{ if(g2)g2.remove(); },500);
+    }catch(e){ if(g2)g2.remove(); if(btn)btn.textContent="✗ error"; }
+    setTimeout(()=>{ if(btn){ btn.disabled=false; btn.textContent=old; } },900);
+  },30);
+}
 function buildUI(){
   const host=document.getElementById("groups");
   GROUPS.forEach((g,gi)=>{ const det=document.createElement("details"); if(gi<2)det.open=true;
@@ -292,9 +375,19 @@ function buildUI(){
     host.appendChild(det); });
   document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;buildSystem();});
   document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;buildSystem();});
-  document.getElementById("pause").addEventListener("click",e=>{ if(running){pauseT=(millis()-t0)/1000;running=false;e.target.textContent="play";}else{t0=millis()-pauseT*1000;running=true;e.target.textContent="pause";}});
-  document.getElementById("save").addEventListener("click",()=>saveCanvas("noixzy_"+PIECE+"_"+seed,"png"));
+  document.getElementById("pause").addEventListener("click",togglePause);
+  document.getElementById("save").addEventListener("click",triggerSavePNG);
+  document.getElementById("save2x").addEventListener("click",save2xPNG);
   document.getElementById("savePBR").addEventListener("click",makePBRMaps);
+  document.getElementById("rec").addEventListener("click",()=>recordClip(getRecDuration()));
+  document.getElementById("copyP").addEventListener("click",copyParams);
+  document.getElementById("pasteP").addEventListener("click",pasteParams);
+  if(typeof renderSVG === 'function'){
+    const svgBtn=document.createElement('button');
+    svgBtn.id='svg'; svgBtn.textContent='svg';
+    document.querySelector('.btns').appendChild(svgBtn);
+    svgBtn.addEventListener('click',renderSVG);
+  }
   document.getElementById("pin").addEventListener("click",pinFav);
   document.getElementById("reset").addEventListener("click",()=>{const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});flash("reset","reset ✓");});
   document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(favs);
@@ -333,7 +426,7 @@ function pbrSave(g,name){
     const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }); }
 function makePBRMaps(){
   flash("savePBR","generating…");
-  const SZ=256, base="noixzy_"+PIECE+"_"+seed;
+  const SZ=1024, base="noixzy_"+PIECE+"_"+seed;
   const hasHF=typeof heightField==='function';
   const heights=hasHF?heightField(SZ):null;
   // height
@@ -357,7 +450,7 @@ function makePBRMaps(){
   }
   nmG.updatePixels();
   // albedo — flat render at canvas res
-  const alG=createGraphics(W,H); randomSeed(seed); noiseSeed(seed); render(alG,getPal());
+  const alG=createGraphics(SZ,SZ); randomSeed(seed); noiseSeed(seed); render(alG,getPal());
   // ao — neighbor height occlusion
   const aoG=createGraphics(SZ,SZ); aoG.loadPixels(); const R=3;
   for(let y=0;y<SZ;y++) for(let x=0;x<SZ;x++){
@@ -370,9 +463,64 @@ function makePBRMaps(){
     const i=(y*SZ+x)*4; aoG.pixels[i]=aoG.pixels[i+1]=aoG.pixels[i+2]=v; aoG.pixels[i+3]=255;
   }
   aoG.updatePixels();
-  [[hmG,"height"],[nmG,"normal"],[alG,"albedo"],[aoG,"ao"]].forEach(([g,sfx],i)=>{
+  const maps=[[hmG,"height"],[nmG,"normal"],[alG,"albedo"],[aoG,"ao"]];
+  showPBRPreview(maps);
+  maps.forEach(([g,sfx],i)=>{
     setTimeout(()=>{ pbrSave(g,base+"_"+sfx+".png"); setTimeout(()=>g.remove(),400); },i*350);
   });
+}
+function showPBRPreview(maps){
+  const ov=document.createElement('div'); ov.className='pbrOverlay';
+  const grid=document.createElement('div'); grid.className='pbrGrid';
+  maps.forEach(([g,label])=>{
+    const cell=document.createElement('div'); cell.className='pbrCell';
+    const img=document.createElement('img'); img.src=g.elt.toDataURL();
+    const lbl=document.createElement('span'); lbl.textContent=label;
+    cell.append(img,lbl); grid.appendChild(cell);
+  });
+  const hint=document.createElement('div'); hint.className='pbrHint'; hint.textContent='click anywhere to close  ·  files downloading';
+  grid.appendChild(hint);
+  ov.appendChild(grid);
+  ov.addEventListener('click',()=>ov.remove());
+  document.body.appendChild(ov);
+}
+function svgNum(v){ return (Math.round(v*1000)/1000).toString(); }
+function svgColor(c){
+  return "#"+[0,1,2].map(i=>{ const v=Math.max(0,Math.min(255,Math.round(c[i]||0))); return v.toString(16).padStart(2,"0"); }).join("");
+}
+function downloadSVG(svg){
+  const blob=new Blob([svg],{type:"image/svg+xml"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='noixzy_'+PIECE+'_'+seed+'.svg'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function recordClip(dur=4){
+  const btn=document.getElementById('rec');
+  if(btn._recording) return;
+  const canvas=document.querySelector('#stage canvas');
+  if(!canvas||!canvas.captureStream){btn.textContent='unsupported';setTimeout(()=>btn.textContent='rec',2000);return;}
+  const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+  const stream=canvas.captureStream(30);
+  const rec=new MediaRecorder(stream,mimeType?{mimeType}:{});
+  const chunks=[];
+  rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+  rec.onstop=()=>{
+    btn._recording=false;
+    const blob=new Blob(chunks,{type:mimeType||'video/webm'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='noixzy_'+PIECE+'_'+seed+'.webm'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    btn.textContent='rec';
+  };
+  btn._recording=true;
+  rec.start();
+  let t=dur;
+  btn.textContent='● '+t+'s';
+  const iv=setInterval(()=>{
+    t--;
+    if(t>0){ btn.textContent='● '+t+'s'; }
+    else { clearInterval(iv); btn.textContent='saving…'; rec.stop(); stream.getTracks().forEach(tr=>tr.stop()); }
+  },1000);
 }
 </script>
 </body>
@@ -382,7 +530,7 @@ function makePBRMaps(){
 // ---------------- per-piece definitions ----------------
 const PIECES=[
 { id:"flow_field", title:"flow field",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.6},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:0}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.6},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 function build(){}
 function render(g,pal){
@@ -423,7 +571,7 @@ function heightField(G){ const sG=RDG, out=new Float32Array(G*G);
   return out; }` },
 
 { id:"voronoi", title:"voronoi",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.4},{k:"relax",label:"relax",min:0,max:1,step:.01,v:.4},{k:"edgefill",label:"edge / fill",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:0},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.4},{k:"relax",label:"relax",min:0,max:1,step:.01,v:.4},{k:"edgefill",label:"edge / fill",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
   code:`
 let VPTS;
 function build(){ const n=floor(map(P.density,0,1,12,120)); let pts=[]; for(let i=0;i<n;i++)pts.push([random(1),random(1)]);
@@ -451,33 +599,44 @@ function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
   return out; }` },
 
 { id:"contour_field", title:"contour field",
-  system:[{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"levels",label:"levels",min:0,max:1,step:.01,v:.5},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.4},{k:"pal",label:"palette",min:0,max:9,step:1,v:0}],
+  system:[{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"levels",label:"levels",min:0,max:1,step:.01,v:.5},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.4},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 function build(){}
-function render(g,pal){ const R=Math.max(5,Math.floor(g.width/200)), C=Math.floor(g.width/R), Rj=Math.floor(g.height/R);
+function contourSegments(w,h,pal){ const R=Math.max(5,Math.floor(w/200)), C=Math.floor(w/R), Rj=Math.floor(h/R);
   const s=map(P.scale,0,1,0.002,0.012), turb=map(P.turbulence,0,1,1,4);
   const fv=(x,y)=>{let v=0,amp=1,fr=1; for(let o=0;o<4;o++){v+=noise(x*s*fr,y*s*fr)*amp;amp*=.5;fr*=1.6*turb;} return v;};
   const fld=[]; for(let j=0;j<=Rj;j++){const row=[];for(let i=0;i<=C;i++)row.push(fv(i*R,j*R));fld.push(row);}
   let mn=1e9,mx=-1e9; for(const r of fld)for(const v of r){mn=Math.min(mn,v);mx=Math.max(mx,v);}
   const L=floor(map(P.levels,0,1,5,26));
   const ix=(p,q,va,vb)=>{const t=(thr-va)/((vb-va)||1e-6);return [lerp(p[0],q[0],t),lerp(p[1],q[1],t)];};
-  let thr=0;
+  let thr=0, segs=[];
   for(let l=1;l<L;l++){ thr=mn+(mx-mn)*l/L; const t=l/L;
-    g.stroke(lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)); g.strokeWeight(1.1);
+    const col=[lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)];
     for(let j=0;j<Rj;j++)for(let i=0;i<C;i++){
       const a=fld[j][i],b=fld[j][i+1],c=fld[j+1][i+1],d=fld[j+1][i],x=i*R,y=j*R;
       const TL=[x,y],TR=[x+R,y],BR=[x+R,y+R],BL=[x,y+R];
       let st=(a>thr?8:0)|(b>thr?4:0)|(c>thr?2:0)|(d>thr?1:0);
       const e={top:ix(TL,TR,a,b),right:ix(TR,BR,b,c),bottom:ix(BL,BR,d,c),left:ix(TL,BL,a,d)};
-      const sg=(p,q)=>g.line(p[0],p[1],q[0],q[1]);
+      const sg=(p,q)=>segs.push({p:p,q:q,c:col});
       if(st===1||st===14)sg(e.left,e.bottom); else if(st===2||st===13)sg(e.bottom,e.right);
       else if(st===3||st===12)sg(e.left,e.right); else if(st===4||st===11)sg(e.top,e.right);
       else if(st===5){sg(e.left,e.top);sg(e.bottom,e.right);} else if(st===6||st===9)sg(e.top,e.bottom);
       else if(st===7||st===8)sg(e.left,e.top); else if(st===10){sg(e.left,e.bottom);sg(e.top,e.right);} } }
+  return segs;
+}
+function render(g,pal){ const segs=contourSegments(g.width,g.height,pal); g.strokeWeight(1.1);
+  for(const s of segs){ g.stroke(s.c[0],s.c[1],s.c[2]); g.line(s.p[0],s.p[1],s.q[0],s.q[1]); }
+}
+function renderSVG(){
+  randomSeed(seed); noiseSeed(seed);
+  const pal=getPal(), segs=contourSegments(W,H,pal);
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
+  for(const s of segs){ svg+='<path d="M '+svgNum(s.p[0])+' '+svgNum(s.p[1])+' L '+svgNum(s.q[0])+' '+svgNum(s.q[1])+'" fill="none" stroke="'+svgColor(s.c)+'" stroke-width="1.1" stroke-linecap="round"/>'; }
+  downloadSVG(svg+'</svg>');
 }` },
 
 { id:"truchet", title:"truchet",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:0}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 function build(){}
 function render(g,pal){ const n=floor(map(P.density,0,1,6,40)), cs=Math.min(g.width,g.height)/n;
@@ -488,10 +647,31 @@ function render(g,pal){ const n=floor(map(P.density,0,1,6,40)), cs=Math.min(g.wi
     const bias=clus>0.001?noise(i*clus*12,j*clus*12):random(); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
     g.stroke(c[0],c[1],c[2]);
     if(flip){ g.arc(x,y,cs,cs,0,HALF_PI); g.arc(x+cs,y+cs,cs,cs,PI,PI+HALF_PI); }
-    else { g.arc(x+cs,y,cs,cs,HALF_PI,PI); g.arc(x,y+cs,cs,cs,-HALF_PI,0); } } }` },
+    else { g.arc(x+cs,y,cs,cs,HALF_PI,PI); g.arc(x,y+cs,cs,cs,-HALF_PI,0); } } }
+function svgArc(cx,cy,r,a0,a1){
+  const x0=cx+Math.cos(a0)*r, y0=cy+Math.sin(a0)*r, x1=cx+Math.cos(a1)*r, y1=cy+Math.sin(a1)*r;
+  return 'M '+svgNum(x0)+' '+svgNum(y0)+' A '+svgNum(r)+' '+svgNum(r)+' 0 0 1 '+svgNum(x1)+' '+svgNum(y1);
+}
+function renderSVG(){
+  randomSeed(seed); noiseSeed(seed);
+  const pal=getPal(), n=floor(map(P.density,0,1,6,40)), cs=Math.min(W,H)/n, r=cs/2;
+  const cols=Math.ceil(W/cs), rows=Math.ceil(H/cs), sw=map(P.weight,0,1,1,cs*0.4), clus=map(P.clustering,0,1,0.001,0.06);
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
+    const bias=clus>0.001?noise(i*clus*12,j*clus*12):random(); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
+    if(flip){
+      svg+='<path d="'+svgArc(x,y,r,0,HALF_PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
+      svg+='<path d="'+svgArc(x+cs,y+cs,r,PI,PI+HALF_PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
+    }else{
+      svg+='<path d="'+svgArc(x+cs,y,r,HALF_PI,PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
+      svg+='<path d="'+svgArc(x,y+cs,r,-HALF_PI,0)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
+    }
+  }
+  downloadSVG(svg+'</svg>');
+}` },
 
 { id:"l_system", title:"l-system",
-  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"angle",label:"angle",min:0,max:1,step:.01,v:.35},{k:"decay",label:"decay",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:0}],
+  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"angle",label:"angle",min:0,max:1,step:.01,v:.35},{k:"decay",label:"decay",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 let LS;
 function build(){ const rules=["FF+[+F-F-F]-[-F+F+F]","F[+F]F[-F]F","FF-[-F+F+F]+[+F-F-F]","F-[[F]+F]+F[+FF]-F"];
@@ -506,7 +686,24 @@ function render(g,pal){ const s=LS.s, depth=LS.depth; const ang=map(P.angle,0,1,
     else if(ch==="+")g.rotate(ang); else if(ch==="-")g.rotate(-ang);
     else if(ch==="["){stack.push([len,lw]);g.push();len*=decay;lw*=0.78;}
     else if(ch==="]"){g.pop();const st=stack.pop();len=st[0];lw=st[1];} }
-  g.pop(); }` },
+  g.pop(); }
+function renderSVG(){
+  if(!LS) build();
+  const pal=getPal(), s=LS.s, depth=LS.depth, ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
+  let len=map(depth,3,6,140,16)*(H/820), lw=2.4, x=W/2, y=H*0.92, a=0;
+  const stack=[];
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
+  for(const ch of s){
+    if(ch==="F"){ const t=Math.max(0,Math.min(1,lw/2.4)), c=[lerp(pal[2][0],pal[1][0],t),lerp(pal[2][1],pal[1][1],t),lerp(pal[2][2],pal[1][2],t)];
+      const nx=x+Math.sin(a)*len, ny=y-Math.cos(a)*len;
+      svg+='<line x1="'+svgNum(x)+'" y1="'+svgNum(y)+'" x2="'+svgNum(nx)+'" y2="'+svgNum(ny)+'" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(Math.max(0.4,lw))+'" stroke-linecap="round"/>';
+      x=nx; y=ny;
+    }else if(ch==="+")a+=ang; else if(ch==="-")a-=ang;
+    else if(ch==="["){stack.push([x,y,a,len,lw]);len*=decay;lw*=0.78;}
+    else if(ch==="]"){const st=stack.pop();x=st[0];y=st[1];a=st[2];len=st[3];lw=st[4];}
+  }
+  downloadSVG(svg+'</svg>');
+}` },
 
 { id:"cellular_erosion", title:"cellular erosion",
   system:[{k:"fill",label:"fill",min:0,max:1,step:.01,v:.48},{k:"iterations",label:"iterations",min:0,max:1,step:.01,v:.5},{k:"grain",label:"grain",min:0,max:1,step:.01,v:.4},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
@@ -534,7 +731,7 @@ function heightField(G){ const G0=CEG, out=new Float32Array(G*G);
   return out; }` },
 
 { id:"recursive_grid", title:"recursive grid",
-  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.5},{k:"jitter",label:"jitter",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:0}],
+  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.5},{k:"jitter",label:"jitter",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 let RGL;
 function build(){ RGL=[]; const maxD=floor(map(P.depth,0,1,3,8)); rgsub(0,0,1,1,0,maxD); }
@@ -550,7 +747,7 @@ function render(g,pal){ for(const c of RGL){ const x=c.x*g.width,y=c.y*g.height,
   g.rect(x+1.5,y+1.5,w-3,h-3); } }` },
 
 { id:"sdf", title:"sdf field",
-  system:[{k:"count",label:"count",min:0,max:1,step:.01,v:.5},{k:"blend",label:"blend",min:0,max:1,step:.01,v:.5},{k:"warp",label:"warp",min:0,max:1,step:.01,v:.35},{k:"pal",label:"palette",min:0,max:9,step:1,v:0},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
+  system:[{k:"count",label:"count",min:0,max:1,step:.01,v:.5},{k:"blend",label:"blend",min:0,max:1,step:.01,v:.5},{k:"warp",label:"warp",min:0,max:1,step:.01,v:.35},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
   code:`
 let SDFB;
 function build(){ const n=floor(map(P.count,0,1,3,12)); SDFB=[]; for(let i=0;i<n;i++)SDFB.push([random(.18,.82),random(.18,.82),random(.06,.15)]); }

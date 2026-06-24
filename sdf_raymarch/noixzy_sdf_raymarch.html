@@ -985,6 +985,13 @@ function bindUI(){
     saveCanvas(`noixzy_${PIECE}_${seed}`, "png");
   });
 }
+
+// Ensure initial render on some browsers that may not start p5 loop immediately
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    try{ if(typeof buildPrims==='function') buildPrims(); if(typeof buildSystem==='function') buildSystem(); /* ensure shader rebuild */ dirty=true; }catch(e){}
+  }, 30);
+});
 </script>
 </body>
 </html>
