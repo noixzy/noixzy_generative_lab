@@ -8,45 +8,36 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
   :root { --bg:#0e0e10; --panel:#1a1a1d; --ink:#e8e8ea; --accent:#ed5700; --dim:#7a7a7e; }
-  html,body { margin:0; background:var(--bg); color:var(--ink);
-              font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
-  html,body { overflow:hidden; }
-  .stage { position:fixed; inset:0; background:#000; }
-  .stage canvas { display:block; width:100vw; height:100vh; }
-  .panel { position:fixed; top:14px; right:14px; width:248px;
-           max-height:calc(100vh - 28px); overflow-y:auto;
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  /* App layout for flagship: keep existing styles but make panel a side column */
+  .app { display:flex; flex-direction:row; align-items:stretch; height:100vh; }
+  .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+  .stage canvas { display:block; width:100%; height:100%; }
+  .panel { position:relative; width:248px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 28px); overflow-y:auto;
            background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
-           border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px;
-           box-shadow:0 10px 34px rgba(0,0,0,0.45); }
+           border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
   .panel.hidden { opacity:0; pointer-events:none; }
-  .panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase;
-              margin:0 0 6px; color:var(--accent); }
+  .panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase; margin:0 0 6px; color:var(--accent); }
   details { border-top:1px solid #262629; padding:6px 0; }
   details[open] summary { color:var(--accent); }
-  summary { cursor:pointer; list-style:none; padding:4px 0; letter-spacing:.1em;
-            text-transform:uppercase; font-size:11px; color:var(--dim); }
+  summary { cursor:pointer; list-style:none; padding:4px 0; letter-spacing:.1em; text-transform:uppercase; font-size:11px; color:var(--dim); }
   summary::-webkit-details-marker { display:none; }
-  summary::before { content:"+ "; }
-  details[open] summary::before { content:"– "; }
+  summary::before { content:"+ "; } details[open] summary::before { content:"– "; }
   .row { margin:7px 0; }
   .row label { display:flex; justify-content:space-between; margin-bottom:3px; opacity:.85; }
   input[type=range] { width:100%; height:22px; accent-color:var(--accent); cursor:pointer; }
   input[type=range]::-webkit-slider-runnable-track { height:4px; border-radius:2px; }
-  select { width:100%; background:#000; color:var(--ink); border:1px solid #333;
-           padding:6px 7px; font:inherit; border-radius:4px; }
+  select { width:100%; background:#000; color:var(--ink); border:1px solid #333; padding:6px 7px; font:inherit; border-radius:4px; }
   select:hover { border-color:var(--accent); }
   .btns select { width:auto; min-height:32px; margin:0; cursor:pointer; }
   .seed { display:flex; gap:8px; align-items:center; margin-top:10px; }
-  .seed input { width:96px; background:#000; color:var(--ink); border:1px solid #333;
-                padding:5px 6px; font:inherit; }
-  button { background:#000; color:var(--ink); border:1px solid #333; padding:6px 9px;
-           font:inherit; cursor:pointer; border-radius:4px; }
+  .seed input { width:96px; background:#000; color:var(--ink); border:1px solid #333; padding:5px 6px; font:inherit; }
+  button { background:#000; color:var(--ink); border:1px solid #333; padding:6px 9px; font:inherit; cursor:pointer; border-radius:4px; }
   button:hover { border-color:var(--accent); color:var(--accent); }
   .read { margin-top:10px; opacity:.6; }
   .btns { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
   .favs { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
-  .chip { display:flex; align-items:center; gap:5px; background:#000; border:1px solid #333;
-          border-radius:4px; padding:4px 6px; cursor:pointer; font-size:11px; }
+  .chip { display:flex; align-items:center; gap:5px; background:#000; border:1px solid #333; border-radius:4px; padding:4px 6px; cursor:pointer; font-size:11px; }
   .chip:hover { border-color:var(--accent); }
   .chip b { color:var(--accent); }
   .chip .sw { width:9px; height:9px; border-radius:2px; display:inline-block; }
@@ -57,10 +48,12 @@
   .kbCard h2 { margin:0 0 14px; color:var(--accent); font-size:13px; letter-spacing:.12em; text-transform:lowercase; }
   .kbGrid { display:grid; grid-template-columns:auto 1fr; gap:7px 18px; font-size:12px; }
   .kbGrid b { color:var(--accent); font-weight:400; white-space:pre; }
+  /* Responsive: stack panel below preview on narrow screens */
+  @media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
   <div id="stage" class="stage"></div>
   <div class="panel">
     <h1>noixzy // grid extrude</h1>
@@ -85,6 +78,20 @@
       <button id="save2x">save 2x</button>
       <button id="rec">rec</button>
       <select id="recDur"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select>
+      <button id="btnAudio">audio</button>
+    </div>
+    <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#111;border-radius:6px;font-size:12px;">
+      <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:var(--dim);transition:border-color .2s;">
+        drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span>
+        <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
+      </div>
+      <div id="audioStatus" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
+        <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+        <span id="audioFilename" style="color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
+        <button id="btnMic" title="mic input" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+      </div>
+      <div style="color:var(--accent);margin-bottom:6px;letter-spacing:.08em;">audio → params</div>
+      <div id="audioBands"></div>
     </div>
     <div id="favs" class="favs"></div>
     <div class="btns" id="favBtns" style="display:none;">
@@ -98,7 +105,12 @@
 <script>
 let W=820,H=820; const PIECE="grid_extrude";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
-let scene, glowBuf, vigTex, grainTex, leaves=[];
+let scene, glowBuf, vigTex, leaves=[];
+let audioCtx,analyser,audioData,audioActive=false;
+const ABANDS={bass:0,mid:0,high:0,presence:0};
+const AMAP={bass:null,mid:null,high:null,presence:null};
+const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
+let _audioSaved={};
 
 const SYMMETRY_MODES=[
   {v:0, label:"none"},
@@ -125,14 +137,14 @@ function symmetryLabel(v){
 // ---- parameter registry: the stacked layers ----
 const PARAMS=[
   // SYSTEM — the generative grid itself (rebuilds geometry)
-  {k:"depth",  g:"system", label:"depth",     min:0,max:1,step:.01,v:.55,sys:true},
-  {k:"thr",    g:"system", label:"threshold", min:0,max:1,step:.01,v:.5, sys:true},
+  {k:"depth",  g:"system", label:"depth",     min:0,max:1,step:.01,v:.88,sys:true},
+  {k:"thr",    g:"system", label:"threshold", min:0,max:1,step:.01,v:.63,sys:true},
   {k:"jit",    g:"system", label:"jitter",    min:0,max:1,step:.01,v:.15,sys:true},
-  {k:"fill",   g:"system", label:"density",   min:0,max:1,step:.01,v:.6},
+  {k:"fill",   g:"system", label:"density",   min:0,max:1,step:.01,v:.60},
   {k:"pal",    g:"system", label:"palette",   min:0,max:9,step:1,  v:4},
   // EXTRUDE — flat cells -> 3D blocks
   {k:"height", g:"extrude",label:"height",    min:0,max:1,step:.01,v:.45},
-  {k:"hvar",   g:"extrude",label:"variation", min:0,max:1,step:.01,v:.6},
+  {k:"hvar",   g:"extrude",label:"variation", min:0,max:1,step:.01,v:.60},
   {k:"light",  g:"extrude",label:"light",     min:0,max:1,step:.01,v:.5},
   {k:"displace",g:"extrude",label:"displace", min:0,max:1,step:.01,v:0},
   // MATERIAL — surface shading
@@ -149,7 +161,6 @@ const PARAMS=[
   // LOOK — post / finishing
   {k:"contrast",g:"look",  label:"contrast",  min:0,max:1,step:.01,v:.4},
   {k:"vig",    g:"look",   label:"vignette",  min:0,max:1,step:.01,v:.45},
-  {k:"grain",  g:"look",   label:"grain",     min:0,max:1,step:.01,v:.18},
   {k:"glow",   g:"look",   label:"glow",      min:0,max:1,step:.01,v:.3},
   // MOTION — loop authoring
   {k:"speed",  g:"motion", label:"speed",     min:0,max:1,step:.01,v:.2},
@@ -203,7 +214,7 @@ function cycleTheme(dir){
 }
 
 function setup(){
-  const c=createCanvas(windowWidth,windowHeight); c.parent("stage"); pixelDensity(1);
+  const container=document.getElementById("stage"); const c=createCanvas(container.clientWidth,container.clientHeight); c.parent("stage"); pixelDensity(1);
   W=width; H=height;
   scene=createGraphics(W,H);
   glowBuf=createGraphics(Math.floor(W/3),Math.floor(H/3));
@@ -216,7 +227,8 @@ function setup(){
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggleKbHelp(false); });
 }
 function windowResized(){
-  resizeCanvas(windowWidth,windowHeight);
+  const container=document.getElementById("stage");
+  resizeCanvas(container.clientWidth,container.clientHeight);
   W=width; H=height;
   scene=createGraphics(W,H);
   glowBuf=createGraphics(Math.floor(W/3),Math.floor(H/3));
@@ -229,10 +241,6 @@ function buildPostTextures(){
   const g=vigTex.drawingContext.createRadialGradient(W/2,H/2,Math.min(W,H)*0.28, W/2,H/2,Math.hypot(W/2,H/2));
   g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,1)");
   vigTex.drawingContext.fillStyle=g; vigTex.drawingContext.fillRect(0,0,W,H);
-  grainTex=createGraphics(320,320); grainTex.loadPixels();
-  for(let i=0;i<grainTex.pixels.length;i+=4){ const v=128+(Math.random()-0.5)*255;
-    grainTex.pixels[i]=grainTex.pixels[i+1]=grainTex.pixels[i+2]=v; grainTex.pixels[i+3]=255; }
-  grainTex.updatePixels();
 }
 function toggleKbHelp(show){
   const el=document.getElementById("kbHelp"); if(!el) return;
@@ -325,8 +333,10 @@ function drawScene(time){
 function draw(){
   const time = (running ? (millis()-t0)/1000 : pauseT);
   // motion / drift means redraw geometry each frame; otherwise only when dirty
-  const animate = (P.speed>0 || P.drift>0);
+  const animate = (P.speed>0 || P.drift>0 || audioActive);
+  _audioApply();
   if(animate || dirty){ drawScene(time); dirty=false; }
+  _audioRestore();
 
   const pal=PALETTES[P.pal].map(hx);
   background(pal[0][0],pal[0][1],pal[0][2]);
@@ -347,10 +357,6 @@ function draw(){
   }
   // LOOK: vignette (precomputed gradient overlay)
   if(P.vig>0.01){ push(); tint(255,255*P.vig); image(vigTex,0,0,W,H); pop(); noTint(); }
-  // LOOK: grain (noise texture, OVERLAY blend, jittered each frame)
-  if(P.grain>0.01){ push(); blendMode(OVERLAY); tint(255,200*P.grain);
-    const ox=-Math.random()*60, oy=-Math.random()*60; image(grainTex,ox,oy,W-ox,H-oy);
-    pop(); blendMode(BLEND); noTint(); }
 
   select("#seedRead").html(seed);
 }
@@ -482,6 +488,22 @@ function save2xPNG(){
 }
 
 // ---- UI: build grouped, collapsible sliders from the registry ----
+function _audioApply(){
+  _audioSaved={};
+  if(!audioActive||!analyser) return;
+  analyser.getByteFrequencyData(audioData);
+  const N=audioData.length;
+  const avg=(s,e)=>{let v=0;for(let i=s;i<e;i++)v+=audioData[i];return v/((e-s)*255);};
+  ABANDS.bass=avg(0,4); ABANDS.mid=avg(4,20); ABANDS.high=avg(20,60); ABANDS.presence=avg(0,N);
+  for(const band of ['bass','mid','high','presence']){
+    const k=AMAP[band]; if(!k||P[k]===undefined) continue;
+    _audioSaved[k]=P[k];
+    const par=PARAMS.find(p=>p.k===k);
+    const mn=par?par.min:0, mx=par?par.max:1;
+    P[k]=Math.min(mx,Math.max(mn,P[k]+ABANDS[band]*ADEPTH[band]*(mx-mn)));
+  }
+}
+function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSaved[k]; _audioSaved={}; }
 function buildUI(){
   const host=document.getElementById("groups");
   GROUPS.forEach((g,gi)=>{
@@ -523,6 +545,41 @@ function buildUI(){
   document.getElementById("rec").addEventListener("click",()=>recordClip(getRecDuration()));
   document.getElementById("copyP").addEventListener("click",copyParams);
   document.getElementById("pasteP").addEventListener("click",pasteParams);
+  // audio
+  const btnAudio=document.getElementById("btnAudio");
+  const audioPanel=document.getElementById("audioPanel");
+  const audioDropZone=document.getElementById("audioDropZone");
+  const audioFileInput=document.getElementById("audioFileInput");
+  const audioStatus=document.getElementById("audioStatus");
+  const audioPlayPause=document.getElementById("audioPlayPause");
+  const audioFilename=document.getElementById("audioFilename");
+  const btnMic=document.getElementById("btnMic");
+  const audioBands=document.getElementById("audioBands");
+  let audioSource=null,audioBuffer=null,audioPlaying=false,micStream=null;
+  function _ensureCtx(){ if(!audioCtx){audioCtx=new AudioContext();analyser=audioCtx.createAnalyser();analyser.fftSize=512;audioData=new Uint8Array(analyser.frequencyBinCount);} if(audioCtx.state==="suspended")audioCtx.resume(); }
+  async function _loadFile(file){ _ensureCtx(); if(audioSource){try{audioSource.stop();}catch(e){}audioSource=null;} const ab=await file.arrayBuffer(); audioBuffer=await audioCtx.decodeAudioData(ab); audioFilename.textContent=file.name; audioStatus.style.display="flex"; _playBuffer(); }
+  function _playBuffer(){ if(!audioBuffer)return; if(audioSource){try{audioSource.stop();}catch(e){}} audioSource=audioCtx.createBufferSource(); audioSource.buffer=audioBuffer; audioSource.loop=true; audioSource.connect(analyser); analyser.connect(audioCtx.destination); audioSource.start(); audioPlaying=true; audioPlayPause.textContent="⏸"; audioActive=true; }
+  audioPlayPause.addEventListener("click",()=>{ if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();} });
+  const _loadFileData=async f=>{if(f&&f.type.startsWith("audio/"))await _loadFile(f);};
+  audioDropZone.addEventListener("click",()=>audioFileInput.click());
+  audioFileInput.addEventListener("change",e=>{if(e.target.files[0])_loadFileData(e.target.files[0]);});
+  audioDropZone.addEventListener("dragover",e=>{e.preventDefault();audioDropZone.style.borderColor="var(--accent)";});
+  audioDropZone.addEventListener("dragleave",()=>{audioDropZone.style.borderColor="#444";});
+  audioDropZone.addEventListener("drop",e=>{e.preventDefault();audioDropZone.style.borderColor="#444";_loadFileData(e.dataTransfer.files[0]);});
+  btnMic.addEventListener("click",async()=>{ if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;} try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");} });
+  btnAudio.addEventListener("click",()=>{ const open=audioPanel.style.display==="none"; audioPanel.style.display=open?"block":"none"; btnAudio.style.color=open?"var(--accent)":""; });
+  const mappableParams=PARAMS.filter(p=>!p.sys&&p.k!=='pal');
+  ['bass','mid','high','presence'].forEach(band=>{
+    const row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;gap:6px;margin-bottom:5px;";
+    const lbl=document.createElement("span"); lbl.textContent=band; lbl.style.cssText="width:68px;color:var(--dim);";
+    const sel=document.createElement("select"); sel.style.cssText="flex:1;background:#1a1a1d;color:var(--ink);border:1px solid #333;border-radius:4px;padding:2px 4px;font-size:11px;";
+    const none=document.createElement("option"); none.value=""; none.textContent="— off —"; sel.appendChild(none);
+    mappableParams.forEach(p=>{const o=document.createElement("option");o.value=p.k;o.textContent=p.label||p.k;sel.appendChild(o);});
+    sel.addEventListener("change",()=>{AMAP[band]=sel.value||null;});
+    const dep=document.createElement("input"); dep.type="range"; dep.min=0; dep.max=1; dep.step=.01; dep.value=0.5; dep.style.cssText="width:55px;";
+    dep.addEventListener("input",()=>{ADEPTH[band]=parseFloat(dep.value);});
+    row.append(lbl,sel,dep); audioBands.appendChild(row);
+  });
   document.getElementById("pin").addEventListener("click",pinFav);
   document.getElementById("reset").addEventListener("click",()=>{ const d={}; PARAMS.forEach(p=>d[p.k]=p.v);
     applyConfig({seed:1, P:d}); flash("reset","reset ✓"); });

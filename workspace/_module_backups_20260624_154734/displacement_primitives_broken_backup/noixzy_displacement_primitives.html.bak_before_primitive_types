@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>noixzy // displacement_primitives</title>
+<link rel="icon" href="data:,">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+  :root { --bg:#0e0e10; --panel:#101316; --ink:#e8e8ea; --accent:#48dfff; --lime:#b7ff3c; --dim:#8b969c; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .app { display:flex; flex-direction:row; align-items:stretch; height:100vh; }
+  .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+  .stage canvas { display:block; width:100%; height:100%; }
+  .panel { position:relative; width:316px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 28px); overflow-y:auto;
+           background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
+           border:1px solid rgba(72,223,255,0.20); padding:14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
+  .panel.hidden { opacity:0; pointer-events:none; }
+  .panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase; margin:0 0 12px; color:var(--accent); }
+  .row { margin:11px 0; padding:3px 0 5px 8px; border-left:2px solid transparent; }
+  .row label { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; opacity:.9; }
+  input[type=range] { width:100%; height:30px; accent-color:var(--accent); }
+  .colorRow { display:grid; grid-template-columns:1fr 48px; gap:10px; align-items:end; }
+  input[type=color] { width:48px; height:36px; padding:0; border:1px solid #333; border-radius:4px; background:#000; cursor:pointer; }
+  input[type=color]:hover { border-color:var(--accent); }
+  input[type=number], input[type=text], select { box-sizing:border-box; min-height:36px; background:#000; color:var(--ink); border:1px solid #333; padding:7px 8px; font:inherit; border-radius:4px; }
+  button { min-height:36px; background:#000; color:var(--ink); border:1px solid #333; padding:7px 10px; font:inherit; cursor:pointer; border-radius:4px; }
+  button:hover { border-color:var(--accent); color:var(--accent); }
+  .tools { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0; }
+  .presetBox { margin-top:12px; padding-top:12px; border-top:1px solid rgba(72,223,255,0.18); }
+  .presetLine { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:8px; }
+  select { width:100%; margin-top:2px; }
+  select:hover { border-color:var(--accent); }
+  .hint { margin-top:8px; opacity:.4; font-size:11px; }
+  @media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="stage" class="stage"></div>
+  <div class="panel" id="panel">
+    <h1>noixzy // displacement_primitives</h1>
+
+    <div class="row" style="margin-bottom:10px">
+      <label>theme</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="themeSelect" style="flex:1;margin-top:2px"></select>
+        <span style="opacity:.45;font-size:11px;white-space:nowrap">[ / ]</span>
+      </div>
+    </div>
+
+    <div class="row"><label>displacement_primitives <span id="vAmount">—</span></label>
+      <input id="sAmount" type="range" min="0" max="1" step="0.01" value="0.35"></div>
+    <div class="row"><label>frequency <span id="vFreq">—</span></label>
+      <input id="sFreq" type="range" min="0" max="1" step="0.01" value="0.32"></div>
+    <div class="row"><label>roughness <span id="vRough">—</span></label>
+      <input id="sRough" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+    <div class="row"><label>speed <span id="vSpeed">—</span></label>
+      <input id="sSpeed" type="range" min="0" max="1" step="0.01" value="0.28"></div>
+    <div class="row"><label>spin <span id="vSpin">—</span></label>
+      <input id="sSpin" type="range" min="0" max="1" step="0.01" value="0.22"></div>
+    <div class="row"><label>distance <span id="vDist">—</span></label>
+      <input id="sDist" type="range" min="2.2" max="7" step="0.05" value="3.8"></div>
+    <div class="row"><label>elevation <span id="vElev">—</span></label>
+      <input id="sElev" type="range" min="-1.5" max="2.5" step="0.05" value="0.65"></div>
+    <div class="row"><label>ao <span id="vAO">—</span></label>
+      <input id="sAO" type="range" min="0" max="1" step="0.01" value="0.55"></div>
+    <div class="row"><label>palette <span id="vPal">—</span></label>
+      <input id="sPal" type="range" min="0" max="11" step="1" value="4"></div>
+
+    <div class="row colorRow"><label for="bgColor">background</label>
+      <input id="bgColor" type="color" value="#0c0c0c"></div>
+    <div class="row"><label>bg value <span id="vBgVal">—</span></label>
+      <input id="sBgVal" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row colorRow"><label for="formColor">form color</label>
+      <input id="formColor" type="color" value="#3a3a3a"></div>
+    <div class="row colorRow"><label for="hiColor">highlight / rim</label>
+      <input id="hiColor" type="color" value="#f2f2f2"></div>
+    <div class="row"><label>form saturation <span id="vFormSat">—</span></label>
+      <input id="sFormSat" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row"><label>form value <span id="vFormVal">—</span></label>
+      <input id="sFormVal" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row"><label>rim strength <span id="vRim">—</span></label>
+      <input id="sRim" type="range" min="0" max="2" step="0.01" value="1"></div>
+
+    <div class="tools">
+      <button id="btnSave" type="button">save png</button>
+      <button id="btnPause" type="button">pause</button>
+    </div>
+
+    <div class="presetBox">
+      <div class="presetLine">
+        <select id="starterPreset"></select>
+        <button id="btnLoad" type="button">load</button>
+      </div>
+    </div>
+
+    <div class="hint">h hide · space pause · [ ] theme · s save</div>
+  </div>
+</div>
+
+<script id="vert" type="x-shader/x-vertex">
+attribute vec3 aPosition;
+varying vec2 vUv;
+void main(){
+  vUv = aPosition.xy;
+  gl_Position = vec4(aPosition.xy, 0.0, 1.0);
+}
+</script>
+
+<script id="frag" type="x-shader/x-fragment">
+precision highp float;
+varying vec2 vUv;
+
+uniform vec2  u_res;
+uniform float u_time;
+uniform float u_amount;
+uniform float u_freq;
+uniform float u_roughness;
+uniform float u_speed;
+uniform float u_spin;
+uniform float u_dist;
+uniform float u_elev;
+uniform float u_ao;
+uniform vec3  u_bgColor;
+uniform vec3  u_formColor;
+uniform vec3  u_hiColor;
+uniform float u_bgValue;
+uniform float u_formSat;
+uniform float u_formValue;
+uniform float u_rim;
+
+float hash(vec3 p) {
+  p = fract(p * 0.3183099 + 0.1);
+  p *= 17.0;
+  return fract(p.x*p.y*p.z*(p.x+p.y+p.z));
+}
+
+float vnoise(vec3 x) {
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  f = f*f*(3.0 - 2.0*f);
+  return mix(
+    mix(mix(hash(i+vec3(0,0,0)), hash(i+vec3(1,0,0)), f.x),
+        mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)), f.x), f.y),
+    mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)), f.x),
+        mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)), f.x), f.y), f.z);
+}
+
+float fbm(vec3 p, float gain) {
+  float v = 0.0, a = 0.5;
+  v += a * (vnoise(p)*2.0 - 1.0); p = p*2.1 + vec3(17.3, 41.7, 11.1); a *= gain;
+  v += a * (vnoise(p)*2.0 - 1.0); p = p*2.1 + vec3(17.3, 41.7, 11.1); a *= gain;
+  v += a * (vnoise(p)*2.0 - 1.0); p = p*2.1 + vec3(17.3, 41.7, 11.1); a *= gain;
+  v += a * (vnoise(p)*2.0 - 1.0); p = p*2.1 + vec3(17.3, 41.7, 11.1); a *= gain;
+  v += a * (vnoise(p)*2.0 - 1.0);
+  return v;
+}
+
+float map(vec3 p) {
+  float freq = mix(1.0, 7.5, u_freq);
+  float gain = mix(0.28, 0.68, u_roughness);
+  float spd  = u_time * u_speed * 0.18;
+  vec3  dir  = normalize(p + vec3(0.001));
+  float disp = fbm(dir * freq + vec3(spd, spd*0.7, spd*0.5), gain);
+  return length(p) - 1.0 - disp * u_amount * 0.52;
+}
+
+vec3 calcNormal(vec3 p) {
+  vec2 e = vec2(0.003, 0.0);
+  return normalize(vec3(
+    map(p+e.xyy)-map(p-e.xyy),
+    map(p+e.yxy)-map(p-e.yxy),
+    map(p+e.yyx)-map(p-e.yyx)));
+}
+
+float calcAO(vec3 pos, vec3 nor) {
+  float occ = 0.0, d;
+  d=map(pos+nor*0.06); occ+=(0.06-d)*1.0;
+  d=map(pos+nor*0.15); occ+=(0.15-d)*0.75;
+  d=map(pos+nor*0.28); occ+=(0.28-d)*0.55;
+  d=map(pos+nor*0.42); occ+=(0.42-d)*0.38;
+  return clamp(1.0 - 1.6*occ, 0.0, 1.0);
+}
+
+void main() {
+  vec2 uv = vUv;
+  uv.x *= u_res.x / u_res.y;
+
+  float a = u_time * u_spin * 0.32;
+  float el = u_elev + 0.20*sin(u_time * 0.11);
+  vec3 ro = vec3(sin(a)*u_dist, el, cos(a)*u_dist);
+  vec3 ta = vec3(0.0);
+  vec3 fw = normalize(ta - ro);
+  vec3 rt = normalize(cross(vec3(0.0,1.0,0.0), fw));
+  vec3 up = cross(fw, rt);
+  vec3 rd = normalize(fw*1.85 + rt*uv.x + up*uv.y);
+
+  float tt = 0.5;
+  bool hit = false;
+  for(int i = 0; i < 88; i++) {
+    float d = map(ro + rd * tt);
+    if(d < 0.001) { hit = true; break; }
+    if(tt > 10.0) break;
+    tt += d * 0.72;
+  }
+
+  float y = vUv.y * 0.5 + 0.5;
+  vec3 bgBase = max(u_bgColor * u_bgValue, vec3(0.0));
+  vec3 bg = mix(bgBase * 0.58, bgBase * 1.1, y);
+  float bvig = smoothstep(1.45, 0.0, length(vUv * 0.86));
+  bg = mix(bg * 0.72, bg, bvig);
+  vec3 col = bg;
+
+  if(hit) {
+    vec3 p = ro + rd * tt;
+    vec3 n = calcNormal(p);
+    float ao = mix(1.0, calcAO(p, n), u_ao);
+
+    vec3 ld = normalize(vec3(0.55, 0.9, 0.45));
+    float dif  = clamp(dot(n, ld)*0.5 + 0.5, 0.0, 1.0);
+    float rim  = pow(clamp(1.0 - dot(n, -rd), 0.0, 1.0), 2.5);
+    float spec = pow(clamp(dot(reflect(-ld, n), -rd), 0.0, 1.0), 32.0);
+    float fres = pow(clamp(1.0 - dot(n, -rd), 0.0, 1.0), 5.0);
+
+    float luma = dot(u_formColor, vec3(0.2126, 0.7152, 0.0722));
+    vec3 baseCol = mix(vec3(luma), u_formColor, u_formSat) * u_formValue;
+
+    col  = baseCol * mix(0.45, 1.12, dif);
+    col  = mix(col, u_hiColor * u_formValue, smoothstep(0.58, 0.96, dif) * 0.38 * u_rim);
+    col += rim  * u_hiColor * 0.3  * u_rim;
+    col += spec * u_hiColor * 0.22 * u_rim;
+    col += fres * u_hiColor * 0.06 * u_rim;
+    col *= ao;
+
+    float fog = clamp((tt - 1.8) / 8.5, 0.0, 0.5);
+    col = mix(col, bg, fog * 0.45);
+  }
+
+  float vig = smoothstep(1.42, 0.15, length(vUv));
+  col *= mix(0.74, 1.0, vig);
+  col  = pow(clamp(col, 0.0, 1.0), vec3(0.84));
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<script>
+const PIECE = "displacement_primitives";
+const THEMEKEY = "noixzy_lab_theme";
+const PALETTES = [
+  ["ember",    "#0e0e10", "#5a2400", "#ed8a3a"],
+  ["mineral",  "#071414", "#0f403a", "#7fe0c2"],
+  ["violet",   "#100c18", "#2c2660", "#b7b0ff"],
+  ["amber",    "#140d06", "#5a3414", "#f0c890"],
+  ["graphite", "#0c0c0c", "#3a3a3a", "#f2f2f2"],
+  ["cyan",     "#071018", "#103f5a", "#72d8ff"],
+  ["acid",     "#0a1207", "#2d4f13", "#c7ff4a"],
+  ["magenta",  "#16070e", "#5a1232", "#ff6aa6"],
+  ["gold",     "#15100a", "#6b4514", "#ffe0a0"],
+  ["neutral",  "#0f1115", "#222b34", "#b7c1ca"],
+  ["copper",   "#140b0b", "#612626", "#ff9a7a"],
+  ["ice",      "#090d18", "#17305f", "#9bc8ff"],
+];
+const THEME_NAMES = PALETTES.map(p=>p[0]);
+
+const STARTERS = [
+  { name:"graphite",    palIdx:4, bg:"#0c0c0c", form:"#3a3a3a", hi:"#f2f2f2", bgVal:1.0, fSat:0.0, fVal:1.0, rim:0.8, amount:0.35, freq:0.32, rough:0.5, speed:0.28, spin:0.22, ao:0.55 },
+  { name:"clay blob",   palIdx:9, bg:"#0b0e12", form:"#1e2a34", hi:"#b0bac4", bgVal:0.88, fSat:0.2, fVal:0.95, rim:0.7, amount:0.5, freq:0.45, rough:0.65, speed:0.15, spin:0.18, ao:0.65 },
+  { name:"cyan depth",  palIdx:5, bg:"#03101a", form:"#0e3f5c", hi:"#72d8ff", bgVal:0.85, fSat:1.1, fVal:0.9, rim:1.35, amount:0.42, freq:0.38, rough:0.58, speed:0.32, spin:0.25, ao:0.6 },
+  { name:"acid bloom",  palIdx:6, bg:"#060e04", form:"#224010", hi:"#c7ff4a", bgVal:0.78, fSat:1.2, fVal:0.88, rim:1.2, amount:0.6, freq:0.55, rough:0.72, speed:0.4, spin:0.3, ao:0.7 },
+  { name:"ember deep",  palIdx:0, bg:"#0a0806", form:"#4a1c08", hi:"#ed8a3a", bgVal:0.9, fSat:1.0, fVal:0.95, rim:1.1, amount:0.45, freq:0.28, rough:0.4, speed:0.22, spin:0.2, ao:0.58 },
+  { name:"magenta orb", palIdx:7, bg:"#0e040a", form:"#4a0e2a", hi:"#ff6aa6", bgVal:0.82, fSat:1.15, fVal:0.92, rim:1.3, amount:0.38, freq:0.4, rough:0.55, speed:0.35, spin:0.28, ao:0.62 },
+];
+
+let cs = {
+  bg:"#0c0c0c", form:"#3a3a3a", hi:"#f2f2f2",
+  bgVal:1, fSat:1, fVal:1, rim:1
+};
+let P = { amount:0.35, freq:0.32, rough:0.5, speed:0.28, spin:0.22, dist:3.8, elev:0.65, ao:0.55 };
+let t0, paused=false, pauseT=0, theShader;
+
+function hexToRGB(h){ return [parseInt(h.slice(1,3),16)/255, parseInt(h.slice(3,5),16)/255, parseInt(h.slice(5,7),16)/255]; }
+function clampV(v,a,b){ return Math.min(b,Math.max(a,v)); }
+
+function applyPalette(idx) {
+  const pal = PALETTES[clampV(Math.round(idx),0,PALETTES.length-1)];
+  cs.bg=pal[1]; cs.form=pal[2]; cs.hi=pal[3];
+  cs.bgVal=1; cs.fSat=1; cs.fVal=1; cs.rim=1;
+  syncColorUI();
+}
+
+function syncColorUI() {
+  document.getElementById("bgColor").value   = cs.bg;
+  document.getElementById("formColor").value = cs.form;
+  document.getElementById("hiColor").value   = cs.hi;
+  document.getElementById("sBgVal").value  = cs.bgVal;
+  document.getElementById("sFormSat").value= cs.fSat;
+  document.getElementById("sFormVal").value= cs.fVal;
+  document.getElementById("sRim").value    = cs.rim;
+  document.getElementById("vBgVal").textContent  = cs.bgVal.toFixed(2);
+  document.getElementById("vFormSat").textContent= cs.fSat.toFixed(2);
+  document.getElementById("vFormVal").textContent= cs.fVal.toFixed(2);
+  document.getElementById("vRim").textContent    = cs.rim.toFixed(2);
+}
+
+function syncParamUI() {
+  const cfg = [
+    {id:"sAmount",vid:"vAmount",key:"amount"},
+    {id:"sFreq",  vid:"vFreq",  key:"freq"},
+    {id:"sRough", vid:"vRough", key:"rough"},
+    {id:"sSpeed", vid:"vSpeed", key:"speed"},
+    {id:"sSpin",  vid:"vSpin",  key:"spin"},
+    {id:"sDist", vid:"vDist", key:"dist"},
+    {id:"sElev", vid:"vElev", key:"elev"},
+    {id:"sAO",    vid:"vAO",    key:"ao"},
+  ];
+  cfg.forEach(c=>{ document.getElementById(c.id).value=P[c.key]; document.getElementById(c.vid).textContent=P[c.key].toFixed(2); });
+}
+
+function loadStarter(s) {
+  P.amount=s.amount; P.freq=s.freq; P.rough=s.rough; P.speed=s.speed; P.spin=s.spin; P.dist=(s.dist??3.8); P.elev=(s.elev??0.65); P.ao=s.ao;
+  cs.bg=s.bg; cs.form=s.form; cs.hi=s.hi; cs.bgVal=s.bgVal; cs.fSat=s.fSat; cs.fVal=s.fVal; cs.rim=s.rim;
+  document.getElementById("sPal").value = s.palIdx;
+  document.getElementById("vPal").textContent = `${s.palIdx} ${PALETTES[s.palIdx][0]}`;
+  syncParamUI();
+  syncColorUI();
+}
+
+let activeTheme = null;
+function applyTheme(name) {
+  const idx = THEME_NAMES.indexOf(name);
+  if(idx < 0) return;
+  activeTheme = name;
+  applyPalette(idx);
+  document.getElementById("sPal").value = idx;
+  document.getElementById("vPal").textContent = `${idx} ${name}`;
+  const sel = document.getElementById("themeSelect");
+  if(sel) sel.value = name;
+  try{ localStorage.setItem(THEMEKEY, name); }catch(e){}
+}
+function cycleTheme(dir) {
+  const idx = THEME_NAMES.indexOf(activeTheme);
+  applyTheme(THEME_NAMES[((idx<0?0:idx)+dir+THEME_NAMES.length)%THEME_NAMES.length]);
+}
+
+function setup() {
+  const stage = document.getElementById("stage");
+  const c = createCanvas(stage.clientWidth, stage.clientHeight, WEBGL);
+  c.parent(stage);
+
+  theShader = createShader(
+    document.getElementById("vert").textContent,
+    document.getElementById("frag").textContent
+  );
+
+  t0 = millis();
+
+  const tSel = document.getElementById("themeSelect");
+  THEME_NAMES.forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n; tSel.appendChild(o); });
+  tSel.addEventListener("change", e=>applyTheme(e.target.value));
+
+  const paramCfg = [
+    {id:"sAmount",vid:"vAmount",key:"amount"},
+    {id:"sFreq",  vid:"vFreq",  key:"freq"},
+    {id:"sRough", vid:"vRough", key:"rough"},
+    {id:"sSpeed", vid:"vSpeed", key:"speed"},
+    {id:"sSpin",  vid:"vSpin",  key:"spin"},
+    {id:"sDist", vid:"vDist", key:"dist"},
+    {id:"sElev", vid:"vElev", key:"elev"},
+    {id:"sAO",    vid:"vAO",    key:"ao"},
+  ];
+  paramCfg.forEach(cfg=>{
+    const el = document.getElementById(cfg.id);
+    el.addEventListener("input", ()=>{
+      P[cfg.key] = parseFloat(el.value);
+      document.getElementById(cfg.vid).textContent = P[cfg.key].toFixed(2);
+    });
+  });
+
+  document.getElementById("bgColor").addEventListener("input",   e=>{ cs.bg   = e.target.value; });
+  document.getElementById("formColor").addEventListener("input",  e=>{ cs.form = e.target.value; });
+  document.getElementById("hiColor").addEventListener("input",    e=>{ cs.hi   = e.target.value; });
+  document.getElementById("sBgVal").addEventListener("input",     e=>{ cs.bgVal=parseFloat(e.target.value); document.getElementById("vBgVal").textContent=cs.bgVal.toFixed(2); });
+  document.getElementById("sFormSat").addEventListener("input",   e=>{ cs.fSat =parseFloat(e.target.value); document.getElementById("vFormSat").textContent=cs.fSat.toFixed(2); });
+  document.getElementById("sFormVal").addEventListener("input",   e=>{ cs.fVal =parseFloat(e.target.value); document.getElementById("vFormVal").textContent=cs.fVal.toFixed(2); });
+  document.getElementById("sRim").addEventListener("input",       e=>{ cs.rim  =parseFloat(e.target.value); document.getElementById("vRim").textContent=cs.rim.toFixed(2); });
+
+  document.getElementById("sPal").addEventListener("input", e=>{
+    const idx = parseInt(e.target.value);
+    document.getElementById("vPal").textContent = `${idx} ${PALETTES[idx][0]}`;
+    applyPalette(idx);
+    activeTheme = PALETTES[idx][0];
+    const sel = document.getElementById("themeSelect");
+    if(idx < THEME_NAMES.length && sel) sel.value = PALETTES[idx][0];
+  });
+
+  const starterSel = document.getElementById("starterPreset");
+  STARTERS.forEach((s,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=s.name; starterSel.appendChild(o); });
+  document.getElementById("btnLoad").addEventListener("click", ()=>{
+    loadStarter(STARTERS[parseInt(starterSel.value)]);
+  });
+
+  document.getElementById("btnSave").addEventListener("click", ()=>{
+    saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`, "png");
+  });
+
+  document.getElementById("btnPause").addEventListener("click", ()=>{
+    paused = !paused;
+    if(paused) pauseT = millis() - t0;
+    else t0 = millis() - pauseT;
+    document.getElementById("btnPause").textContent = paused ? "play" : "pause";
+  });
+
+  document.addEventListener("keydown", e=>{
+    if(e.key === "h") document.getElementById("panel").classList.toggle("hidden");
+    if(e.key === " "){ e.preventDefault(); document.getElementById("btnPause").click(); }
+    if(e.key === "[") cycleTheme(-1);
+    if(e.key === "]") cycleTheme(1);
+    if(e.key === "s") document.getElementById("btnSave").click();
+  });
+
+  const saved = localStorage.getItem(THEMEKEY);
+  if(saved && THEME_NAMES.includes(saved)) applyTheme(saved);
+  else applyTheme("graphite");
+
+  syncParamUI();
+  syncColorUI();
+  document.getElementById("vPal").textContent = `${document.getElementById("sPal").value} ${PALETTES[parseInt(document.getElementById("sPal").value)][0]}`;
+
+  window.addEventListener("resize", ()=>{
+    resizeCanvas(stage.clientWidth, stage.clientHeight);
+  });
+}
+
+function draw() {
+  if(paused) return;
+  const t = (millis() - t0) / 1000.0;
+
+  shader(theShader);
+  theShader.setUniform("u_res",       [width, height]);
+  theShader.setUniform("u_time",      t);
+  theShader.setUniform("u_amount",    P.amount);
+  theShader.setUniform("u_freq",      P.freq);
+  theShader.setUniform("u_roughness", P.rough);
+  theShader.setUniform("u_speed",     P.speed);
+  theShader.setUniform("u_spin",      P.spin);
+  theShader.setUniform("u_dist",      P.dist);
+  theShader.setUniform("u_elev",      P.elev);
+  theShader.setUniform("u_ao",        P.ao);
+  theShader.setUniform("u_bgColor",   hexToRGB(cs.bg));
+  theShader.setUniform("u_formColor", hexToRGB(cs.form));
+  theShader.setUniform("u_hiColor",   hexToRGB(cs.hi));
+  theShader.setUniform("u_bgValue",   cs.bgVal);
+  theShader.setUniform("u_formSat",   cs.fSat);
+  theShader.setUniform("u_formValue", cs.fVal);
+  theShader.setUniform("u_rim",       cs.rim);
+  noStroke();
+  quad(-1,-1, 1,-1, 1,1, -1,1);
+}
+</script>
+</body>
+</html>

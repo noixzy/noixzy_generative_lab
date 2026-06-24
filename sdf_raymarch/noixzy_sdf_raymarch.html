@@ -8,35 +8,26 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
   :root { --bg:#0e0e10; --panel:#101316; --ink:#e8e8ea; --accent:#48dfff; --lime:#b7ff3c; --dim:#8b969c; }
-  html,body { margin:0; overflow:hidden; background:var(--bg); color:var(--ink);
-              font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
-  .stage { position:fixed; inset:0; background:#000; }
-  .stage canvas { display:block; width:100vw; height:100vh; }
-  .panel { position:fixed; top:14px; right:14px; width:316px; box-sizing:border-box;
-           max-height:calc(100vh - 28px); overflow-y:auto;
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .app { display:flex; flex-direction:row; align-items:stretch; height:100vh; }
+  .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+  .stage canvas { display:block; width:100%; height:100%; }
+  .panel { position:relative; width:316px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 28px); overflow-y:auto;
            background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
-           border:1px solid rgba(72,223,255,0.20); padding:14px; border-radius:9px;
-           box-shadow:0 10px 34px rgba(0,0,0,0.45); }
+           border:1px solid rgba(72,223,255,0.20); padding:14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
   .panel.hidden { opacity:0; pointer-events:none; }
-  .panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase;
-              margin:0 0 12px; color:var(--accent); }
+  .panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase; margin:0 0 12px; color:var(--accent); }
   .row { margin:11px 0; padding:3px 0 5px 8px; border-left:2px solid transparent; }
   .row.locked { border-left-color:var(--lime); background:rgba(183,255,60,0.045); }
-  .row label { display:flex; align-items:center; justify-content:space-between; gap:8px;
-               margin-bottom:5px; opacity:.9; }
+  .row label { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; opacity:.9; }
   input[type=range] { width:100%; height:30px; accent-color:var(--accent); }
   .colorRow { display:grid; grid-template-columns:1fr 48px; gap:10px; align-items:end; }
-  input[type=color] { width:48px; height:36px; padding:0; border:1px solid #333;
-                      border-radius:4px; background:#000; cursor:pointer; }
+  input[type=color] { width:48px; height:36px; padding:0; border:1px solid #333; border-radius:4px; background:#000; cursor:pointer; }
   input[type=color]:hover { border-color:var(--accent); }
   .seed { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
-  input[type=number], input[type=text], select {
-    box-sizing:border-box; min-height:36px; background:#000; color:var(--ink);
-    border:1px solid #333; padding:7px 8px; font:inherit; border-radius:4px;
-  }
+  input[type=number], input[type=text], select { box-sizing:border-box; min-height:36px; background:#000; color:var(--ink); border:1px solid #333; padding:7px 8px; font:inherit; border-radius:4px; }
   input[type=number] { width:100%; }
-  button { min-height:36px; background:#000; color:var(--ink); border:1px solid #333; padding:7px 10px;
-           font:inherit; cursor:pointer; border-radius:4px; }
+  button { min-height:36px; background:#000; color:var(--ink); border:1px solid #333; padding:7px 10px; font:inherit; cursor:pointer; border-radius:4px; }
   button:hover { border-color:var(--accent); color:var(--accent); }
   .lockBtn { min-height:32px; padding:5px 9px; color:var(--dim); border-color:#2b3337; font-size:11px; }
   .lockBtn.locked { color:#081007; border-color:var(--lime); background:var(--lime); }
@@ -51,13 +42,12 @@
   .read { margin-top:12px; opacity:.6; }
   .status { min-height:18px; color:var(--dim); }
   .hint { margin-top:8px; opacity:.4; font-size:11px; }
-  @media (max-width: 520px) {
-    .panel { top:8px; right:8px; left:8px; width:auto; max-height:calc(100vh - 16px); }
-  }
+  /* Responsive: stack panel below preview on narrow screens */
+  @media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
   <div id="stage" class="stage"></div>
   <div class="panel">
     <h1>noixzy // sdf raymarch</h1>
@@ -107,6 +97,10 @@
 
     <div class="row"><label>spin <span id="v4">—</span></label>
       <input id="p4" type="range" min="0" max="1" step="0.01" value="0.3"></div>
+    <div class="row"><label>distance <span id="vDist">—</span></label>
+      <input id="pDist" type="range" min="0" max="1" step="0.01" value="0.55"></div>
+    <div class="row"><label>elevation <span id="vElev">—</span></label>
+      <input id="pElev" type="range" min="0" max="1" step="0.01" value="0.44"></div>
     <div class="row"><label>extrude <span id="v5">—</span></label>
       <input id="p5" type="range" min="0" max="1" step="0.01" value="0"></div>
     <div class="row"><label>displace <span id="v6">—</span></label>
@@ -182,6 +176,8 @@ uniform int   u_count;
 uniform float u_blend;     // smooth-min k
 uniform float u_turb;      // domain warp amount
 uniform float u_spin;      // animation speed
+uniform float u_dist;      // camera distance
+uniform float u_elev;      // camera elevation
 uniform vec4  u_prims[MAXP]; // xyz = center, w = radius
 uniform vec3  u_bgColor;
 uniform vec3  u_blobColor;
@@ -334,9 +330,11 @@ void main(){
   float frameShift = mix(0.02, 0.04, smoothstep(1.0, 1.8, u_res.x/u_res.y));
   uv.x += frameShift;
 
-  // camera orbits the blob centroid while a ray offset composes the form left
+  // Phase 2 camera: orbit remains centered on blob centroid, distance/elevation are user-controlled.
   float a = u_time * u_spin;
-  vec3 ro = u_target + vec3(sin(a)*5.0, 1.0, cos(a)*5.0);
+  float camDist = mix(2.65, 6.25, u_dist);
+  float camElev = mix(-1.25, 2.20, u_elev);
+  vec3 ro = u_target + vec3(sin(a)*camDist, camElev, cos(a)*camDist);
   vec3 ta = u_target;
   vec3 fw = normalize(ta-ro);
   vec3 rt = normalize(cross(vec3(0,1,0), fw));
@@ -386,7 +384,7 @@ const PIECE = "sdf_raymarch";
 const MAX_PRIMS = 24;
 const DEFAULT_PRESET = 4;
 let seed = 1;
-let P = [0.5, 0.55, 0.35, DEFAULT_PRESET, 0.3, 0, 0, 0.42, 0.5, 0.55]; // density, blend, turb, palette, spin, extrude, displace, spread, blob size, ao
+let P = [0.5, 0.55, 0.35, DEFAULT_PRESET, 0.3, 0, 0, 0.42, 0.5, 0.55, 0.55, 0.44]; // density, blend, turb, palette, spin, extrude, displace, spread, blob size, ao, distance, elevation
 let theShader, prims, running = true, t0;
 let target = [0,0,0];
 let turbType = 0;
@@ -429,14 +427,16 @@ const P_CONTROLS = {
   p6: { index:6, out:"v6" },
   p7: { index:7, out:"v7", rebuild:true },
   p8: { index:8, out:"v8", rebuild:true },
-  p9: { index:9, out:"v9" }
+  p9: { index:9, out:"v9" },
+  pDist: { index:10, out:"vDist" },
+  pElev: { index:11, out:"vElev" }
 };
 const COLOR_CONTROLS = { bgColor:"bg", blobColor:"blob", hiColor:"hi" };
 const VALUE_CONTROLS = { bgValue:"bgValue", blobSat:"blobSat", blobValue:"blobValue", rimStrength:"rim" };
 const LOCKABLE_KEYS = [
   "p0","p7","p8","p1","p2","turbType","p3","bgColor","bgValue",
   "blobColor","hiColor","blobSat","blobValue","rimStrength","p9",
-  "p4","p5","p6","displaceType","seed"
+  "p4","pDist","pElev","p5","p6","displaceType","seed"
 ];
 const FORM_RANDOM_KEYS = ["p0","p1","p2","p4","p5","p6","p7","p8","seed"];
 const TYPE_OPTIONS = { turbType:[0,1,2,3], displaceType:[0,1,2,3] };
@@ -816,7 +816,7 @@ function cycleTheme(dir){
 }
 
 function setup(){
-  const c = createCanvas(windowWidth, windowHeight, WEBGL);
+  const container=document.getElementById("stage"); const c = createCanvas(container.clientWidth, container.clientHeight, WEBGL);
   c.parent("stage");
   pixelDensity(1);
   theShader = createShader(
@@ -831,7 +831,7 @@ function setup(){
     tSel.addEventListener('change',e=>applyTheme(e.target.value)); }
   const savedTheme=localStorage.getItem(THEMEKEY); if(savedTheme) applyTheme(savedTheme);
 }
-function windowResized(){ resizeCanvas(windowWidth, windowHeight); }
+function windowResized(){ const container=document.getElementById("stage"); resizeCanvas(container.clientWidth, container.clientHeight); }
 function keyPressed(){
   const tag=document.activeElement&&document.activeElement.tagName;
   if(tag==="INPUT"||tag==="SELECT") return;
@@ -870,6 +870,8 @@ function draw(){
   theShader.setUniform("u_blend", P[1]);
   theShader.setUniform("u_turb", P[2]);
   theShader.setUniform("u_spin", map(P[4], 0, 1, 0.0, 0.7));
+  theShader.setUniform("u_dist", P[10] ?? 0.55);
+  theShader.setUniform("u_elev", P[11] ?? 0.44);
   // flatten prims into vec4 array
   const flat = [];
   for(let i=0;i<MAX_PRIMS;i++){

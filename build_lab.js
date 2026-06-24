@@ -13,60 +13,61 @@ const ENGINE = (cfg) => `<!doctype html>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
   :root { --bg:#0e0e10; --panel:#1a1a1d; --ink:#e8e8ea; --accent:#ed5700; --dim:#7a7a7e; }
-  html,body { margin:0; overflow:hidden; background:var(--bg); color:var(--ink);
-              font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
-  .stage { position:fixed; inset:0; background:#000; }
-  .stage canvas { display:block; width:100vw; height:100vh; }
-  .panel { position:fixed; top:14px; right:14px; width:248px;
-           max-height:calc(100vh - 28px); overflow-y:auto;
+html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+/* App layout: stage (flexible) + panel (fixed-width side panel). */
+.app { display:flex; flex-direction:row; align-items:stretch; height:100vh; }
+.stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+.stage canvas { display:block; width:100%; height:100%; }
+.panel { position:relative; width:248px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 28px); overflow-y:auto;
            background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
-           border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px;
-           box-shadow:0 10px 34px rgba(0,0,0,0.45); }
-  .panel.hidden { opacity:0; pointer-events:none; }
-  .panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase; margin:0 0 6px; color:var(--accent); }
-  details { border-top:1px solid #262629; padding:6px 0; }
-  details[open] summary { color:var(--accent); }
-  summary { cursor:pointer; list-style:none; padding:4px 0; letter-spacing:.1em;
-            text-transform:uppercase; font-size:11px; color:var(--dim); }
-  summary::-webkit-details-marker { display:none; }
-  summary::before { content:"+ "; } details[open] summary::before { content:"– "; }
-  .row { margin:7px 0; }
-  .row label { display:flex; justify-content:space-between; margin-bottom:3px; opacity:.85; }
-  input[type=range] { width:100%; height:22px; accent-color:var(--accent); cursor:pointer; }
-  input[type=range]::-webkit-slider-runnable-track { height:4px; border-radius:2px; }
-  .seed { display:flex; gap:8px; align-items:center; margin-top:10px; }
-  .seed input { width:96px; background:#000; color:var(--ink); border:1px solid #333; padding:5px 6px; font:inherit; }
-  button { background:#000; color:var(--ink); border:1px solid #333; padding:6px 9px; font:inherit; cursor:pointer; border-radius:4px; }
-  button:hover { border-color:var(--accent); color:var(--accent); }
-  .read { margin-top:10px; opacity:.6; }
-  .btns { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-  .favs { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
-  .chip { display:flex; align-items:center; gap:5px; background:#000; border:1px solid #333; border-radius:4px; padding:4px 6px; cursor:pointer; font-size:11px; }
-  .chip:hover { border-color:var(--accent); } .chip b { color:var(--accent); }
-  .chip .sw { width:9px; height:9px; border-radius:2px; display:inline-block; }
-  .chip .x { opacity:.45; padding:0 2px; } .chip .x:hover { opacity:1; color:var(--accent); }
-  .colorRow { display:flex; justify-content:space-between; align-items:center; margin:7px 0; }
-  .colorRow label { opacity:.85; font-size:12px; }
-  input[type=color] { width:44px; height:26px; padding:1px; border:1px solid #333; background:#000; border-radius:3px; cursor:pointer; }
-  input[type=color]:hover { border-color:var(--accent); }
-  select { background:#000; color:var(--ink); border:1px solid #333; padding:5px 6px; font:inherit; border-radius:4px; cursor:pointer; }
-  select:hover { border-color:var(--accent); }
-  #kbHelp { position:fixed; inset:0; background:rgba(0,0,0,0.72); display:none; align-items:center; justify-content:center; z-index:998; }
-  .kbCard { min-width:260px; max-width:min(420px,calc(100vw - 40px)); background:rgba(16,16,20,0.92); color:var(--ink); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:18px 20px; box-shadow:0 18px 48px rgba(0,0,0,0.5); }
-  .kbCard h2 { margin:0 0 14px; color:var(--accent); font-size:13px; letter-spacing:.12em; text-transform:lowercase; }
-  .kbGrid { display:grid; grid-template-columns:auto 1fr; gap:7px 18px; font-size:12px; }
-  .kbGrid b { color:var(--accent); font-weight:400; white-space:pre; }
-  .pbrOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:999; cursor:pointer; }
-  .pbrGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:18px; background:rgba(16,16,20,0.95); border:1px solid rgba(255,255,255,0.09); border-radius:9px; }
-  .pbrCell { display:flex; flex-direction:column; align-items:center; gap:5px; }
-  .pbrCell img { width:220px; height:220px; object-fit:cover; border-radius:4px; border:1px solid #333; display:block; }
-  .pbrCell span { font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; }
-  .pbrHint { grid-column:1/-1; text-align:center; font-size:11px; opacity:.4; margin-top:4px; }
+         border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
+.panel.hidden { opacity:0; pointer-events:none; }
+.panel h1 { font-size:13px; letter-spacing:.12em; text-transform:lowercase; margin:0 0 6px; color:var(--accent); }
+details { border-top:1px solid #262629; padding:6px 0; }
+details[open] summary { color:var(--accent); }
+summary { cursor:pointer; list-style:none; padding:4px 0; letter-spacing:.1em; text-transform:uppercase; font-size:11px; color:var(--dim); }
+summary::-webkit-details-marker { display:none; }
+summary::before { content:"+ "; } details[open] summary::before { content:"– "; }
+.row { margin:7px 0; }
+.row label { display:flex; justify-content:space-between; margin-bottom:3px; opacity:.85; }
+input[type=range] { width:100%; height:22px; accent-color:var(--accent); cursor:pointer; }
+input[type=range]::-webkit-slider-runnable-track { height:4px; border-radius:2px; }
+.seed { display:flex; gap:8px; align-items:center; margin-top:10px; }
+.seed input { width:96px; background:#000; color:var(--ink); border:1px solid #333; padding:5px 6px; font:inherit; }
+button { background:#000; color:var(--ink); border:1px solid #333; padding:6px 9px; font:inherit; cursor:pointer; border-radius:4px; }
+button:hover { border-color:var(--accent); color:var(--accent); }
+.read { margin-top:10px; opacity:.6; }
+.btns { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.favs { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.chip { display:flex; align-items:center; gap:5px; background:#000; border:1px solid #333; border-radius:4px; padding:4px 6px; cursor:pointer; font-size:11px; }
+.chip:hover { border-color:var(--accent); } .chip b { color:var(--accent); }
+.chip .sw { width:9px; height:9px; border-radius:2px; display:inline-block; }
+.chip .x { opacity:.45; padding:0 2px; } .chip .x:hover { opacity:1; color:var(--accent); }
+.colorRow { display:flex; justify-content:space-between; align-items:center; margin:7px 0; }
+.colorRow label { opacity:.85; font-size:12px; }
+input[type=color] { width:44px; height:26px; padding:1px; border:1px solid #333; background:#000; border-radius:3px; cursor:pointer; }
+input[type=color]:hover { border-color:var(--accent); }
+select { background:#000; color:var(--ink); border:1px solid #333; padding:5px 6px; font:inherit; border-radius:4px; cursor:pointer; }
+select:hover { border-color:var(--accent); }
+#kbHelp { position:fixed; inset:0; background:rgba(0,0,0,0.72); display:none; align-items:center; justify-content:center; z-index:998; }
+.kbCard { min-width:260px; max-width:min(420px,calc(100vw - 40px)); background:rgba(16,16,20,0.92); color:var(--ink); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:18px 20px; box-shadow:0 18px 48px rgba(0,0,0,0.5); }
+.kbCard h2 { margin:0 0 14px; color:var(--accent); font-size:13px; letter-spacing:.12em; text-transform:lowercase; }
+.kbGrid { display:grid; grid-template-columns:auto 1fr; gap:7px 18px; font-size:12px; }
+.kbGrid b { color:var(--accent); font-weight:400; white-space:pre; }
+.pbrOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:999; cursor:pointer; }
+.pbrGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:18px; background:rgba(16,16,20,0.95); border:1px solid rgba(255,255,255,0.09); border-radius:9px; }
+.pbrCell { display:flex; flex-direction:column; align-items:center; gap:5px; }
+.pbrCell img { width:220px; height:220px; object-fit:cover; border-radius:4px; border:1px solid #333; display:block; }
+.pbrCell span { font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; }
+.pbrHint { grid-column:1/-1; text-align:center; font-size:11px; opacity:.4; margin-top:4px; }
+/* Responsive: stack panel below preview on narrow screens */
+@media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
 </style>
 </head>
 <body>
-<div class="stage" id="stage"></div>
-<div class="panel">
+<div class="app">
+  <div class="stage" id="stage"></div>
+  <div class="panel">
   <h1>noixzy // ${cfg.title}</h1>
   <div id="groups"></div>
   <details id="themeDet" open><summary>theme</summary>
@@ -81,7 +82,20 @@ const ENGINE = (cfg) => `<!doctype html>
     <div class="colorRow"><label>ink</label><input type="color" id="p_ink"></div>
   </details>
   <div class="seed"><input id="seedField" type="number" value="1"><button id="newSeed">new seed</button></div>
-  <div class="btns"><button id="pin">★ pin</button><button id="reset">reset</button><button id="copyP">copy</button><button id="pasteP">paste</button><button id="pause">pause</button><button id="save">save png</button><button id="save2x">save 2x</button><button id="savePBR">pbr pack</button><button id="rec">rec</button><select id="recDur"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select></div>
+  <div class="btns"><button id="pin">★ pin</button><button id="reset">reset</button><button id="copyP">copy</button><button id="pasteP">paste</button><button id="pause">pause</button><button id="save">save png</button><button id="save2x">save 2x</button><button id="savePBR">pbr pack</button><button id="rec">rec</button><select id="recDur"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select><button id="btnAudio">audio</button></div>
+  <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#111;border-radius:6px;font-size:12px;">
+    <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:var(--dim);transition:border-color .2s;">
+      drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span>
+      <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
+    </div>
+    <div id="audioStatus" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
+      <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+      <span id="audioFilename" style="color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
+      <button id="btnMic" title="mic input" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    </div>
+    <div style="color:var(--accent);margin-bottom:6px;letter-spacing:.08em;">audio → params</div>
+    <div id="audioBands"></div>
+  </div>
   <div id="favs" class="favs"></div>
   <div class="btns" id="favBtns" style="display:none;"><button id="exportFavs">export ★</button><button id="clearFavs">clear ★</button></div>
   <div class="read">seed: <span id="seedRead">1</span> &nbsp; <span style="opacity:.5">[h] hide</span></div>
@@ -90,7 +104,13 @@ const ENGINE = (cfg) => `<!doctype html>
 <script>
 let W=820,H=820; const PIECE="${cfg.id}", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
-let raw, scene, glowBuf, vigTex, grainTex, specTex;
+let raw, scene, glowBuf, vigTex, specTex;
+let animT=0;
+let audioCtx,analyser,audioData,audioActive=false;
+const ABANDS={bass:0,mid:0,high:0,presence:0};
+const AMAP={bass:null,mid:null,high:null,presence:null};
+const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
+let _audioSaved={};
 
 // piece-specific SYSTEM params
 const SYSTEM=${JSON.stringify(cfg.system)};
@@ -102,18 +122,19 @@ const SHARED=[
   {k:"alpha",   g:"material",label:"opacity",  min:.1,max:1,step:.01,v:1},
   {k:"zoom",    g:"frame",   label:"zoom",     min:.4,max:2,step:.01,v:1},
   {k:"rot",     g:"frame",   label:"rotate",   min:-1,max:1,step:.01,v:0},
+  {k:"cx",      g:"frame",   label:"center x", min:-1,max:1,step:.01,v:0},
+  {k:"cy",      g:"frame",   label:"center y", min:-1,max:1,step:.01,v:0},
   {k:"mirror",  g:"frame",   label:"symmetry", min:0,max:2,step:1,v:0,rr:true},
   {k:"contrast",g:"look",    label:"contrast", min:0,max:1,step:.01,v:.4},
   {k:"vig",     g:"look",    label:"vignette", min:0,max:1,step:.01,v:.4},
-  {k:"grain",   g:"look",    label:"grain",    min:0,max:1,step:.01,v:.14},
   {k:"glow",    g:"look",    label:"glow",     min:0,max:1,step:.01,v:.25},
-  {k:"speed",   g:"motion",  label:"speed",    min:0,max:1,step:.01,v:0},
-  {k:"drift",   g:"motion",  label:"drift",    min:0,max:1,step:.01,v:0},
+  {k:"speed",   g:"motion",  label:"speed",    min:0,max:1,step:.01,v:.18},
+  {k:"drift",   g:"motion",  label:"drift",    min:0,max:1,step:.01,v:.12},
 ];
-SYSTEM.forEach(p=>{p.g="system"; if(!p.rr) p.sys=true;});
+SYSTEM.forEach(p=>{ p.g=p.g||"system"; if(!p.rr) p.sys=true; });
 const PARAMS=SYSTEM.concat(SHARED);
 const P={}; PARAMS.forEach(p=>P[p.k]=p.v);
-const GROUPS=["system","material","frame","look","motion"];
+const GROUPS=["system","extrude","material","frame","look","motion"];
 
 const PALETTES=[
   ["#0e0e10","#5a2400","#ed8a3a"],  // 0 ember
@@ -171,35 +192,64 @@ function makeField(N,fn){ const img=createImage(N,N); img.loadPixels();
     img.pixels[i]=c[0];img.pixels[i+1]=c[1];img.pixels[i+2]=c[2];img.pixels[i+3]=c.length>3?c[3]:255; }
   img.updatePixels(); return img; }
 
+// Nearest-neighbour pixel-size quantisation for heightfields.
+// Downsamples out[G×G] to cells×cells then upsamples back, creating hard-edged iso blocks.
+// Call at the end of any heightField() that exposes a P.pix param.
+function _pxQ(out,G){ const c=Math.max(4,Math.floor(map(P.pix||0,0,1,G,4))); if(c>=G-1) return;
+  const r=new Float32Array(c*c);
+  for(let j=0;j<c;j++)for(let i=0;i<c;i++){ const si=Math.min(G-1,Math.floor((i+.5)/c*G)),sj=Math.min(G-1,Math.floor((j+.5)/c*G)); r[i+j*c]=out[si+sj*G]; }
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){ const ci=Math.min(c-1,Math.floor(i/G*c)),cj=Math.min(c-1,Math.floor(j/G*c)); out[i+j*G]=r[ci+cj*c]; } }
+
 // Shared isometric heightfield renderer — oblique iso, sign-aware
 function renderHeightfield(g,heights,G,pal,opts={}){
   const MAX_DEPTH=Math.min(g.width,g.height)*0.28;
   const cW=g.width/G, cH=g.height/G;
-  const sheen=Math.min(1,P.metallic*(1-P.rough)+P.sheen);
-  const neg=P.extrude<0;
+  const shn=Math.min(1,P.metallic*(1-P.rough)+P.sheen);
+  // Support new extrude group params (height/hvar/light) with fallback to legacy P.extrude
+  const hasNew=(P.height!==undefined);
+  const extH=hasNew?P.height:Math.abs(P.extrude||0);
+  const extVar=hasNew?(P.hvar!==undefined?P.hvar:0.5):0.8;
+  const lF=hasNew?lerp(0.25,0.85,P.light!==undefined?P.light:0.5):0.55;
+  const neg=hasNew?false:(P.extrude||0)<0;
   g.noStroke();
   for(let jj=0;jj<G;jj++){ for(let ii=0;ii<G;ii++){
     const j=neg?G-1-jj:jj, i=neg?G-1-ii:ii;
     const h=heights[i+j*G]||0; if(h<=0.001) continue;
-    const z=h*Math.abs(P.extrude)*MAX_DEPTH;
+    const hEff=extH*lerp(1.0,h,extVar);
+    const z=hEff*MAX_DEPTH;
     const x0=i*cW, y0=j*cH;
     const ox=(neg?-1:1)*z*0.5, oy=(neg?1:-1)*z;
     const tx0=x0+ox, ty0=y0+oy, tx1=x0+cW+ox, ty1=y0+cH+oy;
-    const t=Math.min(1,h*(1+0.25*sheen));
+    const t=Math.min(1,h*(1+0.25*shn));
     const tc=[lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)];
     if(neg){
-      g.fill(tc[0]*0.55,tc[1]*0.55,tc[2]*0.55);
+      g.fill(tc[0]*lF,tc[1]*lF,tc[2]*lF);
       g.quad(x0,y0, tx0,ty0, tx0,ty1, x0,y0+cH);
-      g.fill(tc[0]*0.38,tc[1]*0.38,tc[2]*0.38);
+      g.fill(tc[0]*lF*0.7,tc[1]*lF*0.7,tc[2]*lF*0.7);
       g.quad(x0,y0, x0+cW,y0, tx1,ty0, tx0,ty0);
     }else{
-      g.fill(tc[0]*0.55,tc[1]*0.55,tc[2]*0.55);
+      g.fill(tc[0]*lF,tc[1]*lF,tc[2]*lF);
       g.quad(x0+cW,y0, tx1,ty0, tx1,ty1, x0+cW,y0+cH);
-      g.fill(tc[0]*0.38,tc[1]*0.38,tc[2]*0.38);
+      g.fill(tc[0]*lF*0.7,tc[1]*lF*0.7,tc[2]*lF*0.7);
       g.quad(x0,y0+cH, x0+cW,y0+cH, tx1,ty1, tx0,ty1);
     }
     g.fill(tc[0],tc[1],tc[2]);
     g.quad(tx0,ty0, tx1,ty0, tx1,ty1, tx0,ty1);
+    if(P.caps>=1){
+      const cx=tx0+cW*0.5, cy=ty0+cH*0.5;
+      const hl=Math.min(1.35,1.05+(1-h)*0.22);
+      g.fill(Math.min(255,tc[0]*hl),Math.min(255,tc[1]*hl),Math.min(255,tc[2]*hl));
+      if(P.caps>=2){
+        // level 2: full 360° sphere sitting on the column top
+        g.ellipse(cx, cy-cH*0.55, cW, cW);
+        const sx=Math.min(255,tc[0]*1.85),sy=Math.min(255,tc[1]*1.85),sz=Math.min(255,tc[2]*1.85);
+        g.fill(sx,sy,sz,190);
+        g.ellipse(cx-cW*0.14, cy-cH*1.02, cW*0.28, cH*0.22);
+      } else {
+        // level 1: 180° semicircle dome
+        g.arc(cx,cy,cW,cH*2.2,Math.PI,Math.PI*2,'chord');
+      }
+    }
   }}
 }
 
@@ -209,10 +259,40 @@ ${cfg.code}
 /* ============================================== */
 
 function setup(){
-  const c=createCanvas(windowWidth,windowHeight); c.parent("stage"); pixelDensity(1);
+  const container=document.getElementById("stage"); const c=createCanvas(container.clientWidth,container.clientHeight); c.parent("stage"); pixelDensity(1);
   W=width; H=height; allocBuffers(); t0=millis();
-  buildSystem(); buildUI(); loadFavs();
+  buildSystem();
+  try{ buildUI(); }catch(e){ console.warn('buildUI failed during setup',e); }
+  loadFavs();
   applyTheme(localStorage.getItem(THEMEKEY)||'graphite');
+  // If this is the SDF piece, ensure it has minimal motion defaults so it animates on load
+  if(PIECE=="sdf"){
+    if((P.speed===0||P.speed===undefined) && (P.drift===0||P.drift===undefined)){
+      P.speed=0.18; P.drift=0.12;
+    }
+    // sync UI controls to reflect these defaults
+    setTimeout(()=>{
+      try{
+        const s=document.getElementById('p_speed'); if(s) s.value = P.speed;
+        const vs=document.getElementById('v_speed'); if(vs) vs.textContent = (P.speed).toFixed(2);
+        const d=document.getElementById('p_drift'); if(d) d.value = P.drift;
+        const vd=document.getElementById('v_drift'); if(vd) vd.textContent = (P.drift).toFixed(2);
+      }catch(e){}
+    },80);
+  }
+  // Reaction diffusion: reduce default glow so texture edges stay crisp.
+  if(PIECE=="reaction_diffusion"){
+    if(P.glow!==undefined) P.glow=0.05;
+    setTimeout(()=>{
+      try{
+        const g=document.getElementById('p_glow'); if(g) g.value = P.glow;
+        const vg=document.getElementById('v_glow'); if(vg) vg.textContent = (P.glow).toFixed(2);
+      }catch(e){}
+    },80);
+  }
+
+  // ensure first frame renders and t0 is valid
+  try{ t0 = isFinite(t0)? t0 : millis(); renderScene(); dirty=false; }catch(e){ console.warn('initial render failed',e); }
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggleKbHelp(false); });
 }
 function allocBuffers(){
@@ -227,12 +307,8 @@ function allocBuffers(){
   sg.addColorStop(0,"rgba(255,255,255,0)"); sg.addColorStop(.46,"rgba(255,255,255,.35)");
   sg.addColorStop(.5,"rgba(255,255,255,.85)"); sg.addColorStop(.54,"rgba(255,255,255,.35)"); sg.addColorStop(1,"rgba(255,255,255,0)");
   specTex.drawingContext.fillStyle=sg; specTex.drawingContext.fillRect(0,0,W,H);
-  grainTex=createGraphics(320,320); grainTex.loadPixels();
-  for(let i=0;i<grainTex.pixels.length;i+=4){ const v=128+(Math.random()-0.5)*255;
-    grainTex.pixels[i]=grainTex.pixels[i+1]=grainTex.pixels[i+2]=v; grainTex.pixels[i+3]=255; }
-  grainTex.updatePixels();
 }
-function windowResized(){ resizeCanvas(windowWidth,windowHeight); W=width; H=height; allocBuffers(); buildSystem(); }
+function windowResized(){ const container=document.getElementById("stage"); resizeCanvas(container.clientWidth,container.clientHeight); W=width; H=height; allocBuffers(); buildSystem(); }
 function toggleKbHelp(show){
   const el=document.getElementById("kbHelp"); if(!el)return;
   const on=show===undefined ? el.style.display!=="flex" : !!show;
@@ -261,11 +337,14 @@ function renderScene(){
   // If the piece provides a heightField(G) function and extrude is active, render as heightfield
   try{
     const palLocal = getPal();
-    if(typeof heightField === 'function' && Math.abs(P.extrude)>0.01){ const G=130; const heights = heightField(G);
+    if(typeof heightField === 'function' && (Math.abs(P.extrude||0)>0.01||(P.height||0)>0.01)){ const G=220; const heights = heightField(G);
       if(heights && heights.length===G*G){ renderHeightfield(raw,heights,G,palLocal,{}); }
       else { render(raw,palLocal); }
     }else{ render(raw,palLocal); }
   }catch(e){ console.warn('heightfield render failed, falling back to flat render',e); render(raw, getPal()); }
+  // MATERIAL sheen — applied to forms only via source-atop (no bleed onto background)
+  const sheenV=Math.min(1,P.metallic*(1-P.rough)+P.sheen);
+  if(sheenV>0.01){ const dc=raw.drawingContext; dc.save(); dc.globalCompositeOperation='source-atop'; dc.globalAlpha=Math.min(1,0.6*sheenV); dc.drawImage(specTex.elt,0,0,raw.width,raw.height); dc.restore(); }
   // bake symmetry into scene (screen-space clip on untransformed raw)
   scene.clear(); const m=Math.round(P.mirror);
   if(m===0){ scene.image(raw,0,0); }
@@ -278,27 +357,37 @@ function bake(cx,cy,cw,ch,sx,sy,tx,ty){
   scene.translate(tx,ty); scene.scale(sx,sy); scene.image(raw,0,0); scene.pop();
 }
 function draw(){
-  const time=(running?(millis()-t0)/1000:pauseT);
-  const animate=(P.speed>0||P.drift>0);
-  if(dirty){ renderScene(); dirty=false; }
+  // First-frame layout check: flexbox may not finish before setup() reads clientWidth
+  if(!draw._sized){
+    draw._sized=true;
+    const st=document.getElementById("stage");
+    const cw=st.clientWidth,ch=st.clientHeight;
+    if(cw>10&&ch>10&&(Math.abs(cw-W)>4||Math.abs(ch-H)>4)){
+      resizeCanvas(cw,ch); W=width; H=height; allocBuffers(); buildSystem();
+    }
+  }
+  // guard against uninitialized t0 or NaN from millis()-t0
+  if(running && !isFinite(t0)) t0 = millis();
+  const time = (running ? (isFinite(millis()-t0) ? (millis()-t0)/1000 : (t0=millis(),0)) : pauseT);
+  const animate=(P.speed>0||P.drift>0||audioActive);
+  animT = time;
+  _audioApply();
+  if(dirty || animate){ renderScene(); dirty=false; }
+  _audioRestore();
   const pal=getPal();
   background(pal[0][0],pal[0][1],pal[0][2]);
   // FRAME + MOTION transform applied to the baked scene
-  const dz=1+(P.drift>0?Math.sin(time*0.6)*0.045*P.drift:0);
-  const ar=(P.speed>0?time*0.08*P.speed:0);
+  const frameDrift=(PIECE=="reaction_diffusion")?0:P.drift;
+  const dz=1+(frameDrift>0?Math.sin(time*0.6)*0.045*frameDrift:0);
+  const ar=(PIECE=="reaction_diffusion")?0:(P.speed>0?time*0.08*P.speed:0);
   push();
-  translate(W/2,H/2); scale(P.zoom*dz); rotate(P.rot*Math.PI+ar); translate(-W/2,-H/2);
+  translate(W/2 + P.cx * W * 0.45, H/2 - P.cy * H * 0.45); scale(P.zoom*dz); rotate(P.rot*Math.PI); translate(-W/2,-H/2);
   drawingContext.filter = P.contrast>0 ? "contrast("+((100+P.contrast*120)|0)+"%)" : "none";
   tint(255,255*P.alpha); image(scene,0,0);
   drawingContext.filter="none";
   if(P.glow>0.01){ blendMode(ADD); tint(255,110*P.glow); image(glowBuf,0,0,W,H); blendMode(BLEND); }
   pop(); noTint();
-  // MATERIAL sheen (screen-space)
-  const sheen=Math.min(1,P.metallic*(1-P.rough)+P.sheen);
-  if(sheen>0.01){ push(); blendMode(ADD); tint(255,150*sheen); image(specTex,0,0,W,H); pop(); blendMode(BLEND); noTint(); }
   if(P.vig>0.01){ push(); tint(255,255*P.vig); image(vigTex,0,0,W,H); pop(); noTint(); }
-  if(P.grain>0.01){ push(); blendMode(OVERLAY); tint(255,200*P.grain);
-    const ox=-Math.random()*60,oy=-Math.random()*60; image(grainTex,ox,oy,W-ox,H-oy); pop(); blendMode(BLEND); noTint(); }
   select("#seedRead").html(seed);
 }
 
@@ -349,7 +438,7 @@ function save2xPNG(){
       randomSeed(seed); noiseSeed(seed);
       const pal=getPal();
       g2.background(pal[0][0],pal[0][1],pal[0][2]);
-      if(typeof heightField==='function'&&Math.abs(P.extrude)>0.01){ const G=260, heights=heightField(G);
+      if(typeof heightField==='function'&&(Math.abs(P.extrude||0)>0.01||(P.height||0)>0.01)){ const G=260, heights=heightField(G);
         if(heights&&heights.length===G*G) renderHeightfield(g2,heights,G,pal,{});
         else render(g2,pal);
       }else{ render(g2,pal); }
@@ -359,18 +448,38 @@ function save2xPNG(){
     setTimeout(()=>{ if(btn){ btn.disabled=false; btn.textContent=old; } },900);
   },30);
 }
+function _audioApply(){
+  _audioSaved={};
+  if(!audioActive||!analyser) return;
+  analyser.getByteFrequencyData(audioData);
+  const N=audioData.length;
+  const avg=(s,e)=>{let v=0;for(let i=s;i<e;i++)v+=audioData[i];return v/((e-s)*255);};
+  ABANDS.bass=avg(0,4); ABANDS.mid=avg(4,20); ABANDS.high=avg(20,60); ABANDS.presence=avg(0,N);
+  for(const band of ['bass','mid','high','presence']){
+    const k=AMAP[band]; if(!k||P[k]===undefined) continue;
+    _audioSaved[k]=P[k];
+    const par=PARAMS.find(p=>p.k===k);
+    const mn=par?par.min:0, mx=par?par.max:1;
+    P[k]=Math.min(mx,Math.max(mn,P[k]+ABANDS[band]*ADEPTH[band]*(mx-mn)));
+  }
+}
+function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSaved[k]; _audioSaved={}; }
 function buildUI(){
   const host=document.getElementById("groups");
-  GROUPS.forEach((g,gi)=>{ const det=document.createElement("details"); if(gi<2)det.open=true;
+  let rg=0;
+  GROUPS.forEach(g=>{
+    const gp=PARAMS.filter(p=>p.g===g); if(!gp.length) return;
+    const det=document.createElement("details"); if(rg<2) det.open=true; rg++;
     const sum=document.createElement("summary"); sum.textContent=g; det.appendChild(sum);
-    PARAMS.filter(p=>p.g===g).forEach(p=>{ const row=document.createElement("div"); row.className="row";
-      const lab=document.createElement("label"); const span=document.createElement("span"); span.id="v_"+p.k;
+    gp.forEach(p=>{ const row=document.createElement("div"); row.className="row";
+      const lab=document.createElement("label"); lab.htmlFor="p_"+p.k;
+      const span=document.createElement("span"); span.id="v_"+p.k;
       lab.append(p.label+" ",span);
       const inp=document.createElement("input"); inp.type="range"; inp.min=p.min; inp.max=p.max; inp.step=p.step; inp.value=p.v; inp.id="p_"+p.k;
       const fmt=()=> span.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
       inp.addEventListener("input",()=>{ P[p.k]=parseFloat(inp.value); fmt();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
-        if(p.sys) buildSystem(); else if(p.rr) dirty=true; });
+        if(p.sys) buildSystem(); else dirty=true; });
       fmt(); row.append(lab,inp); det.appendChild(row); });
     host.appendChild(det); });
   document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;buildSystem();});
@@ -388,6 +497,81 @@ function buildUI(){
     document.querySelector('.btns').appendChild(svgBtn);
     svgBtn.addEventListener('click',renderSVG);
   }
+  // audio
+  const btnAudio=document.getElementById("btnAudio");
+  const audioPanel=document.getElementById("audioPanel");
+  const audioBands=document.getElementById("audioBands");
+  const audioDropZone=document.getElementById("audioDropZone");
+  const audioFileInput=document.getElementById("audioFileInput");
+  const audioStatus=document.getElementById("audioStatus");
+  const audioPlayPause=document.getElementById("audioPlayPause");
+  const audioFilename=document.getElementById("audioFilename");
+  const btnMic=document.getElementById("btnMic");
+  let audioSource=null, audioBuffer=null, audioPlaying=false, micStream=null;
+
+  function _ensureCtx(){
+    if(!audioCtx){ audioCtx=new AudioContext(); analyser=audioCtx.createAnalyser(); analyser.fftSize=512; audioData=new Uint8Array(analyser.frequencyBinCount); }
+    if(audioCtx.state==="suspended") audioCtx.resume();
+  }
+  async function _loadFile(file){
+    _ensureCtx();
+    if(audioSource){ try{audioSource.stop();}catch(e){} audioSource=null; }
+    const ab=await file.arrayBuffer();
+    audioBuffer=await audioCtx.decodeAudioData(ab);
+    audioFilename.textContent=file.name;
+    audioStatus.style.display="flex";
+    _playBuffer();
+  }
+  function _playBuffer(){
+    if(!audioBuffer) return;
+    if(audioSource){ try{audioSource.stop();}catch(e){} }
+    audioSource=audioCtx.createBufferSource();
+    audioSource.buffer=audioBuffer; audioSource.loop=true;
+    audioSource.connect(analyser); analyser.connect(audioCtx.destination);
+    audioSource.start(); audioPlaying=true; audioPlayPause.textContent="⏸";
+    audioActive=true;
+  }
+  audioPlayPause.addEventListener("click",()=>{
+    if(audioPlaying){ try{audioSource.stop();}catch(e){} audioPlaying=false; audioActive=false; audioPlayPause.textContent="▶"; }
+    else { _playBuffer(); }
+  });
+  async function _loadFileData(file){ if(file&&file.type.startsWith("audio/")) await _loadFile(file); }
+  audioDropZone.addEventListener("click",()=>audioFileInput.click());
+  audioFileInput.addEventListener("change",e=>{ if(e.target.files[0]) _loadFileData(e.target.files[0]); });
+  audioDropZone.addEventListener("dragover",e=>{ e.preventDefault(); audioDropZone.style.borderColor="var(--accent)"; });
+  audioDropZone.addEventListener("dragleave",()=>{ audioDropZone.style.borderColor="#444"; });
+  audioDropZone.addEventListener("drop",e=>{ e.preventDefault(); audioDropZone.style.borderColor="#444"; _loadFileData(e.dataTransfer.files[0]); });
+  btnMic.addEventListener("click",async()=>{
+    if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; btnMic.textContent="mic"; btnMic.style.opacity=".6"; if(!audioPlaying) audioActive=false; return; }
+    try{
+      _ensureCtx();
+      micStream=await navigator.mediaDevices.getUserMedia({audio:true});
+      audioCtx.createMediaStreamSource(micStream).connect(analyser);
+      audioActive=true; btnMic.textContent="mic ●"; btnMic.style.opacity="1";
+    }catch(e){ alert("mic access denied"); }
+  });
+  btnAudio.addEventListener("click",()=>{
+    const open=audioPanel.style.display==="none";
+    audioPanel.style.display=open?"block":"none";
+    btnAudio.style.color=open?"var(--accent)":"";
+  });
+
+  // band mapping rows
+  const mappableParams=PARAMS.filter(p=>!p.sys&&p.k!=='pal');
+  ['bass','mid','high','presence'].forEach(band=>{
+    const row=document.createElement("div");
+    row.style.cssText="display:flex;align-items:center;gap:6px;margin-bottom:5px;";
+    const lbl=document.createElement("span"); lbl.textContent=band; lbl.style.cssText="width:68px;color:var(--dim);";
+    const sel=document.createElement("select");
+    sel.style.cssText="flex:1;background:#1a1a1d;color:var(--ink);border:1px solid #333;border-radius:4px;padding:2px 4px;font-size:11px;";
+    const none=document.createElement("option"); none.value=""; none.textContent="— off —"; sel.appendChild(none);
+    mappableParams.forEach(p=>{ const o=document.createElement("option"); o.value=p.k; o.textContent=p.label||p.k; sel.appendChild(o); });
+    sel.addEventListener("change",()=>{ AMAP[band]=sel.value||null; });
+    const dep=document.createElement("input"); dep.type="range"; dep.min=0; dep.max=1; dep.step=.01; dep.value=0.5;
+    dep.style.cssText="width:55px;";
+    dep.addEventListener("input",()=>{ ADEPTH[band]=parseFloat(dep.value); });
+    row.append(lbl,sel,dep); audioBands.appendChild(row);
+  });
   document.getElementById("pin").addEventListener("click",pinFav);
   document.getElementById("reset").addEventListener("click",()=>{const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});flash("reset","reset ✓");});
   document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(favs);
@@ -530,48 +714,107 @@ function recordClip(dur=4){
 // ---------------- per-piece definitions ----------------
 const PIECES=[
 { id:"flow_field", title:"flow field",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.6},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
+  system:[{k:"density",label:"density",min:0,max:.20,step:.01,v:.20},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 function build(){}
 function render(g,pal){
   const n=floor(map(P.density,0,1,400,4500)), s=map(P.scale,0,1,0.0008,0.006), turb=map(P.turbulence,0,1,1,7);
   g.noStroke();
   for(let i=0;i<n;i++){ let x=random(g.width), y=random(g.height); const c=random()<0.5?pal[1]:pal[2];
-    for(let j=0;j<70;j++){ g.fill(c[0],c[1],c[2],26); g.circle(x,y,1.4);
-      const a=noise(x*s,y*s)*TWO_PI*turb; x+=cos(a)*1.6; y+=sin(a)*1.6;
+    for(let j=0;j<70;j++){ g.fill(min(255,c[0]*1.6),min(255,c[1]*1.6),min(255,c[2]*1.6),26); g.circle(x,y,1.4);
+      const a=noise(x*s,y*s,animT*P.speed*0.55)*TWO_PI*turb; x+=cos(a)*1.6; y+=sin(a)*1.6;
       if(x<0||x>g.width||y<0||y>g.height) break; } }
 }` },
 
 { id:"reaction_diffusion", title:"reaction diffusion",
-  system:[{k:"feed",label:"feed",min:0,max:1,step:.01,v:.45},{k:"kill",label:"kill",min:0,max:1,step:.01,v:.55},{k:"spots",label:"seed spots",min:0,max:1,step:.01,v:.4},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
+  system:[{k:"feed",label:"feed",min:0,max:.17,step:.01,v:.03},{k:"kill",label:"kill",min:.5,max:.75,step:.01,v:.51},{k:"spots",label:"seed spots",min:0,max:.30,step:.01,v:.30},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"esize",g:"extrude",label:"size",min:0,max:1,step:.01,v:.5,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
-let RDA,RDB,RDG;
+let RDA,RDB,RDA2,RDB2,RDG,RDWS;
 function build(){
-  const G=RDG=200; let a=new Float32Array(G*G).fill(1),b=new Float32Array(G*G),a2=new Float32Array(G*G),b2=new Float32Array(G*G);
-  const spots=floor(map(P.spots,0,1,4,40));
-  for(let s=0;s<spots;s++){ const cx=floor(random(G)),cy=floor(random(G)),r=floor(random(3,8));
+  const G=RDG=170; let a=new Float32Array(G*G).fill(1),b=new Float32Array(G*G),a2=new Float32Array(G*G),b2=new Float32Array(G*G);
+  const spots=floor(map(Math.min(P.spots,0.30),0,0.30,2,12));
+  for(let s=0;s<spots;s++){ const cx=floor(random(G)),cy=floor(random(G)),r=floor(random(2,5));
     for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++){ if(x*x+y*y<=r*r){const px=(cx+x+G)%G,py=(cy+y+G)%G; b[px+py*G]=1;} } }
-  const f=map(P.feed,0,1,0.018,0.062), k=map(P.kill,0,1,0.045,0.07);
-  const ws=[[-1,0,.2],[1,0,.2],[0,-1,.2],[0,1,.2],[-1,-1,.05],[1,-1,.05],[-1,1,.05],[1,1,.05]];
-  for(let it=0;it<2200;it++){ for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){ const i=x+y*G; let la=-a[i],lb=-b[i];
+  const f=map(Math.min(P.feed,0.17),0,0.17,0.018,0.034), k=map(Math.min(Math.max(P.kill,0.5),0.75),0.5,0.75,0.052,0.066);
+  const ws=RDWS=[[-1,0,.2],[1,0,.2],[0,-1,.2],[0,1,.2],[-1,-1,.05],[1,-1,.05],[-1,1,.05],[1,1,.05]];
+  for(let it=0;it<1600;it++){ for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){ const i=x+y*G; let la=-a[i],lb=-b[i];
       for(const w of ws){const j=i+w[0]+w[1]*G; la+=a[j]*w[2]; lb+=b[j]*w[2];}
       const ab=a[i]*b[i]*b[i];
       a2[i]=Math.min(1,Math.max(0,a[i]+la-ab+f*(1-a[i]))); b2[i]=Math.min(1,Math.max(0,b[i]+0.5*lb+ab-(k+f)*b[i])); }
     let t=a;a=a2;a2=t; t=b;b=b2;b2=t; }
-  RDA=a; RDB=b;
+  RDA=a; RDB=b; RDA2=a2; RDB2=b2;
 }
 function render(g,pal){ const G=RDG;
-  const img=makeField(G,(x,y)=>{ const v=Math.min(1,Math.max(0,RDA[x+y*G]-RDB[x+y*G]));
+  // Animate the reaction field itself. This is form motion, not 2D frame motion.
+  if(P.speed>0 && RDA && RDB && RDA2 && RDB2){
+    let a=RDA, b=RDB, a2=RDA2, b2=RDB2;
+    const ws=RDWS;
+    const f=map(Math.min(P.feed,0.17),0,0.17,0.018,0.034);
+    const k=map(Math.min(Math.max(P.kill,0.5),0.75),0.5,0.75,0.052,0.066);
+    const steps=floor(map(P.speed,0,1,2,14));
+    for(let it=0;it<steps;it++){
+      for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){
+        const i=x+y*G; let la=-a[i],lb=-b[i];
+        for(const w of ws){const j=i+w[0]+w[1]*G; la+=a[j]*w[2]; lb+=b[j]*w[2];}
+        const ab=a[i]*b[i]*b[i];
+        a2[i]=Math.min(1,Math.max(0,a[i]+la-ab+f*(1-a[i])));
+        b2[i]=Math.min(1,Math.max(0,b[i]+0.5*lb+ab-(k+f)*b[i]));
+      }
+      let t=a;a=a2;a2=t; t=b;b=b2;b2=t;
+    }
+    RDA=a; RDB=b; RDA2=a2; RDB2=b2;
+  }
+  const cells=floor(map(P.pix,0,1,260,6));
+  const img=makeField(G,(x,y)=>{
+    const qx=Math.min(G-1,floor(floor(x/G*cells)/cells*G));
+    const qy=Math.min(G-1,floor(floor(y/G*cells)/cells*G));
+    const raw=Math.min(1,Math.max(0,RDA[qx+qy*G]-RDB[qx+qy*G])); const v=Math.min(1,raw*4.2);
     return [lerp(pal[2][0],pal[0][0],v),lerp(pal[2][1],pal[0][1],v),lerp(pal[2][2],pal[0][2],v)]; });
   g.image(img,0,0,g.width,g.height); }
 function heightField(G){ const sG=RDG, out=new Float32Array(G*G);
+  // Keep reaction_diffusion animated even when extrusion is active.
+  // The engine calls heightField() instead of render() for extrude mode.
+  if(P.speed>0 && RDA && RDB && RDA2 && RDB2){
+    let a=RDA, b=RDB, a2=RDA2, b2=RDB2;
+    const ws=RDWS;
+    const f=map(Math.min(P.feed,0.17),0,0.17,0.018,0.034);
+    const k=map(Math.min(Math.max(P.kill,0.5),0.75),0.5,0.75,0.052,0.066);
+    const steps=floor(map(P.speed,0,1,2,14));
+    for(let it=0;it<steps;it++){
+      for(let y=1;y<sG-1;y++)for(let x=1;x<sG-1;x++){
+        const idx=x+y*sG; let la=-a[idx],lb=-b[idx];
+        for(const w of ws){const jj=idx+w[0]+w[1]*sG; la+=a[jj]*w[2]; lb+=b[jj]*w[2];}
+        const ab=a[idx]*b[idx]*b[idx];
+        a2[idx]=Math.min(1,Math.max(0,a[idx]+la-ab+f*(1-a[idx])));
+        b2[idx]=Math.min(1,Math.max(0,b[idx]+0.5*lb+ab-(k+f)*b[idx]));
+      }
+      let t=a;a=a2;a2=t; t=b;b=b2;b2=t;
+    }
+    RDA=a; RDB=b; RDA2=a2; RDB2=b2;
+  }
   for(let j=0;j<G;j++) for(let i=0;i<G;i++){
-    const si=Math.floor(i*sG/G), sj=Math.floor(j*sG/G);
-    out[i+j*G]=Math.min(1,Math.max(0,RDA[si+sj*sG]-RDB[si+sj*sG])); }
-  return out; }` },
+    // Extrusion samples an inset version of the reaction field so border artifacts do not become geometry.
+    const m=0.12;
+    const u=m+(i/(G-1))*(1-2*m);
+    const v=m+(j/(G-1))*(1-2*m);
+    const si=Math.floor(u*(sG-1)), sj=Math.floor(v*(sG-1));
+
+    const raw=Math.min(1,Math.max(0,RDA[si+sj*sG]-RDB[si+sj*sG]));
+    const flatV=Math.min(1,raw*4.2);
+    const form=1.0-flatV;
+
+    // Extrude size controls how wide the raised particles/forms are.
+    // Lower threshold = larger raised forms; higher threshold = tighter raised cores.
+    const esize=(P.esize===undefined?0.5:P.esize); const sizeGate=0.88 - esize*0.78;
+    let h=Math.min(1,Math.max(0,(form-sizeGate)*2.1));
+    h=h*h*(3-2*h);
+
+    out[i+j*G]=h;
+  }
+  _pxQ(out,G); return out; }` },
 
 { id:"voronoi", title:"voronoi",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.4},{k:"relax",label:"relax",min:0,max:1,step:.01,v:.4},{k:"edgefill",label:"edge / fill",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.4},{k:"relax",label:"relax",min:0,max:1,step:.01,v:.4},{k:"edgefill",label:"edge / fill",min:0,max:1,step:.01,v:.5},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 let VPTS;
 function build(){ const n=floor(map(P.density,0,1,12,120)); let pts=[]; for(let i=0;i<n;i++)pts.push([random(1),random(1)]);
@@ -582,9 +825,12 @@ function build(){ const n=floor(map(P.density,0,1,12,120)); let pts=[]; for(let 
       sx[bi]+=px;sy[bi]+=py;cn[bi]++; }
     pts=pts.map((p,i)=>cn[i]?[sx[i]/cn[i],sy[i]/cn[i]]:p); }
   VPTS=pts; }
-function render(g,pal){ const N=260, pts=VPTS, ef=P.edgefill;
+function render(g,pal){ const N=260, ef=P.edgefill;
+  const t=animT*P.speed*2.0;
+  const pts=VPTS.map((p,i)=>[p[0]+Math.sin(t*0.55+i*1.91)*0.04,p[1]+Math.cos(t*0.43+i*2.73)*0.04]);
   const cols=pts.map((p,i)=> i%2?pal[1]:pal[2]);
-  const img=makeField(N,(x,y)=>{ const px=x/N,py=y/N; let b0=1e9,b1=1e9,bi=0;
+  const cells=floor(map(P.pix,0,1,560,6));
+  const img=makeField(560,(x,y)=>{ const px=floor(x/560*cells)/cells, py=floor(y/560*cells)/cells; let b0=1e9,b1=1e9,bi=0;
     for(let i=0;i<pts.length;i++){const dx=px-pts[i][0],dy=py-pts[i][1],d=dx*dx+dy*dy; if(d<b0){b1=b0;b0=d;bi=i;}else if(d<b1)b1=d;}
     const edge=Math.sqrt(b1)-Math.sqrt(b0);
     if(edge<map(ef,0,1,0.005,0.0010)) return pal[1];
@@ -596,7 +842,7 @@ function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
     const px=i/G, py=j/G; let b0=1e9,bi=0;
     for(let k=0;k<pts.length;k++){const dx=px-pts[k][0],dy=py-pts[k][1],d=dx*dx+dy*dy;if(d<b0){b0=d;bi=k;}}
     out[i+j*G]=cH[bi]; }
-  return out; }` },
+  _pxQ(out,G); return out; }` },
 
 { id:"contour_field", title:"contour field",
   system:[{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"levels",label:"levels",min:0,max:1,step:.01,v:.5},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.4},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
@@ -604,7 +850,7 @@ function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
 function build(){}
 function contourSegments(w,h,pal){ const R=Math.max(5,Math.floor(w/200)), C=Math.floor(w/R), Rj=Math.floor(h/R);
   const s=map(P.scale,0,1,0.002,0.012), turb=map(P.turbulence,0,1,1,4);
-  const fv=(x,y)=>{let v=0,amp=1,fr=1; for(let o=0;o<4;o++){v+=noise(x*s*fr,y*s*fr)*amp;amp*=.5;fr*=1.6*turb;} return v;};
+  const fv=(x,y)=>{let v=0,amp=1,fr=1; for(let o=0;o<4;o++){v+=noise(x*s*fr,y*s*fr,animT*P.speed*0.35+o*2.3)*amp;amp*=.5;fr*=1.6*turb;} return v;};
   const fld=[]; for(let j=0;j<=Rj;j++){const row=[];for(let i=0;i<=C;i++)row.push(fv(i*R,j*R));fld.push(row);}
   let mn=1e9,mx=-1e9; for(const r of fld)for(const v of r){mn=Math.min(mn,v);mx=Math.max(mx,v);}
   const L=floor(map(P.levels,0,1,5,26));
@@ -624,8 +870,46 @@ function contourSegments(w,h,pal){ const R=Math.max(5,Math.floor(w/200)), C=Math
       else if(st===7||st===8)sg(e.left,e.top); else if(st===10){sg(e.left,e.bottom);sg(e.top,e.right);} } }
   return segs;
 }
-function render(g,pal){ const segs=contourSegments(g.width,g.height,pal); g.strokeWeight(1.1);
-  for(const s of segs){ g.stroke(s.c[0],s.c[1],s.c[2]); g.line(s.p[0],s.p[1],s.q[0],s.q[1]); }
+function chainContours(segs){
+  const key=p=>Math.round(p[0]*2)+'_'+Math.round(p[1]*2);
+  const map={};
+  segs.forEach((s,i)=>{
+    (map[key(s.p)]||(map[key(s.p)]=[])).push({i,end:'p'});
+    (map[key(s.q)]||(map[key(s.q)]=[])).push({i,end:'q'});
+  });
+  const used=new Uint8Array(segs.length);
+  const chains=[];
+  for(let i=0;i<segs.length;i++){
+    if(used[i]) continue; used[i]=1;
+    const ch={pts:[segs[i].p,segs[i].q],c:segs[i].c};
+    for(let pass=0;pass<2;pass++){
+      let go=true;
+      while(go){ go=false;
+        const tip=pass===0?ch.pts[ch.pts.length-1]:ch.pts[0];
+        for(const {i:j,end} of (map[key(tip)]||[])){
+          if(used[j]) continue; used[j]=1;
+          const np=end==='p'?segs[j].q:segs[j].p;
+          pass===0?ch.pts.push(np):ch.pts.unshift(np);
+          go=true; break;
+        }
+      }
+    }
+    chains.push(ch);
+  }
+  return chains;
+}
+function render(g,pal){
+  const chains=chainContours(contourSegments(g.width,g.height,pal));
+  g.strokeWeight(1.1); g.noFill();
+  for(const ch of chains){
+    g.stroke(ch.c[0],ch.c[1],ch.c[2]);
+    const pts=ch.pts; if(pts.length<2) continue;
+    g.beginShape();
+    g.curveVertex(pts[0][0],pts[0][1]);
+    for(const p of pts) g.curveVertex(p[0],p[1]);
+    g.curveVertex(pts[pts.length-1][0],pts[pts.length-1][1]);
+    g.endShape();
+  }
 }
 function renderSVG(){
   randomSeed(seed); noiseSeed(seed);
@@ -636,18 +920,46 @@ function renderSVG(){
 }` },
 
 { id:"truchet", title:"truchet",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 function build(){}
 function render(g,pal){ const n=floor(map(P.density,0,1,6,40)), cs=Math.min(g.width,g.height)/n;
   const cols=Math.ceil(g.width/cs), rows=Math.ceil(g.height/cs);
   g.noFill(); g.strokeWeight(map(P.weight,0,1,1,cs*0.4)); g.strokeCap(SQUARE);
-  const clus=map(P.clustering,0,1,0.001,0.06);
+  const ns=map(P.clustering,0,1,3.5,0.12), spd=map(P.speed,0,1,0,0.08);
   for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
-    const bias=clus>0.001?noise(i*clus*12,j*clus*12):random(); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
+    const bias=noise(i*ns,j*ns,animT*spd); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
     g.stroke(c[0],c[1],c[2]);
     if(flip){ g.arc(x,y,cs,cs,0,HALF_PI); g.arc(x+cs,y+cs,cs,cs,PI,PI+HALF_PI); }
     else { g.arc(x+cs,y,cs,cs,HALF_PI,PI); g.arc(x,y+cs,cs,cs,-HALF_PI,0); } } }
+function trHeightField(G){
+  const n=floor(map(P.density,0,1,6,40));
+  const ns=map(P.clustering,0,1,3.5,0.12);
+  const spd=map(P.speed,0,1,0,0.08);
+  // half-width of arc ridge as fraction of tile — mirrors strokeWeight mapping
+  const hw=map(P.weight,0,1,0.01,0.21);
+  const out=new Float32Array(G*G);
+  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
+    const px=i/G, py=j/G;
+    const ti=Math.min(Math.floor(px*n),n-1), tj=Math.min(Math.floor(py*n),n-1);
+    const lx=px*n-ti, ly=py*n-tj;
+    const flip=noise(ti*ns,tj*ns,animT*spd)<0.5;
+    let d;
+    if(flip){
+      const d1=Math.abs(Math.sqrt(lx*lx+ly*ly)-0.5);
+      const d2=Math.abs(Math.sqrt((lx-1)*(lx-1)+(ly-1)*(ly-1))-0.5);
+      d=Math.min(d1,d2);
+    }else{
+      const d1=Math.abs(Math.sqrt((lx-1)*(lx-1)+ly*ly)-0.5);
+      const d2=Math.abs(Math.sqrt(lx*lx+(ly-1)*(ly-1))-0.5);
+      d=Math.min(d1,d2);
+    }
+    const h=Math.max(0,1-d/hw);
+    out[i+j*G]=h*h;
+  }
+  return out;
+}
+function heightField(G){ return trHeightField(G); }
 function svgArc(cx,cy,r,a0,a1){
   const x0=cx+Math.cos(a0)*r, y0=cy+Math.sin(a0)*r, x1=cx+Math.cos(a1)*r, y1=cy+Math.sin(a1)*r;
   return 'M '+svgNum(x0)+' '+svgNum(y0)+' A '+svgNum(r)+' '+svgNum(r)+' 0 0 1 '+svgNum(x1)+' '+svgNum(y1);
@@ -655,10 +967,10 @@ function svgArc(cx,cy,r,a0,a1){
 function renderSVG(){
   randomSeed(seed); noiseSeed(seed);
   const pal=getPal(), n=floor(map(P.density,0,1,6,40)), cs=Math.min(W,H)/n, r=cs/2;
-  const cols=Math.ceil(W/cs), rows=Math.ceil(H/cs), sw=map(P.weight,0,1,1,cs*0.4), clus=map(P.clustering,0,1,0.001,0.06);
+  const cols=Math.ceil(W/cs), rows=Math.ceil(H/cs), sw=map(P.weight,0,1,1,cs*0.4), ns=map(P.clustering,0,1,3.5,0.12);
   let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
   for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
-    const bias=clus>0.001?noise(i*clus*12,j*clus*12):random(); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
+    const bias=noise(i*ns,j*ns); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
     if(flip){
       svg+='<path d="'+svgArc(x,y,r,0,HALF_PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
       svg+='<path d="'+svgArc(x+cs,y+cs,r,PI,PI+HALF_PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
@@ -670,16 +982,79 @@ function renderSVG(){
   downloadSVG(svg+'</svg>');
 }` },
 
+{ id:"truchet_b", title:"truchet // color",
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  code:`
+function build(){}
+function render(g,pal){ const n=floor(map(P.density,0,1,6,40)), cs=Math.min(g.width,g.height)/n;
+  const cols=Math.ceil(g.width/cs), rows=Math.ceil(g.height/cs);
+  g.noFill(); g.strokeWeight(map(P.weight,0,1,1,cs*0.4)); g.strokeCap(ROUND);
+  const ns=map(P.clustering,0,1,3.5,0.12), spd=map(P.speed,0,1,0,0.08);
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
+    const bias=noise(i*ns,j*ns,animT*spd); const flip=bias<0.5;
+    const c=[lerp(pal[1][0],pal[2][0],bias),lerp(pal[1][1],pal[2][1],bias),lerp(pal[1][2],pal[2][2],bias)];
+    g.stroke(c[0],c[1],c[2]);
+    if(flip){ g.arc(x,y,cs,cs,0,HALF_PI); g.arc(x+cs,y+cs,cs,cs,PI,PI+HALF_PI); }
+    else { g.arc(x+cs,y,cs,cs,HALF_PI,PI); g.arc(x,y+cs,cs,cs,-HALF_PI,0); } } }
+function heightField(G){
+  const n=floor(map(P.density,0,1,6,40));
+  const ns=map(P.clustering,0,1,3.5,0.12);
+  const spd=map(P.speed,0,1,0,0.08);
+  const hw=map(P.weight,0,1,0.01,0.21);
+  const out=new Float32Array(G*G);
+  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
+    const px=i/G, py=j/G;
+    const ti=Math.min(Math.floor(px*n),n-1), tj=Math.min(Math.floor(py*n),n-1);
+    const lx=px*n-ti, ly=py*n-tj;
+    const flip=noise(ti*ns,tj*ns,animT*spd)<0.5;
+    let d;
+    if(flip){
+      const d1=Math.abs(Math.sqrt(lx*lx+ly*ly)-0.5);
+      const d2=Math.abs(Math.sqrt((lx-1)*(lx-1)+(ly-1)*(ly-1))-0.5);
+      d=Math.min(d1,d2);
+    }else{
+      const d1=Math.abs(Math.sqrt((lx-1)*(lx-1)+ly*ly)-0.5);
+      const d2=Math.abs(Math.sqrt(lx*lx+(ly-1)*(ly-1))-0.5);
+      d=Math.min(d1,d2);
+    }
+    const h=Math.max(0,1-d/hw);
+    out[i+j*G]=h*h;
+  }
+  return out;
+}
+function svgArc(cx,cy,r,a0,a1){
+  const x0=cx+Math.cos(a0)*r, y0=cy+Math.sin(a0)*r, x1=cx+Math.cos(a1)*r, y1=cy+Math.sin(a1)*r;
+  return 'M '+svgNum(x0)+' '+svgNum(y0)+' A '+svgNum(r)+' '+svgNum(r)+' 0 0 1 '+svgNum(x1)+' '+svgNum(y1);
+}
+function renderSVG(){
+  randomSeed(seed); noiseSeed(seed);
+  const pal=getPal(), n=floor(map(P.density,0,1,6,40)), cs=Math.min(W,H)/n, r=cs/2;
+  const cols=Math.ceil(W/cs), rows=Math.ceil(H/cs), sw=map(P.weight,0,1,1,cs*0.4), ns=map(P.clustering,0,1,3.5,0.12);
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
+    const bias=noise(i*ns,j*ns); const flip=bias<0.5;
+    const c=[lerp(pal[1][0],pal[2][0],bias),lerp(pal[1][1],pal[2][1],bias),lerp(pal[1][2],pal[2][2],bias)];
+    if(flip){
+      svg+='<path d="'+svgArc(x,y,r,0,HALF_PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="round"/>';
+      svg+='<path d="'+svgArc(x+cs,y+cs,r,PI,PI+HALF_PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="round"/>';
+    }else{
+      svg+='<path d="'+svgArc(x+cs,y,r,HALF_PI,PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="round"/>';
+      svg+='<path d="'+svgArc(x,y+cs,r,-HALF_PI,0)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="round"/>';
+    }
+  }
+  downloadSVG(svg+'</svg>');
+}` },
+
 { id:"l_system", title:"l-system",
-  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"angle",label:"angle",min:0,max:1,step:.01,v:.35},{k:"decay",label:"decay",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
+  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"angle",label:"angle",min:0,max:1,step:.01,v:.35},{k:"decay",label:"decay",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 let LS;
 function build(){ const rules=["FF+[+F-F-F]-[-F+F+F]","F[+F]F[-F]F","FF-[-F+F+F]+[+F-F-F]","F-[[F]+F]+F[+FF]-F"];
   const rule=rules[floor(random(rules.length))]; const depth=floor(map(P.depth,0,1,3,6)); let s="F";
   for(let d=0;d<depth;d++){let ns="";for(const ch of s)ns+=ch==="F"?rule:ch;s=ns;} LS={s,depth}; }
 function render(g,pal){ const s=LS.s, depth=LS.depth; const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
-  let len=map(depth,3,6,140,16)*(g.height/820);
-  g.push(); g.translate(g.width/2,g.height*0.92); g.noFill(); const stack=[]; let lw=2.4;
+  let len=map(depth,3,6,196,24)*(g.height/820);
+  g.push(); g.translate(g.width/2,g.height*0.95); g.noFill(); const stack=[]; let lw=2.4;
   for(const ch of s){ if(ch==="F"){ const t=Math.max(0,Math.min(1,lw/2.4));
       g.stroke(lerp(pal[2][0],pal[1][0],t),lerp(pal[2][1],pal[1][1],t),lerp(pal[2][2],pal[1][2],t)); g.strokeWeight(Math.max(0.4,lw));
       g.line(0,0,0,-len); g.translate(0,-len); }
@@ -690,7 +1065,7 @@ function render(g,pal){ const s=LS.s, depth=LS.depth; const ang=map(P.angle,0,1,
 function renderSVG(){
   if(!LS) build();
   const pal=getPal(), s=LS.s, depth=LS.depth, ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
-  let len=map(depth,3,6,140,16)*(H/820), lw=2.4, x=W/2, y=H*0.92, a=0;
+  let len=map(depth,3,6,196,24)*(H/820), lw=2.4, x=W/2, y=H*0.95, a=0;
   const stack=[];
   let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
   for(const ch of s){
@@ -703,15 +1078,47 @@ function renderSVG(){
     else if(ch==="]"){const st=stack.pop();x=st[0];y=st[1];a=st[2];len=st[3];lw=st[4];}
   }
   downloadSVG(svg+'</svg>');
+}
+function heightField(G){
+  if(!LS) build();
+  const s=LS.s, depth=LS.depth;
+  const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
+  let len=map(depth,3,6,0.24,0.029), lw=0.013;
+  const out=new Float32Array(G*G);
+  const stack=[];
+  let x=0.5, y=0.95, a=0;
+  function paint(x0,y0,x1,y1,w){
+    const steps=Math.ceil(Math.hypot((x1-x0)*G,(y1-y0)*G)*2)+1;
+    const r=Math.max(1,Math.round(w*G*0.5));
+    for(let t=0;t<=steps;t++){
+      const px=x0+(x1-x0)*t/steps, py=y0+(y1-y0)*t/steps;
+      const ix=Math.floor(px*G), iy=Math.floor(py*G);
+      for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+        const nx=ix+dx, ny=iy+dy;
+        if(nx<0||ny<0||nx>=G||ny>=G)continue;
+        const d=Math.hypot(dx,dy)/(r+0.5);
+        out[nx+ny*G]=Math.max(out[nx+ny*G], w*Math.max(0,1-d));
+      }
+    }
+  }
+  for(const ch of s){
+    if(ch==="F"){const nx=x+Math.sin(a)*len,ny=y-Math.cos(a)*len;paint(x,y,nx,ny,lw);x=nx;y=ny;}
+    else if(ch==="+")a+=ang; else if(ch==="-")a-=ang;
+    else if(ch==="["){stack.push([x,y,a,len,lw]);len*=decay;lw*=0.78;}
+    else if(ch==="]"){const st=stack.pop();x=st[0];y=st[1];a=st[2];len=st[3];lw=st[4];}
+  }
+  let mx=0; for(const v of out)mx=Math.max(mx,v);
+  if(mx>0)for(let i=0;i<out.length;i++)out[i]/=mx;
+  return out;
 }` },
 
 { id:"cellular_erosion", title:"cellular erosion",
-  system:[{k:"fill",label:"fill",min:0,max:1,step:.01,v:.48},{k:"iterations",label:"iterations",min:0,max:1,step:.01,v:.5},{k:"grain",label:"grain",min:0,max:1,step:.01,v:.4},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
+  system:[{k:"fill",label:"fill",min:0,max:1,step:.01,v:.48},{k:"iterations",label:"iterations",min:0,max:1,step:.01,v:.5},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 let CEG,CED,CEGR,CE_MX;
 function build(){ const G=CEG=200; let grid=new Uint8Array(G*G);
-  const fillP=map(P.fill,0,1,0.35,0.62), grn=map(P.grain,0,1,0,0.5);
-  for(let y=0;y<G;y++)for(let x=0;x<G;x++){const nn=noise(x*0.05,y*0.05)*(1-grn)+random()*grn; grid[x+y*G]=nn<fillP?1:0;}
+  const fillP=map(P.fill,0,1,0.35,0.62);
+  for(let y=0;y<G;y++)for(let x=0;x<G;x++){const nn=noise(x*0.05,y*0.05)*0.85+random()*0.15; grid[x+y*G]=nn<fillP?1:0;}
   const iters=floor(map(P.iterations,0,1,1,8));
   for(let k=0;k<iters;k++){ const o=new Uint8Array(G*G); for(let y=0;y<G;y++)for(let x=0;x<G;x++){let su=0,c=0;
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=G||ny>=G)continue;su+=grid[nx+ny*G];c++;} o[x+y*G]=su>c/2?1:0;} grid=o;}
@@ -719,16 +1126,19 @@ function build(){ const G=CEG=200; let grid=new Uint8Array(G*G);
   for(let p=0;p<60;p++){let ch=false; for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const i=x+y*G;if(!grid[i])continue;const m=Math.min(d[i-1],d[i+1],d[i-G],d[i+G])+1;if(m<d[i]){d[i]=m;ch=true;}} if(!ch)break;}
   let mx=1; for(const v of d)mx=Math.max(mx,v); CEGR=grid; CED=d; CE_MX=mx; }
 function render(g,pal){ const G=CEG;
-  const img=makeField(G,(x,y)=>{ const i=x+y*G; if(!CEGR[i]) return [0,0,0,0]; const t=CED[i]/CE_MX;
+  const cells=floor(map(P.pix,0,1,260,6));
+  const img=makeField(G,(x,y)=>{
+    const qx=Math.min(G-1,floor(floor(x/G*cells)/cells*G));
+    const qy=Math.min(G-1,floor(floor(y/G*cells)/cells*G));
+    const i=qx+qy*G; if(!CEGR[i]) return [0,0,0,0]; const t=CED[i]/CE_MX;
     return [lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)]; });
   g.image(img,0,0,g.width,g.height); }
 function heightField(G){ const G0=CEG, out=new Float32Array(G*G);
   for(let j=0;j<G;j++) for(let i=0;i<G;i++){
     const si=Math.floor(i*G0/G), sj=Math.floor(j*G0/G), idx=si+sj*G0;
     if(!CEGR[idx]){ out[i+j*G]=0; continue; }
-    const depth=Math.sqrt(CED[idx]/CE_MX);
-    out[i+j*G]=depth*0.45+noise(si*0.1,sj*0.1)*0.55; }
-  return out; }` },
+    out[i+j*G]=Math.sqrt(CED[idx]/CE_MX); }
+  _pxQ(out,G); return out; }` },
 
 { id:"recursive_grid", title:"recursive grid",
   system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.5},{k:"jitter",label:"jitter",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
@@ -747,34 +1157,267 @@ function render(g,pal){ for(const c of RGL){ const x=c.x*g.width,y=c.y*g.height,
   g.rect(x+1.5,y+1.5,w-3,h-3); } }` },
 
 { id:"sdf", title:"sdf field",
-  system:[{k:"count",label:"count",min:0,max:1,step:.01,v:.5},{k:"blend",label:"blend",min:0,max:1,step:.01,v:.5},{k:"warp",label:"warp",min:0,max:1,step:.01,v:.35},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
+  system:[{k:"count",label:"count",min:0,max:1,step:.01,v:.5},{k:"blend",label:"blend",min:0,max:1,step:.01,v:.5},{k:"warp",label:"warp",min:0,max:1,step:.01,v:.35},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"extrude",label:"extrude",min:-1,max:1,step:.01,v:0,rr:true}],
   code:`
 let SDFB;
+// ensure minimal motion on load for this 2D SDF piece
+try{ if(typeof P!=="undefined"){ if((P.speed===0||P.speed===undefined) && (P.drift===0||P.drift===undefined)){ P.speed=0.18; P.drift=0.12; }
+    // sync UI sliders shortly after buildUI runs so controls reflect these defaults
+    setTimeout(()=>{ try{ const s=document.getElementById('p_speed'); if(s) s.value = P.speed; const vs=document.getElementById('v_speed'); if(vs) vs.textContent = (P.speed).toFixed(2); const d=document.getElementById('p_drift'); if(d) d.value = P.drift; const vd=document.getElementById('v_drift'); if(vd) vd.textContent = (P.drift).toFixed(2); }catch(e){} },80);
+  } } }catch(e){}
 function build(){ const n=floor(map(P.count,0,1,3,12)); SDFB=[]; for(let i=0;i<n;i++)SDFB.push([random(.18,.82),random(.18,.82),random(.06,.15)]); }
-function render(g,pal){ const N=300, blobs=SDFB, k=map(P.blend,0,1,0.02,0.12), warp=P.warp, light=[-0.5,-0.72];
-  const field=(px,py)=>{ let d=Math.hypot(px-blobs[0][0],py-blobs[0][1])-blobs[0][2];
-    for(let i=1;i<blobs.length;i++){const sd=Math.hypot(px-blobs[i][0],py-blobs[i][1])-blobs[i][2];
-      const h=Math.max(0,Math.min(1,0.5+0.5*(sd-d)/k)); d=sd*(1-h)+d*h-k*h*(1-h);} return d; };
-  const baseDark=[lerp(pal[0][0],pal[1][0],.3),lerp(pal[0][1],pal[1][1],.3),lerp(pal[0][2],pal[1][2],.3)];
-  const img=makeField(N,(X,Y)=>{ let px=X/N,py=Y/N;
-    if(warp>0){ px+=warp*0.06*(noise(px*6,py*6)-0.5); py+=warp*0.06*(noise(px*6+9,py*6+9)-0.5); }
-    const f=field(px,py); if(f>=0) return [0,0,0,0];
-    const e=1/N; const gx=field(px+e,py)-field(px-e,py), gy=field(px,py+e)-field(px,py-e); const gl=Math.hypot(gx,gy)||1;
-    const dif=Math.max(0,(gx/gl)*light[0]+(gy/gl)*light[1])*0.9+0.12; const rim=Math.pow(1-Math.min(1,-f/0.12),3);
-    let r=lerp(baseDark[0],pal[1][0],dif), gg=lerp(baseDark[1],pal[1][1],dif), bb=lerp(baseDark[2],pal[1][2],dif);
-    r=lerp(r,pal[2][0],rim*0.4); gg=lerp(gg,pal[2][1],rim*0.4); bb=lerp(bb,pal[2][2],rim*0.4);
-    return [r,gg,bb]; });
+function render(g,pal){ const N=300, blobs=SDFB, baseK=map(P.blend,0,1,0.03,0.28), warp=P.warp, light=[-0.6,-0.9];
+  // compute animated positions (smooth orbital motion) per frame
+  const t = animT * P.speed * 5.5;
+  const motionStrength = 0.5 * (0.4 + warp*1.6); // warp biases motion
+  const positions = [];
+  for(let i=0;i<blobs.length;i++){
+    const b = blobs[i]; const phase = i*1.73 + b[0]*7.3 + b[1]*3.1;
+    const orbitR = b[2] * 0.45 * (0.8 + 0.6*map(P.count,0,1,0.6,1.2));
+    const ox = orbitR * Math.cos(t* (0.4 + 0.25*(i%3)) + phase*0.27) * motionStrength;
+    const oy = orbitR * Math.sin(t* (0.42 + 0.21*(i%2)) + phase*0.21) * motionStrength;
+    positions.push([b[0]+ox, b[1]+oy, b[2]]);
+  }
+  // slightly larger smooth-min k, scaled by local size for softer blending
+  const field=(px,py)=>{ let d = Math.hypot(px-positions[0][0], py-positions[0][1]) - positions[0][2];
+    for(let i=1;i<positions.length;i++){
+      const sd = Math.hypot(px-positions[i][0], py-positions[i][1]) - positions[i][2];
+      const k = baseK * (0.9 + 0.6*(positions[i][2]+positions[0][2]));
+      const h = Math.max(0, Math.min(1, 0.5 + 0.5*(sd - d)/k));
+      d = sd*(1-h) + d*h - k*h*(1-h);
+    }
+    return d;
+  };
+
+  const baseDark=[lerp(pal[0][0],pal[1][0],.32),lerp(pal[0][1],pal[1][1],.32),lerp(pal[0][2],pal[1][2],.32)];
+
+  const cells=floor(map(P.pix,0,1,560,6));
+  const img=makeField(560,(X,Y)=>{ let px=floor(X/560*cells)/cells, py=floor(Y/560*cells)/cells;
+    // time-varying warp for organic flow (no chaotic jitter)
+    if(warp>0){ const w = warp*0.08; px += w*(noise(px*5 + t*0.13, py*5) - 0.5); py += w*(noise(px*5 + 9.1, py*5 + t*0.11) - 0.5); }
+    const f = field(px,py);
+    if(f>=0) return [0,0,0,0];
+
+    // compute approximate 2D normal using smooth sampling
+    const e = 1/N;
+    const fx = field(px+e,py) - field(px-e,py);
+    const fy = field(px,py+e) - field(px,py-e);
+    const gl = Math.hypot(fx,fy) || 1;
+    const nx = fx/gl, ny = fy/gl;
+
+    // lighting (stronger directional feel like raymarch)
+    const dif = Math.max(0, nx*light[0] + ny*light[1]) * 1.05 + 0.06;
+    // rim influenced by view-normal (approx) and depth
+    const rim = Math.pow(1 - Math.min(1, -f/0.14), 3);
+
+    // soft AO: sample along normal away from surface to see occlusion
+    const s1 = field(px + nx*0.018, py + ny*0.018);
+    const s2 = field(px + nx*0.048, py + ny*0.048);
+    const occ = (Math.max(0,s1) + Math.max(0,s2)) / 2.0;
+    const ao = 1 - Math.max(0, Math.min(1, occ / 0.12));
+
+    // color ramp and warm highlight mix
+    const ramp = Math.max(0, Math.min(1, dif*0.9 + 0.08));
+    let r = lerp(baseDark[0], pal[1][0], dif), gg = lerp(baseDark[1], pal[1][1], dif), bb = lerp(baseDark[2], pal[1][2], dif);
+    const hiAmt = Math.max(0, Math.min(1, (ramp - 0.18)/(1-0.18))) * 0.62;
+    r = lerp(r, pal[2][0], hiAmt); gg = lerp(gg, pal[2][1], hiAmt); bb = lerp(bb, pal[2][2], hiAmt);
+
+    // rim contribution (soft)
+    r += rim * pal[2][0] * 0.42; gg += rim * pal[2][1] * 0.42; bb += rim * pal[2][2] * 0.42;
+
+    // apply AO and subtle depth falloff (material-local)
+    r *= ao; gg *= ao; bb *= ao;
+    const depthFall = Math.max(0, Math.min(1, (-f - 0.12) / 0.45));
+    const depthMix = lerp(1.0, 0.72, Math.min(0.65, depthFall));
+    r *= depthMix; gg *= depthMix; bb *= depthMix;
+
+    // gentle vignette and filmic curve
+    const dx = px - 0.5, dy = py - 0.5, dist = Math.hypot(dx, dy);
+    const vig = Math.max(0, Math.min(1, (1.4 - dist*1.6) / 1.2));
+    const vigMix = lerp(0.8, 1.0, vig);
+    r *= vigMix; gg *= vigMix; bb *= vigMix;
+    r = Math.pow(Math.max(0, r), 0.86); gg = Math.pow(Math.max(0, gg), 0.86); bb = Math.pow(Math.max(0, bb), 0.86);
+
+    return [r, gg, bb]; });
   g.image(img,0,0,g.width,g.height); }
-function heightField(G){ const blobs=SDFB, k=map(P.blend,0,1,0.02,0.12), warp=P.warp;
-  const field=(px,py)=>{ let d=Math.hypot(px-blobs[0][0],py-blobs[0][1])-blobs[0][2];
-    for(let i=1;i<blobs.length;i++){const sd=Math.hypot(px-blobs[i][0],py-blobs[i][1])-blobs[i][2];
-      const hh=Math.max(0,Math.min(1,0.5+0.5*(sd-d)/k)); d=sd*(1-hh)+d*hh-k*hh*(1-hh);} return d; };
+function heightField(G){ const blobs=SDFB, baseK=map(P.blend,0,1,0.03,0.28), warp=P.warp;
+  // reuse animated positions for heightfield sampling
+  const t = millis()*0.001; const motionStrength = 0.5 * (0.4 + warp*1.6); const positions = [];
+  const tHF = animT * P.speed * 5.5;
+  for(let i=0;i<blobs.length;i++){ const b=blobs[i]; const phase=i*1.73 + b[0]*7.3 + b[1]*3.1; const orbitR=b[2]*0.45*(0.8+0.6*map(P.count,0,1,0.6,1.2)); const ox=orbitR*Math.cos(tHF*(0.4+0.25*(i%3))+phase*0.27)*motionStrength; const oy=orbitR*Math.sin(tHF*(0.42+0.21*(i%2))+phase*0.21)*motionStrength; positions.push([b[0]+ox,b[1]+oy,b[2]]); }
+  const field=(px,py)=>{ let d=Math.hypot(px-positions[0][0],py-positions[0][1])-positions[0][2];
+    for(let i=1;i<positions.length;i++){const sd=Math.hypot(px-positions[i][0],py-positions[i][1])-positions[i][2]; const k = baseK * (0.9 + 0.6*(positions[i][2]+positions[0][2])); const hh=Math.max(0,Math.min(1,0.5+0.5*(sd-d)/k)); d=sd*(1-hh)+d*hh-k*hh*(1-hh);} return d; };
   const out=new Float32Array(G*G);
   for(let j=0;j<G;j++) for(let i=0;i<G;i++){
     let px=i/G, py=j/G;
     if(warp>0){px+=warp*0.06*(noise(px*6,py*6)-0.5);py+=warp*0.06*(noise(px*6+9,py*6+9)-0.5);}
     out[i+j*G]=Math.min(1,Math.max(0,-field(px,py)/0.15)); }
-  return out; }` },
+  _pxQ(out,G); return out; }` },
+
+{ id:"wave_interference", title:"wave interference",
+  system:[
+    {k:"sources",  label:"sources",   min:0,max:1,step:.01,v:.25,sys:true},
+    {k:"freq",     label:"frequency", min:0,max:1,step:.01,v:.35},
+    {k:"contrast", label:"contrast",  min:0,max:1,step:.01,v:.4},
+    {k:"pix",      label:"pixel size",min:0,max:1,step:.01,v:.25},
+    {k:"pal",      label:"palette",   min:0,max:9,step:1,  v:4},
+    {k:"height",g:"extrude",label:"height",   min:0,max:1,step:.01,v:0,  rr:true},
+    {k:"hvar",  g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5, rr:true},
+    {k:"light", g:"extrude",label:"light",    min:0,max:1,step:.01,v:.5, rr:true},
+  ],
+  code:`
+let WI_SRCS;
+function build(){
+  const n=floor(map(P.sources,0,1,2,6));
+  WI_SRCS=[];
+  for(let i=0;i<n;i++){
+    const a=TWO_PI*i/n+random(-0.38,0.38);
+    const r=0.22+random()*0.18;
+    WI_SRCS.push([0.5+cos(a)*r, 0.5+sin(a)*r]);
+  }
+}
+function render(g,pal){
+  const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5);
+  const t=animT*P.speed*0.5;
+  const cells=floor(map(P.pix,0,1,600,6));
+  const img=makeField(600,(xi,yi)=>{
+    const x=floor(xi/600*cells)/cells, y=floor(yi/600*cells)/cells;
+    let sum=0;
+    for(const [sx,sy] of WI_SRCS){
+      const d=Math.sqrt((x-sx)*(x-sx)+(y-sy)*(y-sy));
+      sum+=Math.sin(d*freq*Math.PI*2-t);
+    }
+    sum/=WI_SRCS.length;
+    const v=0.5+0.5*Math.tanh(sum*sharp);
+    const c0=pal[0],c1=pal[1],c2=pal[2];
+    if(v<0.5){const f=v*2; return [lerp(c0[0],c1[0],f),lerp(c0[1],c1[1],f),lerp(c0[2],c1[2],f)];}
+    const f=(v-0.5)*2; return [lerp(c1[0],c2[0],f),lerp(c1[1],c2[1],f),lerp(c1[2],c2[2],f)];
+  });
+  g.image(img,0,0,g.width,g.height);
+}
+function heightField(G){
+  const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5);
+  const out=new Float32Array(G*G);
+  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
+    const x=i/(G-1), y=j/(G-1);
+    let sum=0;
+    for(const [sx,sy] of WI_SRCS){
+      const d=Math.sqrt((x-sx)*(x-sx)+(y-sy)*(y-sy));
+      sum+=Math.sin(d*freq*Math.PI*2);
+    }
+    sum/=WI_SRCS.length;
+    out[i+j*G]=0.5+0.5*Math.tanh(sum*sharp);
+  }
+  _pxQ(out,G); return out;
+}` },
+
+{ id:"stipple", title:"stipple",
+  system:[
+    {k:"density",  label:"density",   min:0,max:1,step:.01,v:.5,  sys:true},
+    {k:"dotsize",  label:"dot size",  min:0,max:1,step:.01,v:.45,rr:true},
+    {k:"softness", label:"softness",  min:0,max:1,step:.01,v:.4, rr:true},
+    {k:"pal",      label:"palette",   min:0,max:9,step:1,  v:2},
+    {k:"height",   g:"extrude",label:"height",   min:0,max:1,step:.01,v:0,   rr:true},
+    {k:"colsize",  g:"extrude",label:"dot size", min:0,max:1,step:.01,v:.5,  rr:true},
+    {k:"caps",     g:"extrude",label:"round cap",min:0,max:2,step:1,  v:1,  rr:true},
+    {k:"hvar",     g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,  rr:true},
+    {k:"light",    g:"extrude",label:"light",    min:0,max:1,step:.01,v:.5,  rr:true},
+  ],
+  code:`
+let ST_DOTS;
+function build(){
+  const n=floor(map(P.density,0,1,80,2200));
+  ST_DOTS=[];
+  // Poisson-ish: rejection sample — keep dot if field value justifies it
+  let tries=0;
+  while(ST_DOTS.length<n && tries<n*18){
+    tries++;
+    const x=random(), y=random();
+    const lum=_stLum(x,y);
+    if(random()<lum) ST_DOTS.push([x,y,lum]);
+  }
+}
+function _stLum(x,y){
+  // multi-octave noise field — bright = dense dot region
+  let v=0,amp=1,fr=1;
+  for(let o=0;o<4;o++){
+    v+=noise(x*3*fr+41.3,y*3*fr+17.9)*amp;
+    amp*=0.5; fr*=2.1;
+  }
+  return Math.min(1,Math.max(0,(v-0.18)*1.4));
+}
+function render(g,pal){
+  const maxR=map(P.dotsize,0,1,1.5,12);
+  const soft=map(P.softness,0,1,0.05,0.85);
+  const t=animT*P.speed*2.6;
+  g.noStroke();
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  for(const [nx,ny,lum] of ST_DOTS){
+    const px=nx*g.width, py=ny*g.height;
+    const wave=Math.sin(t+nx*9.1+ny*6.7);
+    const pulse=Math.sin(t*0.4+(nx+ny)*3.2);
+    const breathe=Math.max(0.05,0.45+0.38*wave+0.17*pulse);
+    const r=maxR*lum*breathe;
+    const ci=Math.floor(lum*2);
+    const cf=lum*2-ci;
+    const ca=pal[Math.min(ci,2)], cb=pal[Math.min(ci+1,2)];
+    const cr=lerp(ca[0],cb[0],cf), cg2=lerp(ca[1],cb[1],cf), cb2=lerp(ca[2],cb[2],cf);
+    if(soft>0.1){
+      const steps=4;
+      for(let s=steps;s>=1;s--){
+        const frac=s/steps;
+        const alpha=255*(1-soft)*frac*frac;
+        g.fill(cr,cg2,cb2,alpha);
+        g.circle(px,py,r*2*frac);
+      }
+    } else {
+      g.fill(cr,cg2,cb2,255);
+      g.circle(px,py,r*2);
+    }
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  // base radius matches render() pixel radius, normalized to 0-1 space (canvas ~820px)
+  const baseR=map(P.dotsize,0,1,1.5,12)/820;
+  const soft=map(P.softness,0,1,0.05,0.85);
+  const t=animT*P.speed*2.6;
+  for(const [nx,ny,lum] of ST_DOTS){
+    const wave=Math.sin(t+nx*9.1+ny*6.7);
+    const pulse=Math.sin(t*0.4+(nx+ny)*3.2);
+    const breathe=Math.max(0.05,0.45+0.38*wave+0.17*pulse);
+    const r=baseR*lum*breathe;
+    if(r<=0) continue;
+    const i0=Math.max(0,Math.floor((nx-r)*(G-1)));
+    const i1=Math.min(G-1,Math.ceil((nx+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((ny-r)*(G-1)));
+    const j1=Math.min(G-1,Math.ceil((ny+r)*(G-1)));
+    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++){
+      const dx=i/(G-1)-nx, dy=j/(G-1)-ny;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){
+        const frac=1-d/r;
+        const contrib=soft>0.1?frac*frac:frac;
+        out[i+j*G]=Math.min(1,out[i+j*G]+contrib*lum);
+      }
+    }
+  }
+  // colsize drives block quantisation — same feel as flat dotsize
+  const cs=P.colsize===undefined?0.5:P.colsize;
+  const c=Math.max(4,Math.floor(map(cs,0,1,G,4)));
+  if(c<G-1){
+    const tmp=new Float32Array(c*c);
+    for(let j=0;j<c;j++)for(let i=0;i<c;i++){
+      const si=Math.min(G-1,Math.floor((i+.5)/c*G)),sj=Math.min(G-1,Math.floor((j+.5)/c*G));
+      tmp[i+j*c]=out[si+sj*G];
+    }
+    for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+      const ci=Math.min(c-1,Math.floor(i/G*c)),cj=Math.min(c-1,Math.floor(j/G*c));
+      out[i+j*G]=tmp[ci+cj*c];
+    }
+  }
+  return out;
+}` },
 ];
 
 // ---------------- write files ----------------
