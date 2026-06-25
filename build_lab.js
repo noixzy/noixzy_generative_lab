@@ -237,6 +237,10 @@ function renderHeightfield(g,heights,G,pal,opts={}){
   const MAX_DEPTH=Math.min(g.width,g.height)*0.28;
   const cW=g.width/G, cH=g.height/G;
   const shn=Math.min(1,P.metallic*(1-P.rough)+P.sheen);
+  // Apply visual z-depth first, then extrude from the staged plane.
+  // Most new modules use P.zdepth. contour_field keeps its original P.depth slider.
+  const zDep=(P.zdepth!==undefined)?P.zdepth:((typeof PIECE!=="undefined"&&PIECE==="contour_field"&&P.depth!==undefined)?P.depth:0);
+  const cx=g.width/2, cy=g.height/2;
   // Support new extrude group params (height/hvar/light) with fallback to legacy P.extrude
   const hasNew=(P.height!==undefined);
   const extH=hasNew?P.height:Math.abs(P.extrude||0);
@@ -249,24 +253,31 @@ function renderHeightfield(g,heights,G,pal,opts={}){
     const h=heights[i+j*G]||0; if(h<=0.001) continue;
     const hEff=extH*lerp(1.0,h,extVar);
     const z=hEff*MAX_DEPTH;
-    const x0=i*cW, y0=j*cH;
-    const ox=(neg?-1:1)*z*0.5, oy=(neg?1:-1)*z;
-    const tx0=x0+ox, ty0=y0+oy, tx1=x0+cW+ox, ty1=y0+cH+oy;
+    const bx0=i*cW, by0=j*cH, bx1=bx0+cW, by1=by0+cH;
+    const tf=(j+0.5)/G, zp=tf*2-1;
+    const planeS=Math.abs(zDep)>0.01?1-zp*0.36*zDep:1;
+    const planeY=Math.abs(zDep)>0.01?zp*cy*0.34*zDep:0;
+    const stage=(x,y)=>[cx+(x-cx)*planeS, cy+(y-cy)*planeS+planeY];
+    const A=stage(bx0,by0), B=stage(bx1,by0), C=stage(bx1,by1), D=stage(bx0,by1);
+    const ox=(neg?-1:1)*z*0.5*(0.85+0.15*planeS), oy=(neg?1:-1)*z*(0.85+0.15*planeS);
+    const x0=A[0], y0=A[1], x1=B[0], y1=B[1], x2=C[0], y2=C[1], x3=D[0], y3=D[1];
+    const tx0=x0+ox, ty0=y0+oy, tx1=x2+ox, ty1=y2+oy;
+    const tA=[x0+ox,y0+oy], tB=[x1+ox,y1+oy], tC=[x2+ox,y2+oy], tD=[x3+ox,y3+oy];
     const t=Math.min(1,h*(1+0.25*shn));
     const tc=[lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)];
     if(neg){
       g.fill(tc[0]*lF,tc[1]*lF,tc[2]*lF);
-      g.quad(x0,y0, tx0,ty0, tx0,ty1, x0,y0+cH);
+      g.quad(x0,y0, tA[0],tA[1], tD[0],tD[1], x3,y3);
       g.fill(tc[0]*lF*0.7,tc[1]*lF*0.7,tc[2]*lF*0.7);
-      g.quad(x0,y0, x0+cW,y0, tx1,ty0, tx0,ty0);
+      g.quad(x0,y0, x1,y1, tB[0],tB[1], tA[0],tA[1]);
     }else{
       g.fill(tc[0]*lF,tc[1]*lF,tc[2]*lF);
-      g.quad(x0+cW,y0, tx1,ty0, tx1,ty1, x0+cW,y0+cH);
+      g.quad(x1,y1, tB[0],tB[1], tC[0],tC[1], x2,y2);
       g.fill(tc[0]*lF*0.7,tc[1]*lF*0.7,tc[2]*lF*0.7);
-      g.quad(x0,y0+cH, x0+cW,y0+cH, tx1,ty1, tx0,ty1);
+      g.quad(x3,y3, x2,y2, tC[0],tC[1], tD[0],tD[1]);
     }
     g.fill(tc[0],tc[1],tc[2]);
-    g.quad(tx0,ty0, tx1,ty0, tx1,ty1, tx0,ty1);
+    g.quad(tA[0],tA[1], tB[0],tB[1], tC[0],tC[1], tD[0],tD[1]);
     if(P.caps>=1){
       const cx=tx0+cW*0.5, cy=ty0+cH*0.5;
       const hl=Math.min(1.35,1.05+(1-h)*0.22);
@@ -830,14 +841,16 @@ function recordClip(dur=4){
 // ---------------- per-piece definitions ----------------
 const PIECES=[
 { id:"flow_field", title:"flow field",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.65},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.65},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 function build(){}
 function render(g,pal){
   const n=floor(map(P.density,0,1,80,6000)), s=map(P.scale,0,1,0.0008,0.006), turb=map(P.turbulence,0,1,1,7);
-  g.noFill(); g.strokeWeight(1.1);
+  const dep=P.zdepth||0,cx=g.width/2,cy=g.height/2;
+  g.noFill();
   for(let i=0;i<n;i++){
     let x=random(g.width), y=random(g.height);
+    const y0=y;
     const c=random()<0.5?pal[1]:pal[2];
     const pts=[];
     for(let j=0;j<55;j++){
@@ -846,15 +859,24 @@ function render(g,pal){
       if(x<0||x>g.width||y<0||y>g.height) break;
     }
     if(pts.length<6) continue;
-    g.stroke(min(255,c[0]*1.6),min(255,c[1]*1.6),min(255,c[2]*1.6),45);
+    const tf=Math.max(0,Math.min(1,y0/g.height)), z=tf*2-1;
+    // contour_field-style z staging
+    const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*cy*0.34*dep:0;
+    const alpha=Math.abs(dep)>0.01?Math.floor(lerp(80,220,tf*(1+dep*0.35))):45;
+    const sw=Math.abs(dep)>0.01?1.1*(1+z*0.5*dep):1.1;
+    g.strokeWeight(sw);
+    g.stroke(min(255,c[0]*(1.25+0.5*tf*dep)),min(255,c[1]*(1.25+0.5*tf*dep)),min(255,c[2]*(1.25+0.5*tf*dep)),alpha);
     g.beginShape();
-    for(let j=0;j<pts.length;j+=2) g.curveVertex(pts[j],pts[j+1]);
+    for(let j=0;j<pts.length;j+=2){
+      const px=cx+(pts[j]-cx)*scl, py=cy+(pts[j+1]-cy)*scl+yOff;
+      g.curveVertex(px,py);
+    }
     g.endShape();
   }
 }` },
 
 { id:"reaction_diffusion", title:"reaction diffusion",
-  system:[{k:"feed",label:"feed",min:0,max:.17,step:.01,v:.03},{k:"kill",label:"kill",min:.5,max:.75,step:.01,v:.51},{k:"spots",label:"seed spots",min:0,max:.30,step:.01,v:.30},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"esize",g:"extrude",label:"size",min:0,max:1,step:.01,v:.5,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  system:[{k:"feed",label:"feed",min:0,max:.17,step:.01,v:.03},{k:"kill",label:"kill",min:.5,max:.75,step:.01,v:.51},{k:"spots",label:"seed spots",min:0,max:.30,step:.01,v:.30},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"esize",g:"extrude",label:"size",min:0,max:1,step:.01,v:.5,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 let RDA,RDB,RDA2,RDB2,RDG,RDWS;
 function build(){
@@ -897,7 +919,18 @@ function render(g,pal){ const G=RDG;
     const qy=Math.min(G-1,floor(floor(y/G*cells)/cells*G));
     const raw=Math.min(1,Math.max(0,RDA[qx+qy*G]-RDB[qx+qy*G])); const v=Math.min(1,raw*4.2);
     return [lerp(pal[2][0],pal[0][0],v),lerp(pal[2][1],pal[0][1],v),lerp(pal[2][2],pal[0][2],v)]; });
-  g.image(img,0,0,g.width,g.height); }
+  const dep=P.zdepth||0;
+  if(Math.abs(dep)>0.01){
+    const cx=g.width/2, cy=g.height/2;
+    for(let l=0;l<7;l++){
+      const tf=l/6, z=tf*2-1;
+      const scl=1-z*0.38*dep, yOff=z*cy*0.34*dep;
+      g.push(); g.tint(255,Math.floor(lerp(42,185,tf)));
+      g.translate(cx,cy+yOff); g.scale(scl); g.image(img,-g.width/2,-g.height/2,g.width,g.height);
+      g.pop();
+    }
+    g.noTint();
+  } else g.image(img,0,0,g.width,g.height); }
 function heightField(G){ const sG=RDG, out=new Float32Array(G*G);
   // Keep reaction_diffusion animated even when extrusion is active.
   // The engine calls heightField() instead of render() for extrude mode.
@@ -941,28 +974,45 @@ function heightField(G){ const sG=RDG, out=new Float32Array(G*G);
   _edgeMask(out,G); _pxQ(out,G); return out; }` },
 
 { id:"voronoi", title:"voronoi",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.4},{k:"relax",label:"relax",min:0,max:1,step:.01,v:.4},{k:"edgefill",label:"edge / fill",min:0,max:1,step:.01,v:.5},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.55},{k:"relax",label:"relax",min:0,max:1,step:.01,v:.4},{k:"edgefill",label:"edge / fill",min:0,max:1,step:.01,v:.5},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 let VPTS;
-function build(){ const n=floor(map(P.density,0,1,12,120)); let pts=[]; for(let i=0;i<n;i++)pts.push([random(1),random(1)]);
+function build(){ const n=floor(map(P.density,0,1,24,260)); let pts=[]; for(let i=0;i<n;i++)pts.push([random(1),random(1)]);
   const iters=floor(map(P.relax,0,1,0,6));
-  for(let k=0;k<iters;k++){ const sx=pts.map(()=>0),sy=pts.map(()=>0),cn=pts.map(()=>0); const S=56;
+  for(let k=0;k<iters;k++){ const sx=pts.map(()=>0),sy=pts.map(()=>0),cn=pts.map(()=>0); const S=72;
     for(let yy=0;yy<S;yy++)for(let xx=0;xx<S;xx++){ const px=xx/S,py=yy/S; let bi=0,bd=1e9;
       for(let i=0;i<pts.length;i++){const dx=px-pts[i][0],dy=py-pts[i][1],d=dx*dx+dy*dy; if(d<bd){bd=d;bi=i;}}
       sx[bi]+=px;sy[bi]+=py;cn[bi]++; }
     pts=pts.map((p,i)=>cn[i]?[sx[i]/cn[i],sy[i]/cn[i]]:p); }
   VPTS=pts; }
-function render(g,pal){ const N=260, ef=P.edgefill;
+function render(g,pal){ const F=840, ef=P.edgefill, dep=P.zdepth||0;
   const t=animT*P.speed*2.0;
   const pts=VPTS.map((p,i)=>[p[0]+Math.sin(t*0.55+i*1.91)*0.04,p[1]+Math.cos(t*0.43+i*2.73)*0.04]);
   const cols=pts.map((p,i)=> i%2?pal[1]:pal[2]);
-  const cells=floor(map(P.pix,0,1,560,6));
-  const img=makeField(560,(x,y)=>{ const px=floor(x/560*cells)/cells, py=floor(y/560*cells)/cells; let b0=1e9,b1=1e9,bi=0;
+  // Higher field resolution lowers the minimum visible pixel size.
+  const cells=floor(map(P.pix,0,1,F,6));
+  const img=makeField(F,(x,y)=>{ const px=floor(x/F*cells)/cells, py=floor(y/F*cells)/cells; let b0=1e9,b1=1e9,bi=0;
     for(let i=0;i<pts.length;i++){const dx=px-pts[i][0],dy=py-pts[i][1],d=dx*dx+dy*dy; if(d<b0){b1=b0;b0=d;bi=i;}else if(d<b1)b1=d;}
     const edge=Math.sqrt(b1)-Math.sqrt(b0);
     if(edge<map(ef,0,1,0.005,0.0010)) return pal[1];
-    const c=cols[bi], t=ef*0.85; return [lerp(pal[0][0],c[0],t),lerp(pal[0][1],c[1],t),lerp(pal[0][2],c[2],t)]; });
-  g.image(img,0,0,g.width,g.height); }
+    const c=cols[bi], t=ef*0.85;
+    const z=(pts[bi][1]*2-1), sh=Math.abs(dep)>0.01?1+z*0.34*dep:1;
+    return [Math.min(255,lerp(pal[0][0],c[0],t)*sh),Math.min(255,lerp(pal[0][1],c[1],t)*sh),Math.min(255,lerp(pal[0][2],c[2],t)*sh)]; });
+  if(Math.abs(dep)>0.01){
+    const cx=g.width/2, cy=g.height/2;
+    // stacked / recursive plate feel for Voronoi
+    for(let l=0;l<9;l++){
+      const tf=l/8, z=tf*2-1;
+      const scl=1-z*0.42*dep, yOff=z*cy*0.38*dep;
+      g.push();
+      g.tint(255,Math.floor(lerp(38,210,tf)));
+      g.translate(cx,cy+yOff);
+      g.scale(scl);
+      g.image(img,-g.width/2,-g.height/2,g.width,g.height);
+      g.pop();
+    }
+    g.noTint();
+  } else g.image(img,0,0,g.width,g.height); }
 function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
   const cH=pts.map((p,i)=>((i*1234567+987)%1000)/1000*0.8+0.2);
   for(let j=0;j<G;j++) for(let i=0;i<G;i++){
@@ -972,7 +1022,7 @@ function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
   _edgeMask(out,G); _pxQ(out,G); return out; }` },
 
 { id:"contour_field", title:"contour field",
-  system:[{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"levels",label:"levels",min:0,max:1,step:.01,v:.5},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.4},{k:"depth",label:"depth",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.6,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  system:[{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"levels",label:"levels",min:0,max:1,step:.01,v:.5},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.4},{k:"depth",label:"depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.6,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 function build(){}
 function contourSegments(w,h,pal){ const R=Math.max(5,Math.floor(w/200)), C=Math.floor(w/R), Rj=Math.floor(h/R);
@@ -1030,15 +1080,15 @@ function render(g,pal){
   const dep=P.depth||0;
   const cx=g.width/2, cy=g.height/2;
   // sort back-to-front so front levels paint over back levels
-  if(dep>0.01) chains.sort((a,b)=>(a.t||0)-(b.t||0));
+  if(Math.abs(dep)>0.01) chains.sort((a,b)=>(a.t||0)-(b.t||0));
   g.noFill();
   for(const ch of chains){
     const tf=ch.t||0;
     const z=tf*2-1; // -1=back, +1=front
-    const scl=dep>0.01?1-z*0.22*dep:1;
-    const yOff=dep>0.01?z*cy*0.18*dep:0;
-    const alpha=dep>0.01?Math.floor(lerp(80,255,tf*(1+dep*0.4))):255;
-    const sw=dep>0.01?1.1*(1+z*0.5*dep):1.1;
+    const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1;
+    const yOff=Math.abs(dep)>0.01?z*cy*0.34*dep:0;
+    const alpha=Math.abs(dep)>0.01?Math.floor(lerp(80,255,tf*(1+dep*0.4))):255;
+    const sw=Math.abs(dep)>0.01?1.1*(1+z*0.5*dep):1.1;
     g.strokeWeight(sw);
     g.stroke(ch.c[0],ch.c[1],ch.c[2],alpha);
     const pts=ch.pts; if(pts.length<2) continue;
@@ -1073,18 +1123,24 @@ function renderSVG(){
 }` },
 
 { id:"truchet", title:"truchet",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:0},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 function build(){}
 function render(g,pal){ const n=floor(map(P.density,0,1,6,40)), cs=Math.min(g.width,g.height)/n;
-  const cols=Math.ceil(g.width/cs), rows=Math.ceil(g.height/cs);
-  g.noFill(); g.strokeWeight(map(P.weight,0,1,1,cs*0.4)); g.strokeCap(SQUARE);
-  const ns=map(P.clustering,0,1,3.5,0.12), spd=map(P.speed,0,1,0,0.08);
+  const cols=Math.ceil(g.width/cs), rows=Math.ceil(g.height/cs), dep=P.zdepth||0, cx=g.width/2, cy=g.height/2;
+  g.noFill(); g.strokeCap(SQUARE);
+  const ns=map(P.clustering,0,1,3.5,0.12), spd=map(P.speed,0,1,0,0.08), baseW=map(P.weight,0,1,1,cs*0.4);
   for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
+    const tf=(j+0.5)/rows, z=tf*2-1;
+    // contour_field-style z staging
+    const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*cy*0.34*dep:0;
+    const x2=cx+(x-cx)*scl, y2=cy+(y-cy)*scl+yOff, cs2=cs*scl;
     const bias=noise(i*ns,j*ns,animT*spd); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
-    g.stroke(c[0],c[1],c[2]);
-    if(flip){ g.arc(x,y,cs,cs,0,HALF_PI); g.arc(x+cs,y+cs,cs,cs,PI,PI+HALF_PI); }
-    else { g.arc(x+cs,y,cs,cs,HALF_PI,PI); g.arc(x,y+cs,cs,cs,-HALF_PI,0); } } }
+    const sh=Math.abs(dep)>0.01?1+z*0.28*dep:1;
+    g.strokeWeight(baseW*(1+tf*0.45*dep));
+    g.stroke(Math.min(255,c[0]*sh),Math.min(255,c[1]*sh),Math.min(255,c[2]*sh),Math.abs(dep)>0.01?Math.floor(120+135*tf):255);
+    if(flip){ g.arc(x2,y2,cs2,cs2,0,HALF_PI); g.arc(x2+cs2,y2+cs2,cs2,cs2,PI,PI+HALF_PI); }
+    else { g.arc(x2+cs2,y2,cs2,cs2,HALF_PI,PI); g.arc(x2,y2+cs2,cs2,cs2,-HALF_PI,0); } } }
 function trHeightField(G){
   const n=floor(map(P.density,0,1,6,40));
   const ns=map(P.clustering,0,1,3.5,0.12);
@@ -1136,19 +1192,25 @@ function renderSVG(){
 }` },
 
 { id:"truchet_b", title:"truchet // color",
-  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.45},{k:"weight",label:"weight",min:0,max:1,step:.01,v:.4},{k:"clustering",label:"clustering",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 function build(){}
 function render(g,pal){ const n=floor(map(P.density,0,1,6,40)), cs=Math.min(g.width,g.height)/n;
-  const cols=Math.ceil(g.width/cs), rows=Math.ceil(g.height/cs);
-  g.noFill(); g.strokeWeight(map(P.weight,0,1,1,cs*0.4)); g.strokeCap(ROUND);
-  const ns=map(P.clustering,0,1,3.5,0.12), spd=map(P.speed,0,1,0,0.08);
+  const cols=Math.ceil(g.width/cs), rows=Math.ceil(g.height/cs), dep=P.zdepth||0, cx=g.width/2, cy=g.height/2;
+  g.noFill(); g.strokeCap(ROUND);
+  const ns=map(P.clustering,0,1,3.5,0.12), spd=map(P.speed,0,1,0,0.08), baseW=map(P.weight,0,1,1,cs*0.4);
   for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
+    const tf=(j+0.5)/rows, z=tf*2-1;
+    // contour_field-style z staging
+    const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*cy*0.34*dep:0;
+    const x2=cx+(x-cx)*scl, y2=cy+(y-cy)*scl+yOff, cs2=cs*scl;
     const bias=noise(i*ns,j*ns,animT*spd); const flip=bias<0.5;
     const c=[lerp(pal[1][0],pal[2][0],bias),lerp(pal[1][1],pal[2][1],bias),lerp(pal[1][2],pal[2][2],bias)];
-    g.stroke(c[0],c[1],c[2]);
-    if(flip){ g.arc(x,y,cs,cs,0,HALF_PI); g.arc(x+cs,y+cs,cs,cs,PI,PI+HALF_PI); }
-    else { g.arc(x+cs,y,cs,cs,HALF_PI,PI); g.arc(x,y+cs,cs,cs,-HALF_PI,0); } } }
+    const sh=Math.abs(dep)>0.01?1+z*0.28*dep:1;
+    g.strokeWeight(baseW*(1+tf*0.45*dep));
+    g.stroke(Math.min(255,c[0]*sh),Math.min(255,c[1]*sh),Math.min(255,c[2]*sh),Math.abs(dep)>0.01?Math.floor(120+135*tf):255);
+    if(flip){ g.arc(x2,y2,cs2,cs2,0,HALF_PI); g.arc(x2+cs2,y2+cs2,cs2,cs2,PI,PI+HALF_PI); }
+    else { g.arc(x2+cs2,y2,cs2,cs2,HALF_PI,PI); g.arc(x2,y2+cs2,cs2,cs2,-HALF_PI,0); } } }
 function heightField(G){
   const n=floor(map(P.density,0,1,6,40));
   const ns=map(P.clustering,0,1,3.5,0.12);
@@ -1199,18 +1261,23 @@ function renderSVG(){
 }` },
 
 { id:"l_system", title:"l-system",
-  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"angle",label:"angle",min:0,max:1,step:.01,v:.35},{k:"decay",label:"decay",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"angle",label:"angle",min:0,max:1,step:.01,v:.35},{k:"decay",label:"decay",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 let LS;
 function build(){ const rules=["FF+[+F-F-F]-[-F+F+F]","F[+F]F[-F]F","FF-[-F+F+F]+[+F-F-F]","F-[[F]+F]+F[+FF]-F"];
   const rule=rules[floor(random(rules.length))]; const depth=floor(map(P.depth,0,1,3,6)); let s="F";
   for(let d=0;d<depth;d++){let ns="";for(const ch of s)ns+=ch==="F"?rule:ch;s=ns;} LS={s,depth}; }
-function render(g,pal){ const s=LS.s, depth=LS.depth; const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
+function render(g,pal){ const s=LS.s, depth=LS.depth; const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84), dep=P.zdepth||0;
   let len=map(depth,3,6,196,24)*(g.height/820);
   g.push(); g.translate(g.width/2,g.height*0.95); g.noFill(); const stack=[]; let lw=2.4;
   for(const ch of s){ if(ch==="F"){ const t=Math.max(0,Math.min(1,lw/2.4));
-      g.stroke(lerp(pal[2][0],pal[1][0],t),lerp(pal[2][1],pal[1][1],t),lerp(pal[2][2],pal[1][2],t)); g.strokeWeight(Math.max(0.4,lw));
-      g.line(0,0,0,-len); g.translate(0,-len); }
+      const z=t*2-1;
+      // contour_field-style z staging, adapted to branch depth
+      const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*(g.height/2)*0.34*dep:0;
+      const a255=Math.abs(dep)>0.01?Math.floor(lerp(80,255,t*(1+dep*0.35))):255;
+      g.stroke(lerp(pal[2][0],pal[1][0],t),lerp(pal[2][1],pal[1][1],t),lerp(pal[2][2],pal[1][2],t),a255); g.strokeWeight(Math.max(0.4,lw*(1+z*0.5*dep)));
+      if(Math.abs(dep)>0.01){ g.line(0,yOff,0,-len*scl+yOff); } else { g.line(0,0,0,-len); }
+      g.translate(0,-len); }
     else if(ch==="+")g.rotate(ang); else if(ch==="-")g.rotate(-ang);
     else if(ch==="["){stack.push([len,lw]);g.push();len*=decay;lw*=0.78;}
     else if(ch==="]"){g.pop();const st=stack.pop();len=st[0];lw=st[1];} }
@@ -1266,7 +1333,7 @@ function heightField(G){
 }` },
 
 { id:"cellular_erosion", title:"cellular erosion",
-  system:[{k:"fill",label:"fill",min:0,max:1,step:.01,v:.48},{k:"iterations",label:"iterations",min:0,max:1,step:.01,v:.5},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  system:[{k:"fill",label:"fill",min:0,max:1,step:.01,v:.48},{k:"iterations",label:"iterations",min:0,max:1,step:.01,v:.5},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 let CEG,CED,CEGR,CE_MX;
 function build(){ const G=CEG=200; let grid=new Uint8Array(G*G);
@@ -1285,7 +1352,18 @@ function render(g,pal){ const G=CEG;
     const qy=Math.min(G-1,floor(floor(y/G*cells)/cells*G));
     const i=qx+qy*G; if(!CEGR[i]) return [0,0,0,0]; const t=CED[i]/CE_MX;
     return [lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)]; });
-  g.image(img,0,0,g.width,g.height); }
+  const dep=P.zdepth||0;
+  if(Math.abs(dep)>0.01){
+    const cx=g.width/2, cy=g.height/2;
+    for(let l=0;l<7;l++){
+      const tf=l/6, z=tf*2-1;
+      const scl=1-z*0.38*dep, yOff=z*cy*0.34*dep;
+      g.push(); g.tint(255,Math.floor(lerp(42,185,tf)));
+      g.translate(cx,cy+yOff); g.scale(scl); g.image(img,-g.width/2,-g.height/2,g.width,g.height);
+      g.pop();
+    }
+    g.noTint();
+  } else g.image(img,0,0,g.width,g.height); }
 function heightField(G){ const G0=CEG, out=new Float32Array(G*G);
   for(let j=0;j<G;j++) for(let i=0;i<G;i++){
     const si=Math.floor(i*G0/G), sj=Math.floor(j*G0/G), idx=si+sj*G0;
@@ -1294,7 +1372,7 @@ function heightField(G){ const G0=CEG, out=new Float32Array(G*G);
   _edgeMask(out,G); _pxQ(out,G); return out; }` },
 
 { id:"recursive_grid", title:"recursive grid",
-  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.5},{k:"jitter",label:"jitter",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
+  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.5},{k:"jitter",label:"jitter",min:0,max:1,step:.01,v:0},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 let RGL;
 function build(){ RGL=[]; const maxD=floor(map(P.depth,0,1,3,8)); rgsub(0,0,1,1,0,maxD); }
@@ -1302,11 +1380,17 @@ function rgsub(x,y,w,h,d,maxD){ const s=map(P.threshold,0,1,0.85,0.18), n=noise(
   if(d<maxD&&(d<1||n>s)&&w>0.02&&h>0.02){ const jt=map(P.jitter,0,1,0.5,0.2), fx=random(jt,1-jt),fy=random(jt,1-jt),mx=w*fx,my=h*fy;
     rgsub(x,y,mx,my,d+1,maxD); rgsub(x+mx,y,w-mx,my,d+1,maxD); rgsub(x,y+my,mx,h-my,d+1,maxD); rgsub(x+mx,y+my,w-mx,h-my,d+1,maxD); }
   else RGL.push({x,y,w,h,d,maxD,r:random()}); }
-function render(g,pal){ for(const c of RGL){ const x=c.x*g.width,y=c.y*g.height,w=c.w*g.width,h=c.h*g.height,r=c.r;
-  if(r<0.18)g.fill(pal[1][0],pal[1][1],pal[1][2]);
-  else if(r<0.34)g.fill(lerp(pal[0][0],pal[2][0],.55),lerp(pal[0][1],pal[2][1],.55),lerp(pal[0][2],pal[2][2],.55));
+function render(g,pal){ const dep=P.zdepth||0,cx=g.width/2,cy=g.height/2;
+  const cells=Math.abs(dep)>0.01?[...RGL].sort((a,b)=>a.d-b.d):RGL;
+  for(const c of cells){ const tf=c.maxD?c.d/c.maxD:0, z=tf*2-1;
+  // contour_field-style z staging
+  const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*cy*0.34*dep:0;
+  const x=cx+(c.x*g.width-cx)*scl,y=cy+(c.y*g.height-cy)*scl+yOff,w=c.w*g.width*scl,h=c.h*g.height*scl,r=c.r;
+  const a=Math.abs(dep)>0.01?Math.floor(95+150*(1-tf)):255;
+  if(r<0.18)g.fill(pal[1][0],pal[1][1],pal[1][2],a);
+  else if(r<0.34)g.fill(lerp(pal[0][0],pal[2][0],.55),lerp(pal[0][1],pal[2][1],.55),lerp(pal[0][2],pal[2][2],.55),a);
   else g.noFill();
-  g.stroke(lerp(pal[2][0],pal[0][0],.4),lerp(pal[2][1],pal[0][1],.4),lerp(pal[2][2],pal[0][2],.4)); g.strokeWeight(map(c.d,0,c.maxD,2,0.6));
+  g.stroke(lerp(pal[2][0],pal[0][0],.4),lerp(pal[2][1],pal[0][1],.4),lerp(pal[2][2],pal[0][2],.4),a); g.strokeWeight(map(c.d,0,c.maxD,2,0.6)*(1+0.4*(1-tf)*dep));
   g.rect(x+1.5,y+1.5,w-3,h-3); } }` },
 
 { id:"sdf", title:"sdf field",
@@ -1413,6 +1497,7 @@ function heightField(G){ const blobs=SDFB, baseK=map(P.blend,0,1,0.03,0.28), war
     {k:"freq",     label:"frequency", min:0,max:1,step:.01,v:.35},
     {k:"contrast", label:"contrast",  min:0,max:1,step:.01,v:.4},
     {k:"pix",      label:"pixel size",min:0,max:1,step:.01,v:.25},
+    {k:"zdepth",   label:"z depth",   min:-1.5,max:1.5,step:.01,v:0},
     {k:"pal",      label:"palette",   min:0,max:9,step:1,  v:4},
     {k:"height",g:"extrude",label:"height",   min:0,max:1,step:.01,v:0,  rr:true},
     {k:"hvar",  g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5, rr:true},
@@ -1430,7 +1515,7 @@ function build(){
   }
 }
 function render(g,pal){
-  const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5);
+  const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5), dep=P.zdepth||0;
   const t=animT*P.speed*0.5;
   const cells=floor(map(P.pix,0,1,600,6));
   const img=makeField(600,(xi,yi)=>{
@@ -1443,10 +1528,21 @@ function render(g,pal){
     sum/=WI_SRCS.length;
     const v=0.5+0.5*Math.tanh(sum*sharp);
     const c0=pal[0],c1=pal[1],c2=pal[2];
-    if(v<0.5){const f=v*2; return [lerp(c0[0],c1[0],f),lerp(c0[1],c1[1],f),lerp(c0[2],c1[2],f)];}
-    const f=(v-0.5)*2; return [lerp(c1[0],c2[0],f),lerp(c1[1],c2[1],f),lerp(c1[2],c2[2],f)];
+    const z=(v*2-1), sh=Math.abs(dep)>0.01?1+z*0.36*dep:1;
+    if(v<0.5){const f=v*2; return [Math.min(255,lerp(c0[0],c1[0],f)*sh),Math.min(255,lerp(c0[1],c1[1],f)*sh),Math.min(255,lerp(c0[2],c1[2],f)*sh)];}
+    const f=(v-0.5)*2; return [Math.min(255,lerp(c1[0],c2[0],f)*sh),Math.min(255,lerp(c1[1],c2[1],f)*sh),Math.min(255,lerp(c1[2],c2[2],f)*sh)];
   });
-  g.image(img,0,0,g.width,g.height);
+  if(Math.abs(dep)>0.01){
+    const cx=g.width/2, cy=g.height/2;
+    for(let l=0;l<7;l++){
+      const tf=l/6, z=tf*2-1;
+      const scl=1-z*0.38*dep, yOff=z*cy*0.34*dep;
+      g.push(); g.tint(255,Math.floor(lerp(42,185,tf)));
+      g.translate(cx,cy+yOff); g.scale(scl); g.image(img,-g.width/2,-g.height/2,g.width,g.height);
+      g.pop();
+    }
+    g.noTint();
+  } else g.image(img,0,0,g.width,g.height);
 }
 function heightField(G){
   const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5);

@@ -83,6 +83,8 @@
       <input id="sEdge" type="range" min="0" max="1" step="0.01" value="0.28"></div>
     <div class="row"><label>extrude <span id="vExtrude">—</span></label>
       <input id="sExtrude" type="range" min="0" max="1" step="0.01" value="0.35"></div>
+    <div class="row"><label>z depth <span id="vZdepth">—</span></label>
+      <input id="sZdepth" type="range" min="-1.5" max="1.5" step="0.01" value="0"></div>
 
     <div class="row colorRow"><label for="bgColor">background</label>
       <input id="bgColor" type="color" value="#0e0e10"></div>
@@ -165,7 +167,7 @@ function lerpC(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[
 let bgCol=[14,14,16],fmCol=[94,36,0],hiCol=[237,138,58];
 let bgVal=1,fmVal=1,hiVal=1;
 let activeTheme=null;
-let P={size:0.38,glow:0.65,freq:0.42,speed:0.35,ripple:0.55,edge:0.28,extrude:0.35};
+let P={size:0.38,glow:0.65,freq:0.42,speed:0.35,ripple:0.55,edge:0.28,extrude:0.35,zdepth:0};
 let t0,paused=false,pauseT=0;
 
 const PARAMS=[
@@ -176,6 +178,7 @@ const PARAMS=[
   {id:"sRipple", vid:"vRipple", key:"ripple"},
   {id:"sEdge",   vid:"vEdge",   key:"edge"},
   {id:"sExtrude",vid:"vExtrude",key:"extrude"},
+  {id:"sZdepth",vid:"vZdepth",key:"zdepth"},
 ];
 
 function syncColorUI(){
@@ -411,6 +414,7 @@ function draw(){
   const glowStr=mix(0.15,1.0,P.glow);
   const edgeW=mix(0.0,0.55,P.edge);
   const extScale=hexR*1.2*P.extrude;
+  const zdep=P.zdepth||0;
 
   const W=width,H=height;
   const hexW=hexR*2;
@@ -438,13 +442,22 @@ function draw(){
       const hc=lerpC(fc,[hR,hG,hB],clampV((gv-0.4)*2.5,0,1));
 
       const extH=val*extScale;
-      const r=hexR*(1-edgeW*0.12);
+      const tf=clampV(cy/H,0,1), z=tf*2-1;
+      // contour_field-style z staging
+      const scl=Math.abs(zdep)>0.01?1-z*0.36*zdep:1;
+      const yOff=Math.abs(zdep)>0.01?z*(H/2)*0.34*zdep:0;
+      const shadeZ=Math.abs(zdep)>0.01?1+z*0.24*zdep:1;
+      const dcx=W/2+(cx-W/2)*scl;
+      const dcy=H/2+(cy-H/2)*scl+yOff;
+      const r=hexR*(1-edgeW*0.12)*scl;
+      const zr=clampV(hc[0]*shadeZ,0,255),zg=clampV(hc[1]*shadeZ,0,255),zb=clampV(hc[2]*shadeZ,0,255);
+      const zAlpha=clampV(190+65*tf+35*zdep*z,80,255);
 
-      drawExtrudedHex(cx,cy,r,hc[0],hc[1],hc[2],240,extH);
+      drawExtrudedHex(dcx,dcy,r,zr,zg,zb,zAlpha,extH*(0.75+0.25*scl));
 
       if(edgeW>0.05){
         fill(bgR*0.6,bgG*0.6,bgB*0.6,255*edgeW*0.9);
-        drawHex(cx,cy-extH,hexR*(1-edgeW*0.32));
+        drawHex(dcx,dcy-extH*(0.75+0.25*scl),hexR*(1-edgeW*0.32)*scl);
       }
     }
   }

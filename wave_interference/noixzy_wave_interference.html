@@ -129,7 +129,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"sources","label":"sources","min":0,"max":1,"step":0.01,"v":0.25,"sys":true},{"k":"freq","label":"frequency","min":0,"max":1,"step":0.01,"v":0.35},{"k":"contrast","label":"contrast","min":0,"max":1,"step":0.01,"v":0.4},{"k":"pix","label":"pixel size","min":0,"max":1,"step":0.01,"v":0.25},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
+const SYSTEM=[{"k":"sources","label":"sources","min":0,"max":1,"step":0.01,"v":0.25,"sys":true},{"k":"freq","label":"frequency","min":0,"max":1,"step":0.01,"v":0.35},{"k":"contrast","label":"contrast","min":0,"max":1,"step":0.01,"v":0.4},{"k":"pix","label":"pixel size","min":0,"max":1,"step":0.01,"v":0.25},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -232,6 +232,10 @@ function renderHeightfield(g,heights,G,pal,opts={}){
   const MAX_DEPTH=Math.min(g.width,g.height)*0.28;
   const cW=g.width/G, cH=g.height/G;
   const shn=Math.min(1,P.metallic*(1-P.rough)+P.sheen);
+  // Apply visual z-depth first, then extrude from the staged plane.
+  // Most new modules use P.zdepth. contour_field keeps its original P.depth slider.
+  const zDep=(P.zdepth!==undefined)?P.zdepth:((typeof PIECE!=="undefined"&&PIECE==="contour_field"&&P.depth!==undefined)?P.depth:0);
+  const cx=g.width/2, cy=g.height/2;
   // Support new extrude group params (height/hvar/light) with fallback to legacy P.extrude
   const hasNew=(P.height!==undefined);
   const extH=hasNew?P.height:Math.abs(P.extrude||0);
@@ -244,24 +248,31 @@ function renderHeightfield(g,heights,G,pal,opts={}){
     const h=heights[i+j*G]||0; if(h<=0.001) continue;
     const hEff=extH*lerp(1.0,h,extVar);
     const z=hEff*MAX_DEPTH;
-    const x0=i*cW, y0=j*cH;
-    const ox=(neg?-1:1)*z*0.5, oy=(neg?1:-1)*z;
-    const tx0=x0+ox, ty0=y0+oy, tx1=x0+cW+ox, ty1=y0+cH+oy;
+    const bx0=i*cW, by0=j*cH, bx1=bx0+cW, by1=by0+cH;
+    const tf=(j+0.5)/G, zp=tf*2-1;
+    const planeS=Math.abs(zDep)>0.01?1-zp*0.36*zDep:1;
+    const planeY=Math.abs(zDep)>0.01?zp*cy*0.34*zDep:0;
+    const stage=(x,y)=>[cx+(x-cx)*planeS, cy+(y-cy)*planeS+planeY];
+    const A=stage(bx0,by0), B=stage(bx1,by0), C=stage(bx1,by1), D=stage(bx0,by1);
+    const ox=(neg?-1:1)*z*0.5*(0.85+0.15*planeS), oy=(neg?1:-1)*z*(0.85+0.15*planeS);
+    const x0=A[0], y0=A[1], x1=B[0], y1=B[1], x2=C[0], y2=C[1], x3=D[0], y3=D[1];
+    const tx0=x0+ox, ty0=y0+oy, tx1=x2+ox, ty1=y2+oy;
+    const tA=[x0+ox,y0+oy], tB=[x1+ox,y1+oy], tC=[x2+ox,y2+oy], tD=[x3+ox,y3+oy];
     const t=Math.min(1,h*(1+0.25*shn));
     const tc=[lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)];
     if(neg){
       g.fill(tc[0]*lF,tc[1]*lF,tc[2]*lF);
-      g.quad(x0,y0, tx0,ty0, tx0,ty1, x0,y0+cH);
+      g.quad(x0,y0, tA[0],tA[1], tD[0],tD[1], x3,y3);
       g.fill(tc[0]*lF*0.7,tc[1]*lF*0.7,tc[2]*lF*0.7);
-      g.quad(x0,y0, x0+cW,y0, tx1,ty0, tx0,ty0);
+      g.quad(x0,y0, x1,y1, tB[0],tB[1], tA[0],tA[1]);
     }else{
       g.fill(tc[0]*lF,tc[1]*lF,tc[2]*lF);
-      g.quad(x0+cW,y0, tx1,ty0, tx1,ty1, x0+cW,y0+cH);
+      g.quad(x1,y1, tB[0],tB[1], tC[0],tC[1], x2,y2);
       g.fill(tc[0]*lF*0.7,tc[1]*lF*0.7,tc[2]*lF*0.7);
-      g.quad(x0,y0+cH, x0+cW,y0+cH, tx1,ty1, tx0,ty1);
+      g.quad(x3,y3, x2,y2, tC[0],tC[1], tD[0],tD[1]);
     }
     g.fill(tc[0],tc[1],tc[2]);
-    g.quad(tx0,ty0, tx1,ty0, tx1,ty1, tx0,ty1);
+    g.quad(tA[0],tA[1], tB[0],tB[1], tC[0],tC[1], tD[0],tD[1]);
     if(P.caps>=1){
       const cx=tx0+cW*0.5, cy=ty0+cH*0.5;
       const hl=Math.min(1.35,1.05+(1-h)*0.22);
@@ -294,7 +305,7 @@ function build(){
   }
 }
 function render(g,pal){
-  const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5);
+  const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5), dep=P.zdepth||0;
   const t=animT*P.speed*0.5;
   const cells=floor(map(P.pix,0,1,600,6));
   const img=makeField(600,(xi,yi)=>{
@@ -307,10 +318,21 @@ function render(g,pal){
     sum/=WI_SRCS.length;
     const v=0.5+0.5*Math.tanh(sum*sharp);
     const c0=pal[0],c1=pal[1],c2=pal[2];
-    if(v<0.5){const f=v*2; return [lerp(c0[0],c1[0],f),lerp(c0[1],c1[1],f),lerp(c0[2],c1[2],f)];}
-    const f=(v-0.5)*2; return [lerp(c1[0],c2[0],f),lerp(c1[1],c2[1],f),lerp(c1[2],c2[2],f)];
+    const z=(v*2-1), sh=Math.abs(dep)>0.01?1+z*0.36*dep:1;
+    if(v<0.5){const f=v*2; return [Math.min(255,lerp(c0[0],c1[0],f)*sh),Math.min(255,lerp(c0[1],c1[1],f)*sh),Math.min(255,lerp(c0[2],c1[2],f)*sh)];}
+    const f=(v-0.5)*2; return [Math.min(255,lerp(c1[0],c2[0],f)*sh),Math.min(255,lerp(c1[1],c2[1],f)*sh),Math.min(255,lerp(c1[2],c2[2],f)*sh)];
   });
-  g.image(img,0,0,g.width,g.height);
+  if(Math.abs(dep)>0.01){
+    const cx=g.width/2, cy=g.height/2;
+    for(let l=0;l<7;l++){
+      const tf=l/6, z=tf*2-1;
+      const scl=1-z*0.38*dep, yOff=z*cy*0.34*dep;
+      g.push(); g.tint(255,Math.floor(lerp(42,185,tf)));
+      g.translate(cx,cy+yOff); g.scale(scl); g.image(img,-g.width/2,-g.height/2,g.width,g.height);
+      g.pop();
+    }
+    g.noTint();
+  } else g.image(img,0,0,g.width,g.height);
 }
 function heightField(G){
   const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5);
