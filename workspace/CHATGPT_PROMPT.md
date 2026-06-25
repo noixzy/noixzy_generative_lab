@@ -9,11 +9,10 @@ You are helping me extend a generative art project. Read the source files carefu
 
 ## Project overview
 
-18 self-contained generative art modules. Each is a single HTML file — no server, just open in browser. p5.js 1.9.0 global mode.
+19 self-contained generative art modules. Each is a single HTML file — no server, just open in browser. p5.js 1.9.0 global mode.
 
 **Locations:**
 - Working directory: `~/Downloads/noixzy_generative_lab/`
-- Mirror: `~/noixzy_generative_lab/`
 - Generator: `build_lab.js` — run `node build_lab.js` after edits
 - GitHub (canonical): `https://github.com/noixzy/noixzy_generative_lab`
 - Live gallery: `https://noixzy.github.io/noixzy_generative_lab/gallery/`
@@ -21,8 +20,8 @@ You are helping me extend a generative art project. Read the source files carefu
 **12 generated pieces** (edit `build_lab.js` only — never touch their HTML):
 `flow_field`, `reaction_diffusion`, `voronoi`, `contour_field`, `truchet`, `truchet_b`, `l_system`, `cellular_erosion`, `recursive_grid`, `wave_interference`, `sdf`, `stipple`
 
-**6 hand-authored flagships** (edit HTML directly):
-`grid_extrude`, `sdf_raymarch`, `gyroid`, `displacement`, `mandelbulb`, `fold`
+**7 hand-authored flagships** (edit HTML directly):
+`grid_extrude`, `sdf_raymarch`, `gyroid`, `displacement`, `displacement_primitives`, `mandelbulb`, `fold`
 
 ## Non-negotiable rules
 
@@ -48,7 +47,7 @@ You are helping me extend a generative art project. Read the source files carefu
 - `dirty` — set true by param changes; forces re-render while paused.
 - Mouse controls built into engine draw loop: drag=pan (cx/cy), alt+drag=rotate, scroll=zoom. Do not duplicate.
 - Double-click any slider resets to default — wired in `buildUI()` via dblclick listener using `p.v`.
-- `buildNav()` — builds prev/next navBar links and thumbnail strip from `ALL_MODULES` array and `PIECE` constant.
+- `buildNav()` — builds prev/next navBar links and thumbnail strip from `ALL_MODULES` array (18 entries) and `PIECE` constant. Called in setup after UI is ready. Every module has this.
 - `saveThumb()` — File System Access API, saves 400x300 PNG to user-chosen folder. Falls back to download.
 - Audio — Web Audio API, file upload primary, mic secondary. `_audioApply()`/`_audioRestore()` wrap renderScene(). `AMAP {bass,mid,high,presence}` maps bands to param keys. `ADEPTH` controls intensity.
 - Pin/fav — star pin button saves `{P, theme}` to localStorage. Chips shown in panel.
@@ -77,13 +76,34 @@ You are helping me extend a generative art project. Read the source files carefu
 | Module | Audio | Pin/fav | thumb btn | Nav | dbl-click reset |
 |---|---|---|---|---|---|
 | grid_extrude | yes | yes | yes | yes | yes |
-| sdf_raymarch | NO — pending | NO — pending | yes | yes | yes (via P_CONTROLS) |
+| sdf_raymarch | yes | yes | yes | yes | yes |
 | gyroid | yes | yes | yes | yes | yes |
 | displacement | yes | yes | yes | yes | yes |
+| displacement_primitives | no | no | no | yes | no |
 | mandelbulb | yes | yes | yes | yes | yes |
 | fold | yes | yes | yes | yes | yes |
 
-All 6 flagships have: thin navBar (prev/next + gallery link), thumbnail strip at panel bottom, → thumb button using File System Access API.
+All 7 flagships have: thin navBar (prev/next + gallery link), thumbnail strip at panel bottom.
+All except displacement_primitives have: audio panel, pin/fav, → thumb button, dbl-click reset.
+
+### Nav system — ALL_MODULES (18 entries)
+
+Every module (generated + flagship) defines the same `ALL_MODULES` array and `buildNav()` function. `buildNav()` is called in `setup()` after UI is bound. It populates `navPrev`/`navNext` hrefs and the `#moduleThumbStrip` scroll strip. The active module's thumb gets `.active` class and scrolls into view.
+
+```js
+const ALL_MODULES=[
+  {id:"grid_extrude",title:"grid extrude"},{id:"sdf_raymarch",title:"sdf raymarch"},
+  {id:"gyroid",title:"gyroid"},{id:"displacement",title:"displacement"},
+  {id:"displacement_primitives",title:"displacement primitives"},
+  {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
+  {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
+  {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
+  {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
+  {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
+  {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
+  {id:"stipple",title:"stipple"},
+];
+```
 
 ### gyroid / displacement / mandelbulb / fold — shared JS pattern
 
@@ -95,7 +115,6 @@ const _pAudioParams = [{k, sid, label, min, max}]; // per-module, used for audio
 // _pinFav(), _renderFavs(), _loadFavs() — pin/fav system
 // saveThumb() — File System Access API thumb export
 // buildNav() — inter-module navigation
-// ALL_MODULES array — list of all 17 modules with id+title
 ```
 
 Slider wiring: gyroid/displacement use `paramCfg = [{id, vid, key}].forEach(...)`, mandelbulb/fold use inline `[[sid,vid,k]].forEach(...)`. Both have dblclick reset via `el.defaultValue`.
@@ -111,35 +130,32 @@ const P_CONTROLS = {
   // ...
 };
 ```
-Has its own full preset system (save/load named presets to localStorage). Audio and pin/fav are the pending addition.
+Has its own full preset system (save/load named presets to localStorage). Audio: `_pAudioParams` uses `k` as P_CONTROLS key strings ('p5', 'p2' etc), `_audioApply` looks up array index via `P_CONTROLS[k].index`. Favorites save full `captureState()` snapshot, restore via `loadState()`.
+
+### displacement_primitives — minimal flagship
+
+Simpler than the others — no audio, no pin/fav, no thumb button yet. Has: theme system, 8 primitive types (sphere/box/rounded box/torus/capsule/cylinder/pyramid/flat plane), starter presets, navBar + buildNav().
 
 ## Deploy workflow
 
 ```bash
-node build_lab.js
-cp build_lab.js ~/noixzy_generative_lab/build_lab.js
-# mirror changed generated HTML files:
-cp flow_field/noixzy_flow_field.html ~/noixzy_generative_lab/flow_field/noixzy_flow_field.html
-# mirror changed flagships:
-cp gyroid/noixzy_gyroid.html ~/noixzy_generative_lab/gyroid/noixzy_gyroid.html
-# push to GitHub (this deploys to GitHub Pages):
-git add -A && git commit -m "..." && git push
+node build_lab.js        # regenerate all 12 engine modules
+git add -A
+git commit -m "..."
+git push                 # deploys to GitHub Pages automatically
 ```
 
 ## Pending tasks
 
-1. **sdf_raymarch — add audio + pin/fav** (only flagship missing these)
-   - Build `_pAudioParams` from P_CONTROLS entries + their slider element min/max
-   - Favorites save `{P: [...P], turbType, displaceType, colorState}` to localStorage
-   - Port the audio panel HTML from gyroid (already present in other flagships)
+1. **displacement_primitives — add audio + pin/fav + thumb btn** (same pattern as displacement/gyroid)
 
-2. **Gallery thumbnails** — → thumb button in every module, picks folder once per session. Or run `node workspace/gen_thumbs.js` for batch Playwright capture.
+2. **Gallery thumbnails** — → thumb button in every module, picks folder once per session. Use module's built-in → thumb button to save PNGs to `gallery/thumbs/`.
 
 3. **Stipple caps=2 visual check** — test at colsize >= 0.6, low density to verify 360-degree sphere tops are visible.
 
-4. **Mouse drag/rotate/zoom for GLSL flagships** — engine modules have it. The 5 GLSL flagships don't yet. Would map drag delta to camera uniforms (u_dist, u_elev, u_spin) rather than P.zoom/P.rot.
+4. **Mouse drag/rotate/zoom for GLSL flagships** — engine modules have it. The 7 GLSL flagships don't yet. Would map drag delta to camera uniforms (u_dist, u_elev, u_spin).
 
-5. **Commit + push session work to GitHub.**
+5. **New modules (queued):** hex grid, rose curve, lissajous mesh, torus knot — all via `build_lab.js` only.
 
 ---
 
@@ -147,4 +163,4 @@ git add -A && git commit -m "..." && git push
 
 [REPLACE THIS with the specific task before pasting to ChatGPT]
 
-Example: "Add audio + pin/fav to sdf_raymarch. Pasting sdf_raymarch HTML as second message."
+Example: "Add audio + pin/fav + thumb to displacement_primitives. Pasting its HTML as second message."
