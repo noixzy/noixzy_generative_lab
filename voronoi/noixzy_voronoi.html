@@ -209,6 +209,17 @@ function makeField(N,fn){ const img=createImage(N,N); img.loadPixels();
   img.updatePixels(); return img; }
 
 // Nearest-neighbour pixel-size quantisation for heightfields.
+// Fades heights to zero within 15% of each edge, with a smooth 15–30% transition.
+// Call before _pxQ in every heightField() so borders stay flat.
+function _edgeMask(out,G){ const G1=G-1;
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const u=i/G1, v=j/G1;
+    const e=Math.min(u,v,1-u,1-v);
+    const m=e<0.15?0:e<0.30?(e-0.15)/0.15:1;
+    out[i+j*G]*=m;
+  }
+}
+
 // Downsamples out[G×G] to cells×cells then upsamples back, creating hard-edged iso blocks.
 // Call at the end of any heightField() that exposes a P.pix param.
 function _pxQ(out,G){ const c=Math.max(4,Math.floor(map(P.pix||0,0,1,G,4))); if(c>=G-1) return;
@@ -298,7 +309,7 @@ function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
     const px=i/G, py=j/G; let b0=1e9,bi=0;
     for(let k=0;k<pts.length;k++){const dx=px-pts[k][0],dy=py-pts[k][1],d=dx*dx+dy*dy;if(d<b0){b0=d;bi=k;}}
     out[i+j*G]=cH[bi]; }
-  _pxQ(out,G); return out; }
+  _edgeMask(out,G); _pxQ(out,G); return out; }
 /* ============================================== */
 
 function setup(){
@@ -422,7 +433,7 @@ function buildNav(){
     const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
     a.appendChild(img); strip.appendChild(a);
   });
-  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){const off=el.offsetLeft-strip.offsetWidth/2+el.offsetWidth/2;strip.scrollLeft=Math.max(0,off);} },50);
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el) el.scrollIntoView({inline:"center",block:"nearest"}); },50);
 }
 let _dragOnCanvas=false;
 function mousePressed(){

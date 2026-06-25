@@ -129,7 +129,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"density","label":"density","min":0,"max":0.2,"step":0.01,"v":0.2},{"k":"scale","label":"scale","min":0,"max":1,"step":0.01,"v":0.4},{"k":"turbulence","label":"turbulence","min":0,"max":1,"step":0.01,"v":0.5},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4}];
+const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.65},{"k":"scale","label":"scale","min":0,"max":1,"step":0.01,"v":0.4},{"k":"turbulence","label":"turbulence","min":0,"max":1,"step":0.01,"v":0.5},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -209,6 +209,17 @@ function makeField(N,fn){ const img=createImage(N,N); img.loadPixels();
   img.updatePixels(); return img; }
 
 // Nearest-neighbour pixel-size quantisation for heightfields.
+// Fades heights to zero within 15% of each edge, with a smooth 15–30% transition.
+// Call before _pxQ in every heightField() so borders stay flat.
+function _edgeMask(out,G){ const G1=G-1;
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const u=i/G1, v=j/G1;
+    const e=Math.min(u,v,1-u,1-v);
+    const m=e<0.15?0:e<0.30?(e-0.15)/0.15:1;
+    out[i+j*G]*=m;
+  }
+}
+
 // Downsamples out[G×G] to cells×cells then upsamples back, creating hard-edged iso blocks.
 // Call at the end of any heightField() that exposes a P.pix param.
 function _pxQ(out,G){ const c=Math.max(4,Math.floor(map(P.pix||0,0,1,G,4))); if(c>=G-1) return;
@@ -274,7 +285,7 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 function build(){}
 function render(g,pal){
-  const n=floor(map(P.density,0,1,100,5000)), s=map(P.scale,0,1,0.0008,0.006), turb=map(P.turbulence,0,1,1,7);
+  const n=floor(map(P.density,0,1,80,6000)), s=map(P.scale,0,1,0.0008,0.006), turb=map(P.turbulence,0,1,1,7);
   g.noFill(); g.strokeWeight(1.1);
   for(let i=0;i<n;i++){
     let x=random(g.width), y=random(g.height);
@@ -415,7 +426,7 @@ function buildNav(){
     const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
     a.appendChild(img); strip.appendChild(a);
   });
-  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){const off=el.offsetLeft-strip.offsetWidth/2+el.offsetWidth/2;strip.scrollLeft=Math.max(0,off);} },50);
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el) el.scrollIntoView({inline:"center",block:"nearest"}); },50);
 }
 let _dragOnCanvas=false;
 function mousePressed(){

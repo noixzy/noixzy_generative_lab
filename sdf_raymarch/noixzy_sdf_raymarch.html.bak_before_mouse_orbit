@@ -219,7 +219,6 @@ uniform int   u_count;
 uniform float u_blend;     // smooth-min k
 uniform float u_turb;      // domain warp amount
 uniform float u_spin;      // animation speed
-uniform float u_azimuth;   // mouse orbit offset
 uniform float u_dist;      // camera distance
 uniform float u_elev;      // camera elevation
 uniform vec4  u_prims[MAXP]; // xyz = center, w = radius
@@ -375,7 +374,7 @@ void main(){
   uv.x += frameShift;
 
   // Phase 2 camera: orbit remains centered on blob centroid, distance/elevation are user-controlled.
-  float a = u_azimuth + u_time * u_spin;
+  float a = u_time * u_spin;
   float camDist = mix(2.65, 6.25, u_dist);
   float camElev = mix(-1.25, 2.20, u_elev);
   vec3 ro = u_target + vec3(sin(a)*camDist, camElev, cos(a)*camDist);
@@ -425,28 +424,24 @@ void main(){
 
 <script>
 const PIECE = "sdf_raymarch";
-let _thumbDir=null,_pCanvas=null;
-function saveThumb(){
-  requestAnimationFrame(()=>{
-    const btn=document.getElementById("btnThumb");
-    const src=_pCanvas||document.querySelector("canvas");
+let _thumbDir=null;
+async function saveThumb(){
+  try{
+    if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
     const c=document.createElement("canvas"); c.width=400; c.height=300;
-    c.getContext("2d").drawImage(src,0,0,400,300);
-    c.toBlob(async b=>{
-      try{
-        if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
-        const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
-        const w=await fh.createWritable(); await w.write(b); await w.close();
-        if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
-      }catch(e){
-        if(e.name!=="AbortError"){
-          const a=document.createElement("a"); a.href=URL.createObjectURL(b);
-          a.download=PIECE+".png"; a.click();
-          if(btn){btn.textContent="✓ dl";setTimeout(()=>btn.textContent="→ thumb",1400);}
-        }
-      }
-    },"image/png");
-  });
+    c.getContext("2d").drawImage(document.querySelector("canvas"),0,0,400,300);
+    const blob=await new Promise(res=>c.toBlob(res,"image/png"));
+    const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
+    const w=await fh.createWritable(); await w.write(blob); await w.close();
+    const btn=document.getElementById("thumb");
+    if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+  }catch(e){
+    if(e.name!=="AbortError"){
+      const c=document.createElement("canvas"); c.width=400; c.height=300;
+      c.getContext("2d").drawImage(document.querySelector("canvas"),0,0,400,300);
+      c.toBlob(b=>{const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=PIECE+".png";a.click();},"image/png");
+    }
+  }
 }
 const MAX_PRIMS = 24;
 const DEFAULT_PRESET = 4;
@@ -884,7 +879,7 @@ function cycleTheme(dir){
 
 function setup(){
   const container=document.getElementById("stage"); const c = createCanvas(container.clientWidth, container.clientHeight, WEBGL);
-  c.parent("stage"); _pCanvas=c.elt;
+  c.parent("stage");
   pixelDensity(1);
   theShader = createShader(
     document.getElementById("vert").textContent,
@@ -928,21 +923,12 @@ function buildPrims(){
   select("#seedRead").html(seed);
 }
 
-let _camAzimuth=0,_drag={active:false,x:0,y:0};
-function _initOrbit(stg){
-  stg.addEventListener("pointerdown",e=>{_drag={active:true,x:e.clientX,y:e.clientY};stg.setPointerCapture(e.pointerId);},{passive:true});
-  stg.addEventListener("pointermove",e=>{if(!_drag.active)return;_camAzimuth+=(e.clientX-_drag.x)*0.012;P[11]=clamp(P[11]-(e.clientY-_drag.y)*0.003,0,1);_drag.x=e.clientX;_drag.y=e.clientY;const se=document.getElementById("pElev");if(se){se.value=P[11];const vv=document.getElementById("vElev");if(vv)vv.textContent=P[11].toFixed(2);}},{passive:true});
-  stg.addEventListener("pointerup",()=>{_drag.active=false;});
-  stg.addEventListener("wheel",e=>{e.preventDefault();P[10]=clamp(P[10]+e.deltaY*0.0003,0,1);const sd=document.getElementById("pDist");if(sd){sd.value=P[10];const vd=document.getElementById("vDist");if(vd)vd.textContent=P[10].toFixed(2);}},{passive:false});
-}
-
 function draw(){
   _audioApply();
   const t = running ? (millis()-t0)/1000 : pauseT;
   shader(theShader);
   theShader.setUniform("u_res", [width, height]);
   theShader.setUniform("u_time", t);
-  theShader.setUniform("u_azimuth", _camAzimuth);
   theShader.setUniform("u_count", prims.length);
   theShader.setUniform("u_blend", P[1]);
   theShader.setUniform("u_turb", P[2]);
@@ -1162,7 +1148,6 @@ function bindUI(){
   document.getElementById("thumb").addEventListener("click", saveThumb);
   _buildAudioUI();
   _loadFavs();
-  _initOrbit(document.getElementById("stage"));
   buildNav();
 }
 
@@ -1183,8 +1168,6 @@ const ALL_MODULES=[
   {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
   {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
   {id:"stipple",title:"stipple"},
-  {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
-  {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
 ];
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);

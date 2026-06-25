@@ -176,7 +176,6 @@ uniform float u_freq;
 uniform float u_roughness;
 uniform float u_speed;
 uniform float u_spin;
-uniform float u_azimuth;
 uniform float u_dist;
 uniform float u_elev;
 uniform float u_primitive;
@@ -306,7 +305,7 @@ void main() {
   vec2 uv = vUv;
   uv.x *= u_res.x / u_res.y;
 
-  float a = u_azimuth + u_time * u_spin * 0.32;
+  float a = u_time * u_spin * 0.32;
   float el = u_elev + 0.20*sin(u_time * 0.11);
   vec3 ro = vec3(sin(a)*u_dist, el, cos(a)*u_dist);
   vec3 ta = vec3(0.0);
@@ -416,36 +415,24 @@ const _pAudioParams=[
 function hexToRGB(h){ return [parseInt(h.slice(1,3),16)/255, parseInt(h.slice(3,5),16)/255, parseInt(h.slice(5,7),16)/255]; }
 function clampV(v,a,b){ return Math.min(b,Math.max(a,v)); }
 
-let _camAzimuth=0,_drag={active:false,x:0,y:0};
-function _initOrbit(stg){
-  stg.addEventListener("pointerdown",e=>{_drag={active:true,x:e.clientX,y:e.clientY};stg.setPointerCapture(e.pointerId);},{passive:true});
-  stg.addEventListener("pointermove",e=>{if(!_drag.active)return;_camAzimuth+=(e.clientX-_drag.x)*0.012;P.elev=clampV(P.elev-(e.clientY-_drag.y)*0.007,-1.5,2.5);_drag.x=e.clientX;_drag.y=e.clientY;const se=document.getElementById("sElev");if(se){se.value=P.elev;document.getElementById("vElev").textContent=P.elev.toFixed(2);}},{passive:true});
-  stg.addEventListener("pointerup",()=>{_drag.active=false;});
-  stg.addEventListener("wheel",e=>{e.preventDefault();P.dist=clampV(P.dist+e.deltaY*0.005,2.2,7);const sd=document.getElementById("sDist");if(sd){sd.value=P.dist;document.getElementById("vDist").textContent=P.dist.toFixed(2);}},{passive:false});
-}
-
-let _thumbDir=null,_pCanvas=null;
-function saveThumb(){
-  requestAnimationFrame(()=>{
-    const btn=document.getElementById("btnThumb");
-    const src=_pCanvas||document.querySelector("canvas");
+let _thumbDir=null;
+async function saveThumb(){
+  try{
+    if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
     const c=document.createElement("canvas"); c.width=400; c.height=300;
-    c.getContext("2d").drawImage(src,0,0,400,300);
-    c.toBlob(async b=>{
-      try{
-        if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
-        const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
-        const w=await fh.createWritable(); await w.write(b); await w.close();
-        if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
-      }catch(e){
-        if(e.name!=="AbortError"){
-          const a=document.createElement("a"); a.href=URL.createObjectURL(b);
-          a.download=PIECE+".png"; a.click();
-          if(btn){btn.textContent="✓ dl";setTimeout(()=>btn.textContent="→ thumb",1400);}
-        }
-      }
-    },"image/png");
-  });
+    c.getContext("2d").drawImage(document.querySelector("canvas"),0,0,400,300);
+    const blob=await new Promise(res=>c.toBlob(res,"image/png"));
+    const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
+    const w=await fh.createWritable(); await w.write(blob); await w.close();
+    const btn=document.getElementById("btnThumb");
+    if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+  }catch(e){
+    if(e.name!=="AbortError"){
+      const c=document.createElement("canvas"); c.width=400; c.height=300;
+      c.getContext("2d").drawImage(document.querySelector("canvas"),0,0,400,300);
+      c.toBlob(b=>{const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=PIECE+".png";a.click();},"image/png");
+    }
+  }
 }
 
 const _FAV_KEY="noixzy_"+PIECE+"_favs";
@@ -586,7 +573,6 @@ function setup() {
   const stage = document.getElementById("stage");
   const c = createCanvas(stage.clientWidth, stage.clientHeight, WEBGL);
   c.parent(stage);
-  _pCanvas = c.elt;
 
   theShader = createShader(
     document.getElementById("vert").textContent,
@@ -674,7 +660,6 @@ function setup() {
   document.getElementById("btnThumb").addEventListener("click", saveThumb);
   _buildAudioUI();
   _loadFavs();
-  _initOrbit(stage);
   buildNav();
 
   window.addEventListener("resize", ()=>{
@@ -693,8 +678,6 @@ const ALL_MODULES=[
   {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
   {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
   {id:"stipple",title:"stipple"},
-  {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
-  {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
 ];
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
@@ -721,7 +704,6 @@ function draw() {
   shader(theShader);
   theShader.setUniform("u_res",       [width, height]);
   theShader.setUniform("u_time",      t);
-  theShader.setUniform("u_azimuth",   _camAzimuth);
   theShader.setUniform("u_amount",    P.amount);
   theShader.setUniform("u_freq",      P.freq);
   theShader.setUniform("u_roughness", P.rough);

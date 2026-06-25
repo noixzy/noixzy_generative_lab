@@ -552,6 +552,7 @@ function setup() {
   STARTERS.forEach((s,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=s.name; ss.appendChild(o); });
   document.getElementById("btnLoad").addEventListener("click", ()=>{ loadStarter(STARTERS[parseInt(ss.value)]); });
   document.getElementById("btnSave").addEventListener("click", ()=>{ saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`, "png"); });
+  document.getElementById("btnThumb").addEventListener("click", saveThumb);
   document.getElementById("btnPause").addEventListener("click", ()=>{
     paused=!paused;
     if(paused) pauseT=millis()-t0; else t0=millis()-pauseT;

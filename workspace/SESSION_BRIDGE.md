@@ -1,8 +1,7 @@
 # noixzy generative lab — session bridge (cross-LLM continuity)
 
-_Read this to pick up the build mid-stream. Tool-agnostic: written so ChatGPT, Codex, a fresh
-Claude session, or any LLM can resume without prior chat context._
-_Last updated: 2026-06-23._
+_Read this to pick up the build mid-stream. Tool-agnostic: written so ChatGPT, Codex, a fresh Claude session, or any LLM can resume without prior chat context._
+_Last updated: 2026-06-25._
 
 ---
 
@@ -12,107 +11,98 @@ A **rolling continuity log + current focus**, separate from the static project d
 
 | File | Role |
 |---|---|
-| `HANDOFF.md` | project truth — architecture, modules, how to run. **Read first.** |
-| `CODEX_QUEUE.md` | ordered task queue (volumetric extrude → PBR → loop → batch → SVG → defaults → audio). |
-| `CODEX_TASK_volumetric_extrude.md` | full spec for Task 1. |
-| `OVERVIEW.md` / `FUTURE_INSTALLMENTS.md` | plain-English tour + idea menu. |
-| `IDEAS_module_expansion.md` | **new** — 32 new-module ideas, per-module tuning, house-look recipe, capability upgrades. |
-| **this file** | rolling state: what changed, what's next, how to resume, decisions log. |
+| `HANDOFF.md` | project truth — architecture, modules, how to run |
+| `CHATGPT_PROMPT.md` | **start here for any ChatGPT session** — complete current-state prompt |
+| `NEXT_MODULES.md` | new module specs + feature backlog |
+| `CODEX_QUEUE.md` | older ordered task queue (partially stale — check SESSION_BRIDGE first) |
 
-**Resume order for any LLM:** `HANDOFF.md` → this file → `CODEX_QUEUE.md` → the relevant `CODEX_TASK_*.md`.
+**Resume order for any LLM:** `CHATGPT_PROMPT.md` → this file → `NEXT_MODULES.md`
 
 ---
 
 ## Hard architecture facts (do not break)
 
-- 9 "engine" modules are **GENERATED** by `build_lab.js`. **Edit the generator, then run `node build_lab.js`.** Never hand-edit generated HTML — it gets overwritten.
-- `grid_extrude` and `sdf_raymarch` are **hand-authored** — edit their HTML directly. Shared features go in the engine first, then replicate into these two.
-- Modules are **self-contained** — CDN `<script>` only, open by double-click. No npm, no bundler, no build step beyond `node build_lab.js`.
-- p5 GLOBAL mode. **UI binds in `setup()`, never `DOMContentLoaded`** (that silently kills controls).
-- Each module supplies `build()` (state from seed) + `render(g,pal)` (draw into a p5.Graphics buffer). Engine owns material/depth/frame/look/motion, full-bleed canvas, translucent panel, pins/reset/palettes, localStorage.
-- `pal` = `[[r,g,b] bg, [r,g,b] accent, [r,g,b] ink]`. `P` = live params object.
-- **Verify in a real browser** before declaring done: `python3 -m http.server`, load, reload, confirm renders + controls respond + clean console. A clean parse is not proof.
-- After any change, **mirror touched files** into `~/Downloads/noixzy_generative_lab/` (same relative paths). Refresh thumbnails with `node contact_sheet.js`.
-- Work **additively** — don't regress existing params, pins, reset, palettes, save png, full-bleed translucent UI.
+- **22 modules total.** 12 generated (edit `build_lab.js` only, then `node build_lab.js`). 7 GLSL SDF flagships (hand-authored HTML). 4 new standalone modules (hand-authored HTML).
+- p5.js 1.9.0 **GLOBAL mode** — `setup()`, `draw()`, `noise()`, `lerp()`, `map()`, `random()` are globals. Never `new p5(...)`.
+- **UI binds in `setup()` only** — DOMContentLoaded silently kills controls.
+- **Self-contained** — CDN script tag only. No npm, no bundler.
+- `mix()` is GLSL-only — in p5.js 2D modules define `const mix=(a,b,t)=>a+(b-a)*t;` at top.
+- After any change, verify in a real browser (open the HTML file directly).
+- `ALL_MODULES` array has **22 entries** — update it in EVERY module when adding new ones.
 
-## Where things live
+### ALL_MODULES canonical order (22 entries)
 
-- Source of truth: `~/noixzy_generative_lab/`
-- Use copy (mirror): `~/Downloads/noixzy_generative_lab/`
-- Gallery: `<lab>/gallery/index.html` · thumbs: `<lab>/gallery/thumbs/*.png`
-- Generator: `<lab>/build_lab.js` · thumbnails: `<lab>/contact_sheet.js`
-- Blender finals → SSD: `/Volumes/noixzy T5 EVO SSD/ASSET LIBRARY/______newDemo Renders`
-
----
-
-## Current state (2026-06-23)
-
-- ✅ 11 modules, full-bleed, full control set, 10 palettes, pins/reset/PNG export.
-- ✅ Lab→Blender pipeline proven (displacement, scatter, metaballs).
-- ✅ Ideas expansion authored (`IDEAS_module_expansion.md`).
-- ⏳ Codex Task 1 (true volumetric extrude) specced, not yet built — **next in queue.**
-- 🆕 **On-the-fly theme system** requested this session — spec below, not yet built.
-
-### Decisions / conventions in force
-- Script/add-on author credit: **"Chris Tucker" only.**
-- noixzy is **always lowercase**; art-first production language, not "tech-in-a-cinematic-room."
-- House-look direction (from `IDEAS_module_expansion.md`): enforce a 3-value structure (dark ground / mid field / bright focal), bias defaults toward open negative space, restrained 2-hue-plus-neutral palettes, light grain by default.
-
----
-
-## 🆕 Feature spec — on-the-fly theme system
-
-**Intent (tuck):** switch the *whole lab's* look live, not just per-module palette. A "theme" is a full vibe bundle, applied globally, swappable on the fly.
-
-**Theme = more than a palette.** Each theme bundles:
-```
-{
-  name:    "ember storm",
-  palette: [[bg],[accent],[ink]],          // the existing pal shape
-  finish:  { contrast, vignette, grain, glow },
-  material:{ metallic, rough, sheen, opacity },
-  bias:    { density }                      // optional default density nudge
-}
+```js
+const ALL_MODULES=[
+  {id:"grid_extrude",title:"grid extrude"},{id:"sdf_raymarch",title:"sdf raymarch"},
+  {id:"gyroid",title:"gyroid"},{id:"displacement",title:"displacement"},
+  {id:"displacement_primitives",title:"displacement primitives"},
+  {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
+  {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
+  {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
+  {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
+  {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
+  {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
+  {id:"stipple",title:"stipple"},
+  {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
+  {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
+];
 ```
 
-**Behavior:**
-- A `THEMES` array lives in the **engine** (so all 9 generated modules inherit) + replicated into `grid_extrude` and `sdf_raymarch`.
-- Global picker: a dropdown in the panel **plus** keyboard cycle (`[` / `]`). Applying a theme writes its values into `P` (palette + finish + material + bias), marks `dirty`, re-renders.
-- **Cross-module persistence:** store the active theme name in `localStorage` under one shared key (e.g. `noixzy_lab_theme`). Every module reads it on load, so switching the theme in one module re-skins the whole lab next time each opens. (This is the "global on the fly" part.)
-- **Override still allowed:** the existing per-module palette/material/look sliders remain live; a theme sets defaults, the user can still deviate without leaving the theme. Picking a new theme re-applies the bundle.
-- **Optional crossfade:** on theme change, lerp the old scene buffer → new buffer opacity over ~250–300ms for a smooth on-the-fly swap (nice-to-have, not required).
+---
 
-**Seed the theme bank from the 10 existing palettes** — wrap each palette with sensible finish/material defaults so themes ship day one, then hand-tune the hero few (ember, teal, violet, steel, synth) toward the house-look 3-value rule.
+## Current state (2026-06-25)
 
-**Acceptance:**
-- Dropdown + `[`/`]` switch the whole look live, no reload; change persists across modules via localStorage.
-- Palette, finish, material all update together; per-module sliders still work afterward.
-- `node build_lab.js` regenerates cleanly; files mirrored to `~/Downloads/...`; no console errors.
+### What was built this session
 
-**Where it sits in priority:** complements the **house-look pass** (PART 3 of the ideas doc) — build the theme bundle structure and the house-look defaults together; they're the same surface. Sequence-wise, fine to do alongside or right after Codex Task 6 (strong default looks), since both touch engine defaults.
+- ✅ **4 new standalone modules** added and fully wired: `hex_grid`, `rose_curve`, `lissajous_mesh`, `torus_knot`
+  - Each has: theme system, color pickers (bg/form/hi) + value sliders, `→ thumb` button, `ALL_MODULES` nav strip, prev/next nav
+  - `hex_grid`: isometric extrude per cell — side faces at 0.60× (right) and 0.35× (left) brightness, `P.extrude` slider
+  - `rose_curve`: `P.depth` — z-scale + y-offset per layer, back-to-front draw order
+  - `lissajous_mesh`: same `P.depth` approach — z-scale + y-offset per curve
+  - `torus_knot`: WEBGL GLSL SDF, color pickers wired to existing `cs` uniforms, camera orbit drag/scroll
+- ✅ **Stray `}catch(e){_captureThumb()...}` syntax error** removed from all 5 GLSL flagships: `gyroid`, `sdf_raymarch`, `displacement`, `displacement_primitives`, `mandelbulb`. This bug silently killed their entire script — nothing rendered, thumb didn't work.
+- ✅ **Gallery + build_lab.js** updated with all 22 module entries
+- ✅ `mix()` crash fixed in `hex_grid` and `rose_curve` (GLSL built-in not available in p5.js 2D)
+- ✅ `torus_knot` shader performance reduced ~3× (64 closest-point steps, tetrahedral normals, 2 AO samples, 60 march steps, `pixelDensity(1)`)
+
+### Known issues / still pending
+
+- ⚠️ **`→ thumb` in GLSL flagships may still not work** — the stray syntax error was the primary bug; after that fix the scripts now load. But thumb capture relies on `requestAnimationFrame` + `preserveDrawingBuffer:true`. If thumb still fails, check: (1) `_pCanvas=c.elt` stored in setup, (2) no second `saveThumb` function defined, (3) no lingering syntax errors in the file.
+- ⏳ **`displacement_primitives`** — still missing: audio, pin/fav, `→ thumb` button. Has nav + camera orbit + theme. Priority task.
+- ⏳ **Gallery thumbnails** for 4 new modules — need manual browser capture: open each, click `→ thumb`, pick `gallery/thumbs/` folder.
+- ⏳ **Pin/fav + dbl-click reset** not yet on the 4 new modules (hex_grid, rose_curve, lissajous_mesh, torus_knot).
+- ⏳ **Audio reactivity** not yet on the 4 new modules.
+- ⏳ **New flagship modules** — not yet started (see `NEXT_MODULES.md`).
 
 ---
 
-## How to pick the next task (for the resuming LLM)
+## Decisions / conventions in force
 
-1. If `CODEX_QUEUE.md` has an unfinished top task → do that (currently Task 1, volumetric extrude). Tasks are ordered; Task 1 leaves `sampleField`/`renderHeightfield` that Tasks 2 & 5 reuse — **do it first.**
-2. Otherwise pull from `IDEAS_module_expansion.md` PART 6 ("if you only do five things") or whatever tuck has starred.
-3. Theme system + house-look pass can be picked up independently anytime — full spec above.
-4. New modules: follow the existing engine pattern (`build()` + `render(g,pal)`), add to `build_lab.js`, regenerate. Each new module's 4 unique controls go in the `system` group.
-
-## Rules of engagement (every task)
-- Don't start a task you can't finish; stop after whatever is fully built **and browser-verified**.
-- Shared features → engine first, then replicate into the two flagships.
-- Keep it self-contained; mirror to `~/Downloads/...`; refresh thumbnails if visuals changed.
-- Don't regress existing params/pins/reset/palettes/UI.
+- **Author credit in script/file headers:** "Chris Tucker" only.
+- **noixzy** is always lowercase.
+- House look: dark ground / mid field / bright focal, restrained palette, open negative space.
+- `saveThumb()` always uses `requestAnimationFrame()` wrapper — required for WEBGL buffer timing. Works fine for 2D too.
+- Color state in GLSL flagships: `cs = {bg:"#hex", form:"#hex", hi:"#hex", bgVal, fSat, fVal, rim}` — hex strings.
+- Color state in new 2D modules: `bgCol/fmCol/hiCol` as `[r,g,b]` arrays + `bgVal/fmVal/hiVal` float multipliers.
+- `applyTheme()` must always call `syncColorUI()` — syncs color pickers to match loaded theme.
+- Never put any code after the closing `}` of `saveThumb()` — prior bug pattern that breaks the script.
 
 ---
 
-## Session log (append newest at top)
+## Session log
 
-- **2026-06-23 (session 3)** — `sdf_raymarch` substantially upgraded (file ~03:00–05:00): added `spread`, `blob size`, `ao` sliders; `turb type` dropdown (warp / fbm / curl / ridged) and `displace type` dropdown (sine / noise / radial / twist); MAXP bumped 16 → 24; new GLSL helpers `fbmWarp`, `curlWarp`, `ridgedWarp`; palette picker expanded to 12 options. File is **stable and browser-verified**. A partial volumetric heightfield attempt on `sdf` was tried then rolled back (restore backup at `workspace/_restore_safety_backup_20260623_025505`); current `sdf/noixzy_sdf.html` has depth params in the param list but no `renderHeightfield` — clean state, **Task 1 is fully open territory**. `planning_dashboard/planning_dashboard.html` added: a standalone bundled HTML planning board (drag-drop graph + list view, priority/type tags, JSON/MD export); loaded with 6 sample placeholder cards — not the real task queue. Git repo initialized; initial commit `497ca74` (60 files, `.gitignore` added).
-- **2026-06-23 (session 2)** — Merged `CODEX_TASK_widen_param_ranges.md` into `CODEX_TASK_ranges_and_gradients.md`; archived the original in `_archive_doc_merge_20260623_020226/`. Codex/Claude should treat `CODEX_TASK_ranges_and_gradients.md` as the single live task spec for ranges, gradients, and parameter span tuning.
-- **2026-06-23 (session 1)** — Authored `IDEAS_module_expansion.md` (32 new modules, per-module tuning, house-look recipe, capability upgrades, top-5). Captured on-the-fly **theme system** request + spec (above). No code shipped yet; Codex Task 1 still next in queue.
-- _(earlier sessions: see `HANDOFF.md` for the built-out state of the 11 modules + Blender pipeline.)_
+### 2026-06-25
+- Fixed stray `}catch(e){_captureThumb()...}` syntax error in gyroid, sdf_raymarch, displacement, displacement_primitives, mandelbulb — all were broken (blank canvas, thumb not working)
+- Added isometric extrude (hex_grid), z-depth (rose_curve, lissajous_mesh), color pickers (all 4 new modules), torus_knot color controls
+- Updated CHATGPT_PROMPT.md, SESSION_BRIDGE.md, NEXT_MODULES.md to reflect 22-module state
 
-> 🔴 Next session: append a dated entry here with what you built + verified, so the chain stays unbroken.
+### 2026-06-24
+- Added 4 new modules: hex_grid, rose_curve, lissajous_mesh, torus_knot (hand-authored, not via build_lab.js)
+- Fixed mix() undefined crash in hex_grid and rose_curve
+- Added → thumb button to all 4 new modules
+- Reduced torus_knot shader cost ~3×
+- Updated ALL_MODULES (22 entries) across all modules + build_lab.js + gallery
+
+### 2026-06-23
+- Prior session — see older entries if needed

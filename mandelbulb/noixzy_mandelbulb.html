@@ -319,15 +319,6 @@ function saveThumb(){
     },"image/png");
   });
 }
-  }catch(e){
-    if(e.name!=="AbortError"){
-      _captureThumb().toBlob(b=>{
-        const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=PIECE+".png";a.click();
-        if(btn){btn.textContent="✓ dl";setTimeout(()=>btn.textContent="→ thumb",1400);}
-      },"image/png");
-    }
-  }
-}
 const THEMEKEY = "noixzy_lab_theme";
 const PALETTES = [
   ["ember",    "#0e0e10", "#5a2400", "#ed8a3a"],
@@ -542,6 +533,7 @@ function setup() {
   STARTERS.forEach((s,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=s.name; ss.appendChild(o); });
   document.getElementById("btnLoad").addEventListener("click", ()=>{ loadStarter(STARTERS[parseInt(ss.value)]); });
   document.getElementById("btnSave").addEventListener("click", ()=>{ saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`, "png"); });
+  document.getElementById("btnThumb").addEventListener("click", saveThumb);
   document.getElementById("btnPause").addEventListener("click", ()=>{
     paused=!paused;
     if(paused) pauseT=millis()-t0; else t0=millis()-pauseT;

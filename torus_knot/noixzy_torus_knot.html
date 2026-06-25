@@ -22,6 +22,9 @@
   input[type=range] { width:100%; height:28px; accent-color:var(--accent); }
   button { min-height:34px; background:#000; color:var(--ink); border:1px solid #333; padding:6px 10px; font:inherit; cursor:pointer; border-radius:4px; }
   button:hover { border-color:var(--accent); color:var(--accent); }
+  .colorRow { display:grid; grid-template-columns:1fr 48px; gap:10px; align-items:end; }
+  input[type=color] { width:48px; height:34px; padding:0; border:1px solid #333; border-radius:4px; background:#000; cursor:pointer; }
+  input[type=color]:hover { border-color:var(--accent); }
   .tools { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
   .presetBox { margin-top:10px; padding-top:10px; border-top:1px solid rgba(240,200,144,0.18); }
   .presetLine { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:8px; }
@@ -74,6 +77,21 @@
       <input id="sElev" type="range" min="-2" max="2" step="0.05" value="0.8"></div>
     <div class="row"><label>ao <span id="vAO">—</span></label>
       <input id="sAO" type="range" min="0" max="1" step="0.01" value="0.6"></div>
+
+    <div class="row colorRow"><label for="bgColor">background</label>
+      <input id="bgColor" type="color" value="#140d06"></div>
+    <div class="row"><label>bg value <span id="vBgVal">—</span></label>
+      <input id="sBgVal" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row colorRow"><label for="fmColor">form color</label>
+      <input id="fmColor" type="color" value="#6b4514"></div>
+    <div class="row"><label>form sat <span id="vFSat">—</span></label>
+      <input id="sFSat" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row"><label>form value <span id="vFVal">—</span></label>
+      <input id="sFVal" type="range" min="0" max="2" step="0.01" value="1"></div>
+    <div class="row colorRow"><label for="hiColor">rim / highlight</label>
+      <input id="hiColor" type="color" value="#ffe0a0"></div>
+    <div class="row"><label>rim strength <span id="vRim">—</span></label>
+      <input id="sRim" type="range" min="0" max="2" step="0.01" value="1"></div>
 
     <div class="tools">
       <button id="btnSave" type="button">save png</button>
@@ -273,11 +291,17 @@ function _initOrbit(stg){
   stg.addEventListener("wheel",e=>{e.preventDefault();P.dist=clampV(P.dist+e.deltaY*0.006,2,9);const sd=document.getElementById("sDist");if(sd){sd.value=P.dist;document.getElementById("vDist").textContent=P.dist.toFixed(2);}},{passive:false});
 }
 
+function syncColorUI(){
+  const bEl=document.getElementById("bgColor");if(bEl)bEl.value=cs.bg;
+  const fEl=document.getElementById("fmColor");if(fEl)fEl.value=cs.form;
+  const hEl=document.getElementById("hiColor");if(hEl)hEl.value=cs.hi;
+}
 function applyTheme(name){
   const idx=THEME_NAMES.indexOf(name);if(idx<0)return;
   activeTheme=name;
   cs.bg=PALETTES[idx][1];cs.form=PALETTES[idx][2];cs.hi=PALETTES[idx][3];
   const sel=document.getElementById("themeSelect");if(sel)sel.value=name;
+  syncColorUI();
   try{localStorage.setItem(THEMEKEY,name);}catch(e){}
 }
 function cycleTheme(dir){
@@ -322,15 +346,6 @@ function saveThumb(){
     },"image/png");
   });
 }
-  }catch(e){
-    if(e.name!=="AbortError"){
-      _captureThumb().toBlob(b=>{
-        const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=PIECE+".png";a.click();
-        if(btn){btn.textContent="✓ dl";setTimeout(()=>btn.textContent="→ thumb",1400);}
-      },"image/png");
-    }
-  }
-}
 function setup(){
   const stage=document.getElementById("stage");
   const c=createCanvas(stage.clientWidth,stage.clientHeight,WEBGL);
@@ -365,6 +380,19 @@ function setup(){
     if(e.key==="[")cycleTheme(-1);if(e.key==="]")cycleTheme(1);
     if(e.key==="s")document.getElementById("btnSave").click();
   });
+
+  document.getElementById("bgColor").addEventListener("input",e=>{cs.bg=e.target.value;});
+  document.getElementById("fmColor").addEventListener("input",e=>{cs.form=e.target.value;});
+  document.getElementById("hiColor").addEventListener("input",e=>{cs.hi=e.target.value;});
+  document.getElementById("sBgVal").addEventListener("input",e=>{cs.bgVal=parseFloat(e.target.value);document.getElementById("vBgVal").textContent=cs.bgVal.toFixed(2);});
+  document.getElementById("sFSat").addEventListener("input",e=>{cs.fSat=parseFloat(e.target.value);document.getElementById("vFSat").textContent=cs.fSat.toFixed(2);});
+  document.getElementById("sFVal").addEventListener("input",e=>{cs.fVal=parseFloat(e.target.value);document.getElementById("vFVal").textContent=cs.fVal.toFixed(2);});
+  document.getElementById("sRim").addEventListener("input",e=>{cs.rim=parseFloat(e.target.value);document.getElementById("vRim").textContent=cs.rim.toFixed(2);});
+  // init color slider displays
+  document.getElementById("vBgVal").textContent=cs.bgVal.toFixed(2);
+  document.getElementById("vFSat").textContent=cs.fSat.toFixed(2);
+  document.getElementById("vFVal").textContent=cs.fVal.toFixed(2);
+  document.getElementById("vRim").textContent=cs.rim.toFixed(2);
 
   const saved=localStorage.getItem(THEMEKEY);
   if(saved&&THEME_NAMES.includes(saved))applyTheme(saved);else applyTheme("amber");

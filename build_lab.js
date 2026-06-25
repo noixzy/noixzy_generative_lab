@@ -67,7 +67,7 @@ select:hover { border-color:var(--accent); }
 .navBar { flex:0 0 28px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:#0a0a0c; border-bottom:1px solid #1c1c1f; z-index:10; }
 .navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
 .navBar a:hover { color:var(--accent); }
-.navCurrent { color:var(--ink) !important; pointer-events:none; }
+.navCurrent { color:var(--accent) !important; }
 /* Thumb strip */
 .moduleNav { margin-top:12px; padding-top:10px; border-top:1px solid #1e1e21; }
 .moduleNav .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
@@ -82,7 +82,7 @@ select:hover { border-color:var(--accent); }
 <body>
 <div class="navBar">
   <a id="navPrev" href="#">← prev</a>
-  <a href="../gallery/index.html" class="navCurrent">${cfg.title}</a>
+  <a href="../gallery/index.html" class="navCurrent">⊞ gallery</a>
   <a id="navNext" href="#">next →</a>
 </div>
 <div class="app">
@@ -214,6 +214,17 @@ function makeField(N,fn){ const img=createImage(N,N); img.loadPixels();
   img.updatePixels(); return img; }
 
 // Nearest-neighbour pixel-size quantisation for heightfields.
+// Fades heights to zero within 15% of each edge, with a smooth 15–30% transition.
+// Call before _pxQ in every heightField() so borders stay flat.
+function _edgeMask(out,G){ const G1=G-1;
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const u=i/G1, v=j/G1;
+    const e=Math.min(u,v,1-u,1-v);
+    const m=e<0.15?0:e<0.30?(e-0.15)/0.15:1;
+    out[i+j*G]*=m;
+  }
+}
+
 // Downsamples out[G×G] to cells×cells then upsamples back, creating hard-edged iso blocks.
 // Call at the end of any heightField() that exposes a P.pix param.
 function _pxQ(out,G){ const c=Math.max(4,Math.floor(map(P.pix||0,0,1,G,4))); if(c>=G-1) return;
@@ -819,11 +830,11 @@ function recordClip(dur=4){
 // ---------------- per-piece definitions ----------------
 const PIECES=[
 { id:"flow_field", title:"flow field",
-  system:[{k:"density",label:"density",min:0,max:.20,step:.01,v:.20},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
+  system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.65},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
 function build(){}
 function render(g,pal){
-  const n=floor(map(P.density,0,1,100,5000)), s=map(P.scale,0,1,0.0008,0.006), turb=map(P.turbulence,0,1,1,7);
+  const n=floor(map(P.density,0,1,80,6000)), s=map(P.scale,0,1,0.0008,0.006), turb=map(P.turbulence,0,1,1,7);
   g.noFill(); g.strokeWeight(1.1);
   for(let i=0;i<n;i++){
     let x=random(g.width), y=random(g.height);
@@ -927,7 +938,7 @@ function heightField(G){ const sG=RDG, out=new Float32Array(G*G);
 
     out[i+j*G]=h;
   }
-  _pxQ(out,G); return out; }` },
+  _edgeMask(out,G); _pxQ(out,G); return out; }` },
 
 { id:"voronoi", title:"voronoi",
   system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.4},{k:"relax",label:"relax",min:0,max:1,step:.01,v:.4},{k:"edgefill",label:"edge / fill",min:0,max:1,step:.01,v:.5},{k:"pix",label:"pixel size",min:0,max:1,step:.01,v:.5},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
@@ -958,7 +969,7 @@ function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
     const px=i/G, py=j/G; let b0=1e9,bi=0;
     for(let k=0;k<pts.length;k++){const dx=px-pts[k][0],dy=py-pts[k][1],d=dx*dx+dy*dy;if(d<b0){b0=d;bi=k;}}
     out[i+j*G]=cH[bi]; }
-  _pxQ(out,G); return out; }` },
+  _edgeMask(out,G); _pxQ(out,G); return out; }` },
 
 { id:"contour_field", title:"contour field",
   system:[{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"levels",label:"levels",min:0,max:1,step:.01,v:.5},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.4},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
@@ -1073,7 +1084,7 @@ function trHeightField(G){
     const h=Math.max(0,1-d/hw);
     out[i+j*G]=h*h;
   }
-  return out;
+  _edgeMask(out,G); return out;
 }
 function heightField(G){ return trHeightField(G); }
 function svgArc(cx,cy,r,a0,a1){
@@ -1136,7 +1147,7 @@ function heightField(G){
     const h=Math.max(0,1-d/hw);
     out[i+j*G]=h*h;
   }
-  return out;
+  _edgeMask(out,G); return out;
 }
 function svgArc(cx,cy,r,a0,a1){
   const x0=cx+Math.cos(a0)*r, y0=cy+Math.sin(a0)*r, x1=cx+Math.cos(a1)*r, y1=cy+Math.sin(a1)*r;
@@ -1225,7 +1236,7 @@ function heightField(G){
   }
   let mx=0; for(const v of out)mx=Math.max(mx,v);
   if(mx>0)for(let i=0;i<out.length;i++)out[i]/=mx;
-  return out;
+  _edgeMask(out,G); return out;
 }` },
 
 { id:"cellular_erosion", title:"cellular erosion",
@@ -1254,7 +1265,7 @@ function heightField(G){ const G0=CEG, out=new Float32Array(G*G);
     const si=Math.floor(i*G0/G), sj=Math.floor(j*G0/G), idx=si+sj*G0;
     if(!CEGR[idx]){ out[i+j*G]=0; continue; }
     out[i+j*G]=Math.sqrt(CED[idx]/CE_MX); }
-  _pxQ(out,G); return out; }` },
+  _edgeMask(out,G); _pxQ(out,G); return out; }` },
 
 { id:"recursive_grid", title:"recursive grid",
   system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.5},{k:"jitter",label:"jitter",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
@@ -1368,7 +1379,7 @@ function heightField(G){ const blobs=SDFB, baseK=map(P.blend,0,1,0.03,0.28), war
     let px=i/G, py=j/G;
     if(warp>0){px+=warp*0.06*(noise(px*6,py*6)-0.5);py+=warp*0.06*(noise(px*6+9,py*6+9)-0.5);}
     out[i+j*G]=Math.min(1,Math.max(0,-field(px,py)/0.15)); }
-  _pxQ(out,G); return out; }` },
+  _edgeMask(out,G); _pxQ(out,G); return out; }` },
 
 { id:"wave_interference", title:"wave interference",
   system:[
@@ -1424,7 +1435,7 @@ function heightField(G){
     sum/=WI_SRCS.length;
     out[i+j*G]=0.5+0.5*Math.tanh(sum*sharp);
   }
-  _pxQ(out,G); return out;
+  _edgeMask(out,G); _pxQ(out,G); return out;
 }` },
 
 { id:"stipple", title:"stipple",
@@ -1532,7 +1543,7 @@ function heightField(G){
       out[i+j*G]=tmp[ci+cj*c];
     }
   }
-  return out;
+  _edgeMask(out,G); return out;
 }` },
 ];
 
