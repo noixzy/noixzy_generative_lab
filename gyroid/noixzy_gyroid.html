@@ -264,20 +264,28 @@ void main() {
 <script>
 const PIECE = "gyroid";
 let _thumbDir=null,_pCanvas=null;
-function _captureThumb(){
-  const src=_pCanvas||document.querySelector("canvas");
-  const c=document.createElement("canvas"); c.width=400; c.height=300;
-  c.getContext("2d").drawImage(src,0,0,400,300);
-  return c;
+function saveThumb(){
+  requestAnimationFrame(()=>{
+    const btn=document.getElementById("btnThumb");
+    const src=_pCanvas||document.querySelector("canvas");
+    const c=document.createElement("canvas"); c.width=400; c.height=300;
+    c.getContext("2d").drawImage(src,0,0,400,300);
+    c.toBlob(async b=>{
+      try{
+        if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
+        const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
+        const w=await fh.createWritable(); await w.write(b); await w.close();
+        if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+      }catch(e){
+        if(e.name!=="AbortError"){
+          const a=document.createElement("a"); a.href=URL.createObjectURL(b);
+          a.download=PIECE+".png"; a.click();
+          if(btn){btn.textContent="✓ dl";setTimeout(()=>btn.textContent="→ thumb",1400);}
+        }
+      }
+    },"image/png");
+  });
 }
-async function saveThumb(){
-  const btn=document.getElementById("btnThumb");
-  try{
-    if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
-    const blob=await new Promise(res=>_captureThumb().toBlob(res,"image/png"));
-    const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
-    const w=await fh.createWritable(); await w.write(blob); await w.close();
-    if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
   }catch(e){
     if(e.name!=="AbortError"){
       _captureThumb().toBlob(b=>{
