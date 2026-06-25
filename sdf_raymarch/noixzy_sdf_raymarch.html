@@ -164,7 +164,18 @@
     </div>
     <div class="row" style="margin-top:12px;">
       <button id="pause" type="button">pause</button>
+      <button id="reset" type="button">reset</button>
+      <button id="copy" type="button">copy</button>
+      <button id="paste" type="button">paste</button>
       <button id="save" type="button">save png</button>
+      <button id="save2x" type="button">save 2x</button>
+      <button id="rec" type="button">rec</button>
+      <select id="recDur" title="record duration">
+        <option value="2">2s</option>
+        <option value="4" selected>4s</option>
+        <option value="8">8s</option>
+        <option value="16">16s</option>
+      </select>
       <button id="thumb" type="button">→ thumb</button>
       <button id="btnPin">★ pin</button>
       <button id="btnAudio">audio</button>
@@ -977,6 +988,100 @@ function draw(){
 
 let pauseT = 0;
 
+// Utility controls added to match newer lab modules
+function _flashBtn(id,msg,ms=900){
+  const b=document.getElementById(id);
+  if(!b) return;
+  const old=b.textContent;
+  b.textContent=msg;
+  setTimeout(()=>b.textContent=old,ms);
+}
+function _sdfState(){
+  return {
+    version:"sdf_raymarch_state_v1",
+    seed:seed,
+    P:[...P],
+    colorState:JSON.parse(JSON.stringify(colorState||{})),
+    locks:JSON.parse(JSON.stringify(locks||{}))
+  };
+}
+function _sdfApplyState(s){
+  if(!s) return;
+  if(Array.isArray(s.P)) P=s.P.slice();
+  if(typeof s.seed==="number") seed=s.seed;
+  if(s.colorState) Object.assign(colorState,s.colorState);
+  if(s.locks) Object.assign(locks,s.locks);
+  if(typeof syncUI==="function") syncUI();
+  if(typeof updateUI==="function") updateUI();
+  if(typeof build==="function") build();
+}
+async function _copySdfState(){
+  const payload=JSON.stringify(_sdfState());
+  try{ await navigator.clipboard.writeText(payload); _flashBtn("copy","copied ✓"); }
+  catch(e){ prompt("copy state",payload); }
+}
+async function _pasteSdfState(){
+  try{
+    const txt=await navigator.clipboard.readText();
+    _sdfApplyState(JSON.parse(txt));
+    _flashBtn("paste","pasted ✓");
+  }catch(e){ _flashBtn("paste","paste ✗",1200); }
+}
+function _resetSdf(){
+  location.reload();
+}
+function _saveSdf2x(){
+  const src=document.querySelector("canvas");
+  if(!src) return _flashBtn("save2x","no canvas",1200);
+  const out=document.createElement("canvas");
+  out.width=src.width*2;
+  out.height=src.height*2;
+  const ctx=out.getContext("2d");
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(src,0,0,out.width,out.height);
+  const a=document.createElement("a");
+  a.download=`noixzy_sdf_raymarch_${seed}_2x.png`;
+  a.href=out.toDataURL("image/png");
+  a.click();
+  _flashBtn("save2x","saved ✓");
+}
+let _sdfRecorder=null,_sdfRecChunks=[];
+function _recSdf(){
+  const btn=document.getElementById("rec");
+  const src=document.querySelector("canvas");
+  if(!src) return;
+  if(_sdfRecorder && _sdfRecorder.state==="recording"){
+    _sdfRecorder.stop();
+    return;
+  }
+  const durEl=document.getElementById("recDur");
+  const seconds=durEl?parseInt(durEl.value,10)||4:4;
+  const stream=src.captureStream(30);
+  _sdfRecChunks=[];
+  _sdfRecorder=new MediaRecorder(stream,{mimeType:"video/webm"});
+  _sdfRecorder.ondataavailable=e=>{ if(e.data&&e.data.size) _sdfRecChunks.push(e.data); };
+  _sdfRecorder.onstop=()=>{
+    const blob=new Blob(_sdfRecChunks,{type:"video/webm"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.download=`noixzy_sdf_raymarch_${seed}_${seconds}s.webm`;
+    a.href=url;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(btn) btn.textContent="rec";
+  };
+  _sdfRecorder.start();
+  if(btn) btn.textContent="stop";
+  setTimeout(()=>{ if(_sdfRecorder&&_sdfRecorder.state==="recording") _sdfRecorder.stop(); },seconds*1000);
+}
+function _bindUtilityControls(){
+  document.getElementById("reset")?.addEventListener("click",_resetSdf);
+  document.getElementById("copy")?.addEventListener("click",_copySdfState);
+  document.getElementById("paste")?.addEventListener("click",_pasteSdfState);
+  document.getElementById("save2x")?.addEventListener("click",_saveSdf2x);
+  document.getElementById("rec")?.addEventListener("click",_recSdf);
+}
+
 let audioCtx,analyser,audioData,audioActive=false;
 const ABANDS={bass:0,mid:0,high:0,presence:0};
 const AMAP={bass:'p5',mid:'p2',high:'p6',presence:'p4'};
@@ -1063,6 +1168,7 @@ function _buildAudioUI(){
     dep.addEventListener("input",()=>{ADEPTH[band]=parseFloat(dep.value);});
     row.append(lbl,sel,dep);audioBands.appendChild(row);
   });
+  _bindUtilityControls();
   document.getElementById("btnPin").addEventListener("click",_pinFav);
   document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
   document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
