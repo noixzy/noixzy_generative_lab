@@ -61,6 +61,164 @@
   .consoleBtns { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
   .consoleBtns button { flex:1 1 calc(50% - 6px); min-width:76px; }
   .presetStatus { min-height:15px; color:var(--dim); font-size:11px; letter-spacing:.04em; margin-bottom:4px; }
+  /* NOIXZY_HAND_AUTHORED_GRID_UI_CSS */
+  .stageFavs {
+    position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
+    z-index:22; display:flex; justify-content:center; align-items:center;
+    flex-wrap:wrap; gap:8px; max-width:min(760px,68vw);
+    pointer-events:auto;
+  }
+  .stageFavs:empty { display:none; }
+  .stageFavs .chip { margin:0; }
+  .stageFavs button,
+  .stageFavs .chip {
+    display:flex; align-items:center; gap:5px;
+    background:#000; border:1px solid #333; border-radius:4px;
+    padding:4px 6px; cursor:pointer; font-size:11px;
+  }
+  .stageFavs button:hover,
+  .stageFavs .chip:hover { border-color:var(--accent); color:var(--accent); }
+  .stageFavs .chip b,
+  .stageFavs button b { color:var(--accent); }
+  .stageFavs .sw { width:9px; height:9px; border-radius:2px; display:inline-block; }
+  .stageFavs .x { opacity:.45; padding:0 2px; }
+  .stageFavs .x:hover { opacity:1; color:var(--accent); }
+
+  #stage canvas {
+    position:absolute !important;
+    inset:0 !important;
+    z-index:0 !important;
+  }
+  #stageTools {
+    z-index:1000 !important;
+    pointer-events:auto !important;
+  }
+  #stageTools,
+  #stageTools * {
+    pointer-events:auto !important;
+  }
+  #stageFavs {
+    z-index:1001 !important;
+    pointer-events:auto !important;
+  }
+  #stageThumbs {
+    z-index:1000 !important;
+    pointer-events:auto !important;
+  }
+  #favPanel,
+  #favs,
+  #favBtns {
+    display:none !important;
+  }
+
+  /* NOIXZY_PANEL_THEME_FAV_SWATCHES_ONLY_CSS */
+  .panel .consoleLabel {
+    margin:10px 0 6px;
+    color:var(--dim);
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    font-size:10px;
+  }
+  .panel .consoleRule {
+    height:1px;
+    background:rgba(255,255,255,.08);
+    margin:10px 0;
+  }
+  .panel .cycleLine {
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .panel .cycleLine select {
+    flex:1;
+    min-width:0;
+  }
+  .panel .consoleBtns {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    margin:8px 0 12px;
+  }
+  .panel .consoleBtns button {
+    min-width:0;
+  }
+  .panel input[type="range"] {
+    accent-color:var(--accent);
+  }
+  .panel input[type="color"] {
+    border-color:var(--accent);
+  }
+  .panel select:focus,
+  .panel input:focus {
+    outline:1px solid var(--accent);
+  }
+  .stageFavs {
+    position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
+    z-index:1001; display:flex; justify-content:center; align-items:center;
+    flex-wrap:wrap; gap:8px; max-width:min(760px,68vw);
+    pointer-events:auto;
+  }
+  .stageFavs:empty { display:none; }
+  .stageFavs .chip {
+    margin:0;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    background:rgba(0,0,0,.58);
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:4px;
+    padding:4px 6px;
+    cursor:pointer;
+    font-size:11px;
+  }
+  .stageFavs .chip:hover {
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+  .stageFavs .sw {
+    width:9px;
+    height:9px;
+    border-radius:2px;
+    display:inline-block;
+    background:var(--accent);
+  }
+  .stageFavs .x {
+    opacity:.45;
+    padding:0 2px;
+  }
+  .stageFavs .x:hover {
+    opacity:1;
+    color:var(--accent);
+  }
+  #favPanel,
+  #favs,
+  #favBtns {
+    display:none !important;
+  }
+
+  /* NOIXZY_TOP_RIGHT_BUTTONS_ONLY_CSS */
+  .panel .consoleBtns {
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+    margin:8px 0 12px !important;
+  }
+  .panel .consoleBtns button {
+    flex:1 1 calc(33.333% - 8px) !important;
+    min-width:82px !important;
+    text-align:center !important;
+  }
+  .panel .consoleBtns .seedLabel {
+    display:inline-block;
+    line-height:1.05;
+  }
+  .panel .consoleBtns .seedRead {
+    display:block;
+    margin-top:2px;
+    color:var(--dim);
+    font-size:10px;
+  }
+
 </style>
 </head>
 <body>
@@ -71,6 +229,7 @@
 </div>
 <div class="app">
   <div id="stage" class="stage">
+    <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
         <button id="btnPin" type="button">★ pin</button>
@@ -500,15 +659,76 @@ function _loadFavs(){try{_favs=JSON.parse(localStorage.getItem(_FAV_KEY)||"[]");
 function _saveFavs(){try{localStorage.setItem(_FAV_KEY,JSON.stringify(_favs));}catch(e){}}
 function _pinFav(){_favs.push({P:{...P},cs:{...cs}});_saveFavs();_renderFavs();}
 function _renderFavs(){
-  const fp=document.getElementById("favPanel");if(!fp)return;fp.innerHTML="";
-  const fb=document.getElementById("favBtns");if(fb)fb.style.display=_favs.length?"grid":"none";
+  /* NOIXZY_NATIVE_SWATCH_RENDER_FAVS */
+  const fp=document.getElementById("stageFavs")||document.getElementById("favPanel");
+  if(!fp) return;
+  fp.innerHTML="";
+
+  const fb=document.getElementById("favBtns");
+  if(fb) fb.style.display="none";
+
+  if(typeof _favs === "undefined") return;
+
   _favs.forEach((f,i)=>{
-    const b=document.createElement("button");b.textContent="★ "+(i+1);b.style.cssText="font-size:11px;padding:4px;";
-    b.addEventListener("click",()=>{
-      Object.assign(P,f.P);if(f.cs)Object.assign(cs,f.cs);
-      _pAudioParams.forEach(pm=>{const el=document.getElementById(pm.sid);if(el)el.value=P[pm.k];});
+    const chip=document.createElement("button");
+    chip.type="button";
+    chip.className="chip";
+    chip.title="restore favorite";
+
+    const sw=document.createElement("span");
+    sw.className="sw";
+
+    let swatch = null;
+    if(f.cs) swatch = f.cs.hi || f.cs.form || f.cs.bg;
+    if(!swatch && typeof cs !== "undefined") swatch = cs.hi || cs.form || cs.bg;
+    if(!swatch) swatch = getComputedStyle(document.documentElement).getPropertyValue("--accent") || "#fff";
+    sw.style.background = swatch;
+
+    const label=document.createElement("b");
+    label.textContent="★ "+(i+1);
+
+    const x=document.createElement("span");
+    x.className="x";
+    x.textContent="×";
+    x.title="remove";
+
+    chip.appendChild(sw);
+    chip.appendChild(label);
+    chip.appendChild(x);
+
+    chip.addEventListener("click",ev=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      if(ev.target.classList.contains("x")){
+        _favs.splice(i,1);
+        try{ if(typeof _saveFavs==="function") _saveFavs(); }catch(e){}
+        _renderFavs();
+        return;
+      }
+
+      if(typeof _applyFav === "function"){
+        _applyFav(f);
+      } else {
+        try{ if(f.P && typeof P !== "undefined") Object.assign(P,f.P); }catch(e){}
+        try{ if(f.cs && typeof cs !== "undefined") Object.assign(cs,f.cs); }catch(e){}
+        try{ if(typeof syncUI === "function") syncUI(); }catch(e){}
+        try{ if(typeof syncColorUI === "function") syncColorUI(); }catch(e){}
+        try{ if(typeof updateColorUI === "function") updateColorUI(); }catch(e){}
+        try{
+          if(typeof _pAudioParams !== "undefined"){
+            _pAudioParams.forEach(pm=>{
+              const el=document.getElementById(pm.sid);
+              if(el && typeof P !== "undefined") el.value=P[pm.k];
+            });
+          }
+        }catch(e){}
+      }
+
+      try{ _noixzySyncThemeChromeFormAndFavs(); }catch(e){}
     });
-    fp.appendChild(b);
+
+    fp.appendChild(chip);
   });
 }
 function _buildAudioUI(){
@@ -662,8 +882,19 @@ function setup() {
       a.href=url; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
       if(btn) btn.textContent="video";
     };
-    rec.start(); if(btn) btn.textContent="stop";
-    setTimeout(()=>{ if(rec.state==="recording") rec.stop(); },seconds*1000);
+    rec.start();
+    let remaining=seconds;
+    if(btn) btn.textContent="● "+remaining+"s";
+    const iv=setInterval(()=>{
+      remaining--;
+      if(remaining>0){
+        if(btn) btn.textContent="● "+remaining+"s";
+      } else {
+        clearInterval(iv);
+        if(btn) btn.textContent="saving…";
+        if(rec.state==="recording") rec.stop();
+      }
+    },1000);
   });
   // starter cycle arrows
   document.getElementById("starterPrev")?.addEventListener("click",()=>{
@@ -725,6 +956,510 @@ const ALL_MODULES=[
   {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
   {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
 ];
+
+/* NOIXZY_HAND_AUTHORED_GRID_UI_START */
+function _noixzyHandAuthoredGridUi(){
+  const stage=document.getElementById("stage");
+  if(stage && !document.getElementById("stageFavs")){
+    const favs=document.createElement("div");
+    favs.id="stageFavs";
+    favs.className="stageFavs";
+    stage.insertBefore(favs, stage.firstChild);
+  }
+
+  const tools=document.getElementById("stageTools");
+  if(tools && !tools.dataset.noixzyGridOrdered){
+    tools.dataset.noixzyGridOrdered="1";
+    const groups = [
+      ["btnPin","exportFavs","btnCopy","btnPaste"],
+      ["btnAudio","clearFavs"],
+      ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    ];
+    const made=[];
+    groups.forEach(ids=>{
+      const nodes=ids.map(id=>document.getElementById(id)).filter(Boolean);
+      if(!nodes.length) return;
+      const g=document.createElement("div");
+      g.className="stageToolGroup";
+      nodes.forEach(n=>g.appendChild(n));
+      made.push(g);
+    });
+    if(made.length){
+      tools.innerHTML="";
+      made.forEach(g=>tools.appendChild(g));
+    }
+  }
+
+  // Bubble-phase only. Do not use capture; capture killed SDF buttons.
+  if(tools && !tools.dataset.noixzyBubbleStop){
+    tools.dataset.noixzyBubbleStop="1";
+    ["pointerdown","pointerup","mousedown","mouseup","touchstart","touchend","click","dblclick","wheel"].forEach(type=>{
+      tools.addEventListener(type,e=>e.stopPropagation(), type==="wheel" ? {passive:false} : false);
+    });
+  }
+
+  const rail=document.getElementById("stageThumbs");
+  if(rail && !rail.dataset.noixzyWheelBound){
+    rail.dataset.noixzyWheelBound="1";
+    ["pointerdown","mousedown","mouseup","touchstart"].forEach(type=>{
+      rail.addEventListener(type,e=>e.stopPropagation(),true);
+    });
+    rail.addEventListener("wheel",e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const strip=document.getElementById("moduleThumbStrip");
+      if(strip) strip.scrollTop += e.deltaY;
+    },{capture:true,passive:false});
+  }
+
+  // Panel: keep theme first, then reset/pause, then starter/local presets, then params.
+  // This moves existing nodes only, preserving native handlers.
+  const panel=document.querySelector(".panel");
+  if(panel && !panel.dataset.noixzyPanelOrdered){
+    const consoleBtns=panel.querySelector(".consoleBtns");
+    const presetBox=panel.querySelector(".presetBox");
+    const presetStatus=document.getElementById("presetStatus");
+
+    if(consoleBtns && presetBox && !presetBox.contains(consoleBtns)){
+      let anchor=consoleBtns.nextSibling;
+      if(presetStatus && presetStatus.parentElement===panel){
+        panel.insertBefore(presetStatus, anchor);
+        anchor=presetStatus.nextSibling;
+      }
+      panel.insertBefore(presetBox, anchor);
+      panel.dataset.noixzyPanelOrdered="1";
+    }
+  }
+}
+
+window.addEventListener("load",()=>{
+  setTimeout(()=>{ try{ _noixzyHandAuthoredGridUi(); }catch(e){ console.error(e); } },40);
+  setTimeout(()=>{ try{ _noixzyHandAuthoredGridUi(); }catch(e){ console.error(e); } },250);
+});
+/* NOIXZY_HAND_AUTHORED_GRID_UI_END */
+
+
+/* NOIXZY_PANEL_THEME_FAV_SWATCHES_ONLY_START */
+function _noixzyThemePaletteIndex(){
+  let name = "";
+  try{ if(typeof activeTheme !== "undefined") name = activeTheme; }catch(e){}
+  const sel = document.getElementById("themeSelect");
+  if(!name && sel) name = sel.value;
+  let idx = -1;
+  try{ idx = THEME_NAMES.indexOf(name); }catch(e){}
+  if(idx < 0 && sel) {
+    try{ idx = THEME_NAMES.indexOf(sel.value); }catch(e){}
+  }
+  if(idx < 0) idx = 0;
+  return idx;
+}
+
+function _noixzySyncThemeChromeFormAndFavs(){
+  let idx = _noixzyThemePaletteIndex();
+  let pal = null;
+  try{ pal = PALETTES[idx]; }catch(e){}
+  if(!pal) return;
+
+  const bg = pal[1];
+  const form = pal[2];
+  const hi = pal[3];
+
+  const root = document.documentElement.style;
+  root.setProperty("--bg", bg);
+  root.setProperty("--panel", bg);
+  root.setProperty("--accent", hi);
+  root.setProperty("--ink", hi);
+  root.setProperty("--dim", form);
+
+  // Native form/color sync paths, depending on module family.
+  try{ if(typeof syncColorUI === "function") syncColorUI(); }catch(e){}
+  try{ if(typeof updateColorUI === "function") updateColorUI(); }catch(e){}
+
+  const palSlider = document.getElementById("sPal");
+  const palLabel = document.getElementById("vPal");
+  if(palSlider) palSlider.value = idx;
+  if(palLabel) palLabel.textContent = idx + " " + pal[0];
+
+  // Fav chips should recolor immediately after theme/fav changes.
+  try{ if(typeof renderFavs === "function") renderFavs(); }catch(e){}
+  try{ if(typeof _renderFavs === "function") _renderFavs(); }catch(e){}
+}
+
+function _noixzyOrderTopRightPanelLikeGrid(){
+  const panel = document.querySelector(".panel");
+  if(!panel || panel.dataset.noixzyPanelThemeOrder === "1") return;
+
+  const h1 = panel.querySelector("h1");
+  const themeSelect = document.getElementById("themeSelect");
+  const themeCycle = themeSelect ? themeSelect.closest(".cycleLine") : null;
+  const consoleBtns = panel.querySelector(".consoleBtns");
+  const presetBox = panel.querySelector(".presetBox");
+  const presetStatus = document.getElementById("presetStatus");
+  const firstParamRow = [...panel.querySelectorAll(".row")].find(row => !row.contains(themeSelect));
+
+  if(!h1 || !themeCycle) return;
+
+  let themeLabel = panel.querySelector('[data-noixzy-theme-label="1"]');
+  if(!themeLabel){
+    themeLabel = document.createElement("div");
+    themeLabel.className = "consoleLabel";
+    themeLabel.dataset.noixzyThemeLabel = "1";
+    themeLabel.textContent = "theme";
+  }
+
+  let rule = panel.querySelector('[data-noixzy-theme-rule="1"]');
+  if(!rule){
+    rule = document.createElement("div");
+    rule.className = "consoleRule";
+    rule.dataset.noixzyThemeRule = "1";
+  }
+
+  panel.insertBefore(themeLabel, h1.nextSibling);
+  panel.insertBefore(themeCycle, themeLabel.nextSibling);
+  panel.insertBefore(rule, themeCycle.nextSibling);
+
+  let anchor = rule.nextSibling;
+
+  if(consoleBtns){
+    panel.insertBefore(consoleBtns, anchor);
+    anchor = consoleBtns.nextSibling;
+  }
+
+  if(presetBox){
+    panel.insertBefore(presetBox, anchor);
+    anchor = presetBox.nextSibling;
+  }
+
+  if(presetStatus){
+    panel.insertBefore(presetStatus, anchor);
+    anchor = presetStatus.nextSibling;
+  }
+
+  if(firstParamRow){
+    panel.insertBefore(firstParamRow, anchor);
+  }
+
+  // Remove empty theme wrapper rows left behind after moving the cycleLine.
+  [...panel.querySelectorAll(".row")].forEach(row=>{
+    if(row.children.length === 0 || row.textContent.trim() === ""){
+      row.remove();
+    }
+  });
+
+  panel.dataset.noixzyPanelThemeOrder = "1";
+}
+
+function _noixzyEnsureStageFavHost(){
+  const stage = document.getElementById("stage");
+  if(stage && !document.getElementById("stageFavs")){
+    const host = document.createElement("div");
+    host.id = "stageFavs";
+    host.className = "stageFavs";
+    stage.insertBefore(host, stage.firstChild);
+  }
+}
+
+function _noixzyWrapThemeApply(){
+  if(window.__noixzyThemeApplyWrapped) return;
+  if(typeof applyTheme !== "function") return;
+
+  const nativeApplyTheme = applyTheme;
+  applyTheme = function(name){
+    const out = nativeApplyTheme.apply(this, arguments);
+    setTimeout(()=>{
+      try{ _noixzySyncThemeChromeFormAndFavs(); }catch(e){}
+    },0);
+    return out;
+  };
+
+  window.__noixzyThemeApplyWrapped = true;
+}
+
+function _noixzyPanelThemeFavBoot(){
+  _noixzyEnsureStageFavHost();
+  _noixzyOrderTopRightPanelLikeGrid();
+  _noixzyWrapThemeApply();
+  _noixzySyncThemeChromeFormAndFavs();
+}
+
+window.addEventListener("load",()=>{
+  setTimeout(()=>{ try{ _noixzyPanelThemeFavBoot(); }catch(e){ console.error(e); } },40);
+  setTimeout(()=>{ try{ _noixzyPanelThemeFavBoot(); }catch(e){ console.error(e); } },260);
+});
+/* NOIXZY_PANEL_THEME_FAV_SWATCHES_ONLY_END */
+
+
+/* NOIXZY_TOP_RIGHT_BUTTONS_ONLY_START */
+function _noixzyEnsureTopRightButtons(){
+  const panel = document.querySelector(".panel");
+  if(!panel) return;
+
+  const themeSelect = document.getElementById("themeSelect");
+  const themeLine = themeSelect ? themeSelect.closest(".cycleLine") : null;
+
+  let btnBox = panel.querySelector(".consoleBtns");
+  if(!btnBox){
+    btnBox = document.createElement("div");
+    btnBox.className = "consoleBtns";
+  }
+
+  // Build only the top-right control buttons.
+  // Existing reset/pause IDs are preserved. Existing metafluid random buttons are reused when present.
+  const existingRandom =
+    document.getElementById("btnRandom") ||
+    document.getElementById("randomUnlocked");
+
+  const existingForm =
+    document.getElementById("btnRandomForm") ||
+    document.getElementById("randomForm");
+
+  const existingColor =
+    document.getElementById("btnRndColor") ||
+    document.getElementById("randomColor");
+
+  const existingSeed = document.getElementById("btnNewSeed");
+  const existingReset = document.getElementById("btnReset");
+  const existingPause = document.getElementById("btnPause");
+
+  const makeBtn = (id, html) => {
+    let b = document.getElementById(id);
+    if(!b){
+      b = document.createElement("button");
+      b.id = id;
+      b.type = "button";
+    }
+    b.innerHTML = html;
+    return b;
+  };
+
+  const bRandom = existingRandom || makeBtn("btnRandom", "randomize<br>unlocked");
+  const bForm   = existingForm   || makeBtn("btnRandomForm", "randomize<br>form");
+  const bColor  = existingColor  || makeBtn("btnRndColor", "randomize<br>color");
+  const bSeed   = existingSeed   || makeBtn("btnNewSeed", '<span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span>');
+  const bReset  = existingReset  || makeBtn("btnReset", "reset");
+  const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  // Normalize labels without breaking IDs.
+  bRandom.innerHTML = "randomize<br>unlocked";
+  bForm.innerHTML = "randomize<br>form";
+  bColor.innerHTML = "randomize<br>color";
+  if(!bSeed.querySelector(".seedLabel")){
+    bSeed.innerHTML = '<span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span>';
+  }
+
+  btnBox.innerHTML = "";
+  [bRandom,bForm,bColor,bSeed,bReset,bPause].forEach(b => btnBox.appendChild(b));
+
+  if(themeLine){
+    panel.insertBefore(btnBox, themeLine.nextSibling);
+  } else {
+    const h1 = panel.querySelector("h1");
+    panel.insertBefore(btnBox, h1 ? h1.nextSibling : panel.firstChild);
+  }
+
+  // Generic fallback actions for modules that did not originally have random buttons.
+  // Native reset/pause handlers stay attached because those nodes are moved, not replaced.
+  const randRange = (el) => {
+    const min = parseFloat(el.min || "0");
+    const max = parseFloat(el.max || "1");
+    const step = parseFloat(el.step || "0.01");
+    let v = min + Math.random() * (max - min);
+    if(Number.isFinite(step) && step > 0) v = Math.round(v / step) * step;
+    el.value = String(Math.max(min, Math.min(max, v)));
+    el.dispatchEvent(new Event("input", {bubbles:true}));
+    el.dispatchEvent(new Event("change", {bubbles:true}));
+  };
+
+  const randomizeForm = () => {
+    panel.querySelectorAll('input[type="range"]').forEach(el => {
+      if(el.id === "sPal") return;
+      randRange(el);
+    });
+  };
+
+  const randomizeColor = () => {
+    const colors = panel.querySelectorAll('input[type="color"]');
+    if(colors.length){
+      colors.forEach(el => {
+        el.value = "#" + Math.floor(Math.random()*0xffffff).toString(16).padStart(6,"0");
+        el.dispatchEvent(new Event("input", {bubbles:true}));
+        el.dispatchEvent(new Event("change", {bubbles:true}));
+      });
+    } else if(typeof cycleTheme === "function") {
+      cycleTheme(1);
+    }
+  };
+
+  if(!bRandom.dataset.noixzyTopButtonBound){
+    bRandom.dataset.noixzyTopButtonBound = "1";
+    bRandom.addEventListener("click", e => {
+      e.preventDefault();
+      randomizeForm();
+      randomizeColor();
+    });
+  }
+
+  if(!bForm.dataset.noixzyTopButtonBound){
+    bForm.dataset.noixzyTopButtonBound = "1";
+    bForm.addEventListener("click", e => {
+      e.preventDefault();
+      randomizeForm();
+    });
+  }
+
+  if(!bColor.dataset.noixzyTopButtonBound){
+    bColor.dataset.noixzyTopButtonBound = "1";
+    bColor.addEventListener("click", e => {
+      e.preventDefault();
+      randomizeColor();
+    });
+  }
+
+  if(!bSeed.dataset.noixzyTopButtonBound){
+    bSeed.dataset.noixzyTopButtonBound = "1";
+    bSeed.addEventListener("click", e => {
+      e.preventDefault();
+      const read = bSeed.querySelector(".seedRead") || document.getElementById("vSeed");
+      const n = Math.floor(Math.random() * 999999);
+      if(read) read.textContent = String(n);
+      randomizeForm();
+    });
+  }
+}
+
+window.addEventListener("load", () => {
+  setTimeout(() => { try{ _noixzyEnsureTopRightButtons(); }catch(e){ console.error(e); } }, 40);
+  setTimeout(() => { try{ _noixzyEnsureTopRightButtons(); }catch(e){ console.error(e); } }, 250);
+});
+/* NOIXZY_TOP_RIGHT_BUTTONS_ONLY_END */
+
+
+/* NOIXZY_BOTTOM_FAV_BUTTONS_ONLY_START */
+function _noixzyEnsureBottomFavButtons(){
+  const tools = document.getElementById("stageTools");
+  if(!tools) return;
+
+  const makeBtn = (id, text) => {
+    let b = document.getElementById(id);
+    if(!b){
+      b = document.createElement("button");
+      b.id = id;
+      b.type = "button";
+    }
+    b.textContent = text;
+    return b;
+  };
+
+  const pin   = document.getElementById("btnPin");
+  const exp   = makeBtn("exportFavs", "export ★");
+  const copy  = document.getElementById("btnCopy");
+  const paste = document.getElementById("btnPaste");
+
+  const audio = document.getElementById("btnAudio");
+  const clear = makeBtn("clearFavs", "clear ★");
+
+  const thumb = document.getElementById("btnThumb");
+  const video = document.getElementById("btnRec");
+  const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+  const save  = document.getElementById("btnSave");
+  const save2 = document.getElementById("btnSave2x");
+
+  const groups = [
+    [pin, exp, copy, paste],
+    [audio, clear],
+    [thumb, video, dur, save, save2]
+  ];
+
+  tools.innerHTML = "";
+
+  groups.forEach(nodes => {
+    const live = nodes.filter(Boolean);
+    if(!live.length) return;
+    const g = document.createElement("div");
+    g.className = "stageToolGroup";
+    live.forEach(n => g.appendChild(n));
+    tools.appendChild(g);
+  });
+
+  // Fallback export if this module did not already wire exportFavs natively.
+  if(!exp.dataset.noixzyFallbackBound){
+    exp.dataset.noixzyFallbackBound = "1";
+    exp.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      let payload = null;
+
+      try{
+        if(typeof favs !== "undefined") payload = favs;
+      }catch(err){}
+
+      try{
+        if(!payload && typeof _favs !== "undefined") payload = _favs;
+      }catch(err){}
+
+      if(!payload){
+        payload = [];
+        document.querySelectorAll("#stageFavs .chip").forEach((chip,i)=>{
+          payload.push({ index:i+1, text:chip.textContent.trim() });
+        });
+      }
+
+      const txt = JSON.stringify(payload, null, 2);
+      navigator.clipboard?.writeText(txt).then(()=>{
+        exp.textContent = "copied ★";
+        setTimeout(()=>exp.textContent = "export ★", 900);
+      }).catch(()=>{
+        prompt("copy favorites json", txt);
+        exp.textContent = "export ★";
+      });
+    });
+  }
+
+  // Fallback clear if this module did not already wire clearFavs natively.
+  if(!clear.dataset.noixzyFallbackBound){
+    clear.dataset.noixzyFallbackBound = "1";
+    clear.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if(!confirm("clear all favorites?")) return;
+
+      let cleared = false;
+
+      try{
+        if(typeof favs !== "undefined" && Array.isArray(favs)){
+          favs.length = 0;
+          cleared = true;
+          try{ if(typeof saveFavs === "function") saveFavs(); }catch(err){}
+          try{ if(typeof renderFavs === "function") renderFavs(); }catch(err){}
+        }
+      }catch(err){}
+
+      try{
+        if(typeof _favs !== "undefined" && Array.isArray(_favs)){
+          _favs.length = 0;
+          cleared = true;
+          try{ if(typeof _saveFavs === "function") _saveFavs(); }catch(err){}
+          try{ if(typeof _renderFavs === "function") _renderFavs(); }catch(err){}
+        }
+      }catch(err){}
+
+      const host = document.getElementById("stageFavs");
+      if(host) host.innerHTML = "";
+
+      clear.textContent = cleared ? "cleared ★" : "clear ★";
+      setTimeout(()=>clear.textContent = "clear ★", 900);
+    });
+  }
+}
+
+window.addEventListener("load", () => {
+  setTimeout(() => { try{ _noixzyEnsureBottomFavButtons(); }catch(e){ console.error(e); } }, 60);
+  setTimeout(() => { try{ _noixzyEnsureBottomFavButtons(); }catch(e){ console.error(e); } }, 300);
+});
+/* NOIXZY_BOTTOM_FAV_BUTTONS_ONLY_END */
+
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
   const safeIdx=idx>=0?idx:0;
