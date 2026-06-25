@@ -500,6 +500,7 @@ const ALL_MODULES=[
   {id:"metafluid",title:"metafluid"},
   {id:"moire_field",title:"moire field"},{id:"particle_orbitals",title:"particle orbitals"},
   {id:"radial_noise",title:"radial noise"},
+  {id:"kaleidoscope_field",title:"kaleidoscope field"},
   {id:"topographic_rings",title:"topographic rings"},{id:"ribbon_flow",title:"ribbon flow"},
   {id:"glyph_field",title:"glyph field"},
   {id:"crystal_growth",title:"crystal growth"},{id:"vector_scope",title:"vector scope"},
@@ -1359,6 +1360,90 @@ function heightField(G){
   for(let j=0;j<G;j++)for(let i=0;i<G;i++){
     const x=i/(G-1),y=j/(G-1),v=_radialVal(x,y,t);
     out[i+j*G]=Math.pow(v,map(P.contrast,0,1,2.2,.75));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+
+{ id:"kaleidoscope_field", title:"kaleidoscope field",
+  system:[
+    {k:"wedges",label:"wedges",min:0,max:1,step:.01,v:.46,sys:true},
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.54,rr:true},
+    {k:"fold",label:"fold",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"twist",label:"twist",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.32},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _kVal(x,y,t){
+  let dx=x-.5,dy=y-.5;
+  let r=Math.sqrt(dx*dx+dy*dy);
+  let a=Math.atan2(dy,dx);
+  const wedges=Math.floor(map(P.wedges,0,1,4,18));
+  const sector=TWO_PI/wedges;
+  a=((a%sector)+sector)%sector;
+  a=Math.abs(a-sector*.5);
+  a += Math.sin(r*map(P.twist,0,1,2,18)+t*.8)*P.twist*.38;
+  const fx=.5+Math.cos(a)*r;
+  const fy=.5+Math.sin(a)*r;
+  const sc=map(P.density,0,1,2.8,12.5);
+  const n=noise(fx*sc+seed*.01,fy*sc+31,t*.15);
+  const stripe=Math.sin((fx+fy+n*P.warp)*map(P.fold,0,1,12,58)+t*1.1)*.5+.5;
+  return Math.max(0,Math.min(1,(stripe*.58+n*.42)*(1-r*.85)));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.3);
+  const wedges=Math.floor(map(P.wedges,0,1,4,18));
+  const radius=Math.min(W,H)*.58;
+  g.background(Math.min(255,pal[0][0]*1.18+12),Math.min(255,pal[0][1]*1.18+12),Math.min(255,pal[0][2]*1.18+12));
+  g.noStroke();
+  g.blendMode(ADD);
+
+  const rings=Math.floor(map(P.density,0,1,34,110));
+  for(let j=0;j<rings;j++){
+    const r0=j/rings*.56;
+    const r1=(j+1)/rings*.56;
+    for(let k=0;k<wedges;k++){
+      const a0=k/wedges*TWO_PI;
+      const a1=(k+1)/wedges*TWO_PI;
+      const midA=(a0+a1)/2, midR=(r0+r1)/2;
+      const v=_kVal(.5+Math.cos(midA)*midR,.5+Math.sin(midA)*midR,t);
+      if(v<.12) continue;
+      const z=(v-.5)*2;
+      const scl=Math.abs(dep)>0.01?1-z*.16*dep:1;
+      const col=(k+j)%2?pal[1]:pal[2];
+      g.fill(Math.min(255,col[0]*1.22+20),Math.min(255,col[1]*1.22+20),Math.min(255,col[2]*1.22+20),map(v,0,1,35,205));
+      g.beginShape();
+      for(const ar of [[a0,r0],[a1,r0],[a1,r1],[a0,r1]]){
+        const a=ar[0], r=ar[1];
+        g.vertex(cx+Math.cos(a)*r*radius*scl,cy+Math.sin(a)*r*radius*scl+z*cy*.10*dep);
+      }
+      g.endShape(CLOSE);
+    }
+  }
+
+  g.noFill();
+  g.stroke(pal[2][0],pal[2][1],pal[2][2],90);
+  g.strokeWeight(1.2);
+  for(let k=0;k<wedges;k++){
+    const a=k/wedges*TWO_PI;
+    g.line(cx,cy,cx+Math.cos(a)*radius,cy+Math.sin(a)*radius);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.3);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_kVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.fold,0,1,1.8,.72));
   }
   _edgeMask(out,G); return out;
 }` },
