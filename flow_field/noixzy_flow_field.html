@@ -63,17 +63,10 @@ select:hover { border-color:var(--accent); }
 .navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
 .navBar a:hover { color:var(--accent); }
 .navCurrent { color:var(--accent) !important; }
-/* Stage overlay — centered favorites */
-.stageFavs {
-  position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
-  z-index:22; display:flex; justify-content:center; align-items:center;
-  flex-wrap:wrap; gap:8px; max-width:min(760px,68vw);
-  pointer-events:auto;
-}
-.stageFavs:empty { display:none; }
-.stageFavs .chip { margin:0; }
-
 /* Stage overlay — bottom toolbar */
+.stageFavs { position:absolute; left:50%; bottom:64px; transform:translateX(-50%); z-index:22; display:flex; justify-content:center; flex-wrap:wrap; gap:6px; max-width:min(72vw,720px); pointer-events:auto; }
+.stageFavs .chip { margin:0; }
+#favs { display:none !important; }
 .stageTools { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); z-index:21; display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:12px; background:rgba(0,0,0,0.52); border:1px solid rgba(255,255,255,0.14); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 10px 30px rgba(0,0,0,0.35); }
 .stageToolGroup { display:flex; align-items:center; gap:6px; }
 .stageTools button,.stageTools select { min-height:30px; background:rgba(0,0,0,0.50); border-color:rgba(255,255,255,0.14); padding:4px 8px; margin:0; white-space:nowrap; }
@@ -122,7 +115,7 @@ select:hover { border-color:var(--accent); }
     <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
-        <button id="pin">★ pin</button>
+        <button id="pin" type="button" onclick="pinFav();return false;">★ pin</button>
         <button id="exportFavs">export ★</button>
         <button id="copyP">copy</button>
         <button id="pasteP">paste</button>
@@ -153,7 +146,18 @@ select:hover { border-color:var(--accent); }
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
       <button id="themePrev" class="cycleBtn" type="button">‹</button>
-      <select id="themeSelect"></select>
+      <select id="themeSelect">
+        <option value="ember">ember</option>
+        <option value="teal">teal</option>
+        <option value="violet">violet</option>
+        <option value="amber">amber</option>
+        <option value="graphite" selected>graphite</option>
+        <option value="cyan">cyan</option>
+        <option value="acid">acid</option>
+        <option value="magenta">magenta</option>
+        <option value="gold">gold</option>
+        <option value="neutral">neutral</option>
+      </select>
       <button id="themeNext" class="cycleBtn" type="button">›</button>
     </div>
     <div class="consoleRule"></div>
@@ -271,32 +275,26 @@ const THEMES=[
 ];
 const THEMEKEY="noixzy_lab_theme";
 let activeTheme=null;
-function syncSeedUI(){
-  const sf=document.getElementById("seedField"); if(sf) sf.value=seed;
-  const sr=document.getElementById("seedRead"); if(sr) sr.textContent=seed;
-  const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed;
-}
-function syncPaletteUI(){
-  const el=document.getElementById("p_pal"); if(el) el.value=P.pal;
-  const sp=document.getElementById("v_pal"); if(sp) sp.textContent=P.pal;
-}
 function applyTheme(name){
-  const th=THEMES.find(t=>t.name===name); if(!th) return;
+  const idx=THEMES.findIndex(t=>t.name===name);
+  const th=THEMES[idx]; if(!th) return;
   activeTheme=name;
-  const themeIdx=THEMES.findIndex(t=>t.name===name);
-  if(themeIdx>=0 && themeIdx<PALETTES.length){
-    P.pal=themeIdx;
-    initColorState(P.pal);
-    syncPaletteUI();
-    syncColorUI();
-    dirty=true;
-  }
   const r=document.documentElement.style;
   r.setProperty('--accent',th.accent);
   r.setProperty('--bg',th.bg);
   r.setProperty('--ink',th.ink);
   r.setProperty('--dim',th.dim);
   const sel=document.getElementById('themeSelect'); if(sel)sel.value=name;
+
+  if(idx>=0 && typeof P!=="undefined"){
+    P.pal=idx;
+    initColorState(idx);
+    syncColorUI();
+    const palEl=document.getElementById("p_pal"); if(palEl) palEl.value=idx;
+    const palRead=document.getElementById("v_pal"); if(palRead) palRead.textContent=idx;
+    if(typeof buildSystem==="function") buildSystem();
+  }
+
   try{localStorage.setItem(THEMEKEY,name);}catch(e){}
 }
 function cycleTheme(dir){
@@ -672,7 +670,7 @@ function draw(){
   if(P.glow>0.01){ blendMode(ADD); tint(255,110*P.glow); image(glowBuf,0,0,W,H); blendMode(BLEND); }
   pop(); noTint();
   if(P.vig>0.01){ push(); tint(255,255*P.vig); image(vigTex,0,0,W,H); pop(); noTint(); }
-  const _sr=document.getElementById("seedRead"); if(_sr) _sr.textContent=seed;
+  const _sr=document.getElementById("seedRead"); if(_sr) _sr.textContent=seed; const _vs=document.getElementById("vSeed"); if(_vs) _vs.textContent=seed;
 }
 
 function normalizePastedP(src){
@@ -769,8 +767,8 @@ function buildUI(){
         if(p.sys) buildSystem(); else dirty=true; });
       fmt(); row.append(lab,inp); det.appendChild(row); });
     host.appendChild(det); });
-  document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;syncSeedUI();buildSystem();});
-  document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);syncSeedUI();buildSystem();_flashConsole("seed "+seed);});
+  document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();});
+  document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();_flashConsole("seed "+seed);});
   document.getElementById("pause").addEventListener("click",togglePause);
   document.getElementById("reset").addEventListener("click",()=>{const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});_flashConsole("reset");});
   document.getElementById("save").addEventListener("click",triggerSavePNG);
@@ -781,7 +779,7 @@ function buildUI(){
   document.getElementById("copyP").addEventListener("click",copyParams);
   document.getElementById("pasteP").addEventListener("click",pasteParams);
   document.getElementById("randomAll").addEventListener("click",_randomizeAll);
-  document.getElementById("randomForm")?.addEventListener("click",_randomizeForm);
+  document.getElementById("randomForm").addEventListener("click",_randomizeForm);
   document.getElementById("randomColor").addEventListener("click",_randomizeColor);
   document.getElementById("themePrev").addEventListener("click",()=>cycleTheme(-1));
   document.getElementById("themeNext").addEventListener("click",()=>cycleTheme(1));
@@ -866,7 +864,20 @@ function buildUI(){
     dep.addEventListener("input",()=>{ ADEPTH[band]=parseFloat(dep.value); });
     row.append(lbl,sel,dep); audioBands.appendChild(row);
   });
-  document.getElementById("pin").addEventListener("click",pinFav);
+  const pinBtn=document.getElementById("pin");
+  if(pinBtn){
+    let pinLock=0;
+    const doPin=e=>{
+      if(e){ e.preventDefault(); e.stopPropagation(); }
+      const now=Date.now();
+      if(now-pinLock<250) return;
+      pinLock=now;
+      pinFav();
+    };
+    ["pointerdown","mousedown","click"].forEach(type=>{
+      pinBtn.addEventListener(type,doPin,{capture:true});
+    });
+  }
   document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(favs);
     if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>_flashConsole("copied ✓"),()=>prompt("favorites:",txt)); else prompt("favorites JSON:",txt);});
   document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){favs=[];saveFavs();renderFavs();}});
@@ -876,8 +887,16 @@ function buildUI(){
   if(inkEl) inkEl.addEventListener("input",e=>{colorState.ink=e.target.value;dirty=true;});
   initColorState(P.pal); syncColorUI();
   const tSel=document.getElementById('themeSelect');
-  if(tSel){ THEMES.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.name; opt.textContent=t.name; tSel.appendChild(opt); });
-    tSel.addEventListener('change',e=>applyTheme(e.target.value)); }
+  if(tSel){
+    tSel.addEventListener('change',e=>applyTheme(e.target.value));
+
+    const palIdx=Math.max(0,Math.min(THEMES.length-1,Math.round(P.pal)||0));
+    const startTheme=THEMES[palIdx].name;
+    tSel.value=startTheme;
+    applyTheme(startTheme);
+    tSel.value=startTheme;
+    requestAnimationFrame(()=>{ tSel.value=startTheme; });
+  }
 }
 function _randomizeAll(){
   SYSTEM.forEach(p=>{
@@ -889,41 +908,56 @@ function _randomizeAll(){
   syncColorUI(); buildSystem(); _flashConsole("randomized");
 }
 function _randomizeForm(){
-  SYSTEM.forEach(p=>{
-    if(p.k==='pal') return;
-    const v=p.min+Math.random()*(p.max-p.min); P[p.k]=p.step>=1?Math.round(v):+(v.toFixed(3));
-    const el=document.getElementById("p_"+p.k); if(el) el.value=P[p.k];
-    const sp=document.getElementById("v_"+p.k); if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
-  });
+  for(const spec of PARAMS){
+    if(spec.k==="pal" || spec.g==="color") continue;
+    if(spec.rr===false) continue;
+    const min=spec.min??0, max=spec.max??1, step=spec.step??.01;
+    let v=min+Math.random()*(max-min);
+    if(step>=1) v=Math.round(v);
+    else v=Math.round(v/step)*step;
+    P[spec.k]=Math.max(min,Math.min(max,v));
+
+    const el=document.getElementById("p_"+spec.k); if(el) el.value=P[spec.k];
+    const sp=document.getElementById("v_"+spec.k); if(sp) sp.textContent=(step>=1)?P[spec.k]:(+P[spec.k]).toFixed(2);
+  }
   buildSystem(); _flashConsole("form randomized");
 }
 function _randomizeColor(){
-  const idx=Math.floor(Math.random()*PALETTES.length);
-  P.pal=idx; initColorState(idx);
-  const el=document.getElementById("p_pal"); if(el) el.value=idx;
-  const sp=document.getElementById("v_pal"); if(sp) sp.textContent=idx;
-  const themeName=(THEMES[idx]&&THEMES[idx].name)||activeTheme;
-  if(themeName) applyTheme(themeName);
-  syncColorUI(); dirty=true; _flashConsole("color randomized");
+  const idx=Math.floor(Math.random()*Math.min(PALETTES.length,THEMES.length));
+  applyTheme(THEMES[idx].name);
+  dirty=true; _flashConsole("color randomized");
 }
 let favs=[];
 function loadFavs(){ try{favs=JSON.parse(localStorage.getItem(FAVKEY)||"[]");}catch(e){favs=[];} renderFavs(); }
 function saveFavs(){ try{localStorage.setItem(FAVKEY,JSON.stringify(favs));}catch(e){} }
-function pinFav(){ favs.push({seed,P:JSON.parse(JSON.stringify(P)),cs:{...colorState}}); saveFavs(); renderFavs(); flash("pin","★ pinned"); }
-function flash(id,msg){ const b=document.getElementById(id); const o=b.textContent; b.textContent=msg; setTimeout(()=>{b.textContent=o;},1100); }
-function applyConfig(cfg){ if(cfg.seed!==undefined){seed=cfg.seed;syncSeedUI();}
+function pinFav(){
+  favs.push({seed,P:JSON.parse(JSON.stringify(P)),cs:{...colorState}});
+  saveFavs();
+  renderFavs();
+  _flashConsole("★ pinned");
+}
+function flash(id,msg){ const b=document.getElementById(id); if(!b)return; const o=b.textContent; b.textContent=msg; setTimeout(()=>{b.textContent=o;},1100); }
+function applyConfig(cfg){ if(cfg.seed!==undefined){seed=cfg.seed;document.getElementById("seedField").value=seed;}
   PARAMS.forEach(p=>{ if(cfg.P&&cfg.P[p.k]!==undefined){ P[p.k]=cfg.P[p.k];
     const el=document.getElementById("p_"+p.k); if(el)el.value=P[p.k];
     const sp=document.getElementById("v_"+p.k); if(sp)sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2); }});
   if(cfg.cs){ colorState={...colorState,...cfg.cs}; }else{ initColorState(P.pal); }
   syncColorUI(); buildSystem(); }
-function renderFavs(){ const host=document.getElementById("stageFavs")||document.getElementById("favs"); if(!host)return; host.innerHTML="";
-  favs.forEach((f,i)=>{ const chip=document.createElement("div"); chip.className="chip";
-    const accentHex=(f.cs&&f.cs.acc)?f.cs.acc:PALETTES[Math.round(f.P.pal)||0][1];
+function renderFavs(){
+  const host=document.getElementById("stageFavs")||document.getElementById("favs"); if(!host)return;
+  host.innerHTML="";
+  favs = (Array.isArray(favs)?favs:[]).filter(f=>f && f.P);
+  favs.forEach((f,i)=>{
+    const chip=document.createElement("div"); chip.className="chip";
+    const palIdx=Math.max(0,Math.min(PALETTES.length-1,Math.round((f.P&&f.P.pal)||0)||0));
+    const accentHex=(f.cs&&f.cs.acc)?f.cs.acc:PALETTES[palIdx][1];
     chip.innerHTML='<span class="sw" style="background:'+accentHex+'"></span><b>★'+(i+1)+'</b><span class="x">×</span>';
     chip.addEventListener("click",e=>{ if(e.target.classList.contains("x"))return; applyConfig(f); });
-    chip.querySelector(".x").addEventListener("click",()=>{favs.splice(i,1);saveFavs();renderFavs();});
-    host.appendChild(chip); }); }
+    chip.querySelector(".x").addEventListener("click",e=>{e.stopPropagation();favs.splice(i,1);saveFavs();renderFavs();});
+    host.appendChild(chip);
+  });
+  saveFavs();
+}
 function pbrSave(g,name){
   g.elt.toBlob(b=>{ const u=URL.createObjectURL(b);
     const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }); }
