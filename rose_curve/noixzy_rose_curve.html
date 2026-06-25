@@ -76,6 +76,7 @@
     <div class="tools">
       <button id="btnSave" type="button">save png</button>
       <button id="btnPause" type="button">pause</button>
+      <button id="btnThumb" type="button">→ thumb</button>
     </div>
 
     <div class="presetBox">
@@ -166,10 +167,34 @@ function syncUI(){
   });
 }
 
+let _thumbDir=null,_pCanvas=null;
+function _captureThumb(){
+  const src=_pCanvas||document.querySelector("canvas");
+  const c=document.createElement("canvas"); c.width=400; c.height=300;
+  c.getContext("2d").drawImage(src,0,0,400,300);
+  return c;
+}
+async function saveThumb(){
+  const btn=document.getElementById("btnThumb");
+  try{
+    if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
+    const blob=await new Promise(res=>_captureThumb().toBlob(res,"image/png"));
+    const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
+    const w=await fh.createWritable(); await w.write(blob); await w.close();
+    if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+  }catch(e){
+    if(e.name!=="AbortError"){
+      _captureThumb().toBlob(b=>{
+        const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=PIECE+".png";a.click();
+        if(btn){btn.textContent="✓ dl";setTimeout(()=>btn.textContent="→ thumb",1400);}
+      },"image/png");
+    }
+  }
+}
 function setup(){
   const stage=document.getElementById("stage");
   const c=createCanvas(stage.clientWidth,stage.clientHeight);
-  c.parent(stage);
+  c.parent(stage); _pCanvas=c.elt;
   colorMode(RGB,255);
   pg=createGraphics(width,height);
   pg.colorMode(RGB,255);
@@ -201,6 +226,7 @@ function setup(){
 
   const saved=localStorage.getItem(THEMEKEY);
   if(saved&&THEME_NAMES.includes(saved))applyTheme(saved);else applyTheme("magenta");
+  document.getElementById("btnThumb").addEventListener("click",saveThumb);
   syncUI();buildNav();
   window.addEventListener("resize",()=>{resizeCanvas(stage.clientWidth,stage.clientHeight);pg=createGraphics(width,height);pg.colorMode(RGB,255);pg.background(bgCol[0],bgCol[1],bgCol[2]);});
 }
