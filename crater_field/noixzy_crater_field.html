@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // vector scope</title>
+<title>noixzy // crater field</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // vector scope</h1>
+  <h1>noixzy // crater field</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="vector_scope", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="crater_field", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"traces","label":"traces","min":0,"max":1,"step":0.01,"v":0.48,"sys":true},{"k":"gain","label":"gain","min":0,"max":1,"step":0.01,"v":0.55,"rr":true},{"k":"phase","label":"phase","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"fold","label":"fold","min":0,"max":1,"step":0.01,"v":0.36,"rr":true},{"k":"glow","label":"glow","min":0,"max":1,"step":0.01,"v":0.6,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.38},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.54,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
+const SYSTEM=[{"k":"count","label":"count","min":0,"max":1,"step":0.01,"v":0.52,"sys":true},{"k":"radius","label":"radius","min":0,"max":1,"step":0.01,"v":0.46,"rr":true},{"k":"rim","label":"rim","min":0,"max":1,"step":0.01,"v":0.62,"rr":true},{"k":"erosion","label":"erosion","min":0,"max":1,"step":0.01,"v":0.44,"rr":true},{"k":"scatter","label":"scatter","min":0,"max":1,"step":0.01,"v":0.58,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"stack","label":"stack depth","min":-1.5,"max":1.5,"step":0.01,"v":0,"rr":true},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.18},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":9},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.65,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.62,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,53 +392,99 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-function build(){}
-function _scopePoint(u,t,layer){
-  const gain=map(P.gain,0,1,.22,.48);
-  const ph=map(P.phase,0,1,0,TWO_PI);
-  const fold=Math.floor(map(P.fold,0,1,1,7));
-  const a=u*TWO_PI;
-  const x=Math.sin(a*(2+fold)+ph+t*.9+layer*.7)*gain + Math.sin(a*3+t*.4)*gain*.28;
-  const y=Math.sin(a*(3+fold*.5)-ph+t*1.1+layer*1.3)*gain + Math.cos(a*2-t*.5)*gain*.24;
-  return [.5+x,.5+y];
+let CRATERS=[];
+function build(){
+  const n=Math.floor(map(P.count,0,1,18,120));
+  CRATERS=[];
+  for(let i=0;i<n;i++){
+    CRATERS.push({
+      x:random(.08,.92),y:random(.08,.92),
+      r:random(.018,.085)*map(P.radius,0,1,.65,1.85),
+      d:random(.45,1),
+      ph:random(TWO_PI)
+    });
+  }
+}
+function _crater(x,y,t){
+  let v=noise(x*3+seed*.01,y*3+9,t*.03)*.18;
+  for(const c of CRATERS){
+    const cx=c.x+Math.sin(t*.11+c.ph)*.012*P.scatter;
+    const cy=c.y+Math.cos(t*.10+c.ph)*.012*P.scatter;
+    const dx=x-cx,dy=y-cy,d=Math.sqrt(dx*dx+dy*dy)/(c.r+.0001);
+    const bowl=Math.exp(-d*d*1.8)*-.55*c.d;
+    const rim=Math.exp(-(d-1.0)*(d-1.0)*map(P.rim,0,1,6,34))*.48*P.rim;
+    const er=noise(x*18+c.ph,y*18-c.ph,t*.05)*P.erosion*.18;
+    v+=bowl+rim+er*Math.exp(-d*d*.8);
+  }
+  return Math.max(0,Math.min(1,.45+v));
 }
 function render(g,pal){
-  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
-  const t=animT*map(P.speed,0,1,.08,1.45);
-  const layers=Math.floor(map(P.traces,0,1,2,14));
-  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,stack=P.stack||0;
+  const stackMag=Math.min(1.5,Math.abs(stack))/1.5;
+  const stackSign=stack<0?-1:1;
+  const t=animT*map(P.speed,0,1,.04,.85);
+  const cols=Math.floor(map(P.count,0,1,52,120));
+  g.background(Math.min(255,pal[0][0]*1.14+10),Math.min(255,pal[0][1]*1.14+10),Math.min(255,pal[0][2]*1.14+10));
   g.noFill();
-  g.blendMode(ADD);
-  for(let L=0;L<layers;L++){
-    const col=L%2?pal[1]:pal[2];
-    const z=(L/(layers-1||1))*2-1;
-    const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
-    g.stroke(col[0],col[1],col[2],map(P.glow,0,1,45,190));
-    g.strokeWeight(map(P.glow,0,1,.8,3.8));
-    g.beginShape();
-    for(let i=0;i<=360;i++){
-      const p=_scopePoint(i/360,t,L);
-      g.curveVertex(cx+(p[0]*W-cx)*scl,cy+(p[1]*H-cy)*scl+z*cy*.14*dep);
+
+  function stagePoint(x,y,v,z,lz){
+    const dz=z+lz*.72*stackMag*stackSign;
+    const scl=Math.abs(dep)>0.01?1-dz*.26*dep:1;
+    const sx=cx+(x*W-cx)*scl + lz*W*.060*stackMag*stackSign;
+    const sy=cy+(y*H-cy)*scl - v*90 + dz*cy*.13*dep + lz*H*.070*stackMag*stackSign;
+    return [sx,sy];
+  }
+
+  const layers=Math.floor(map(stackMag,0,1,1,7));
+  const order=[];
+  for(let i=0;i<layers;i++) order.push(i);
+  if(stackSign<0) order.reverse();
+
+  for(const L of order){
+    const u=layers===1?1:L/(layers-1);
+    const lz=u*2-1;
+    const alphaMul=layers===1?1:lerp(.22,1,stackSign>0?u:1-u);
+    for(let j=0;j<cols;j+=2){
+      g.stroke(
+        Math.min(255,pal[2][0]*1.05+12),
+        Math.min(255,pal[2][1]*1.05+12),
+        Math.min(255,pal[2][2]*1.05+12),
+        map(j,0,cols,42,165)*alphaMul
+      );
+      g.strokeWeight(map(P.rim,0,1,.35,1.75)*lerp(.72,1.12,stackSign>0?u:1-u));
+      g.beginShape();
+      const y=j/(cols-1);
+      for(let i=0;i<=cols;i++){
+        const x=i/cols;
+        const v=_crater(x,y,t+L*.025);
+        const z=(v-.5)*2;
+        const pt=stagePoint(x,y,v,z,lz);
+        g.curveVertex(pt[0],pt[1]);
+      }
+      g.endShape();
     }
-    g.endShape(CLOSE);
+  }
+
+  g.blendMode(ADD);
+  for(const L of order){
+    const u=layers===1?1:L/(layers-1);
+    const lz=u*2-1;
+    const alphaMul=layers===1?1:lerp(.18,.82,stackSign>0?u:1-u);
+    for(const c of CRATERS){
+      const v=_crater(c.x,c.y,t+L*.025), z=(v-.5)*2;
+      const pt=stagePoint(c.x,c.y,v,z,lz);
+      g.stroke(pal[1][0],pal[1][1],pal[1][2],120*alphaMul);
+      g.ellipse(pt[0],pt[1],c.r*W*1.9*lerp(.86,1.12,u),c.r*H*.75*lerp(.86,1.12,u));
+    }
   }
   g.blendMode(BLEND);
 }
 function heightField(G){
   const out=new Float32Array(G*G);
-  const t=animT*map(P.speed,0,1,.08,1.45);
-  const layers=Math.floor(map(P.traces,0,1,2,14));
-  const stamp=(x,y,r,val)=>{
-    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
-    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
-    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
-      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
-    }
-  };
-  for(let L=0;L<layers;L++)for(let i=0;i<260;i++){
-    const p=_scopePoint(i/260,t,L);
-    stamp(p[0],p[1],.018,.22+L/layers*.55);
+  const t=animT*map(P.speed,0,1,.04,.85);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_crater(x,y,t);
+    out[i+j*G]=v;
   }
   _edgeMask(out,G); return out;
 }
