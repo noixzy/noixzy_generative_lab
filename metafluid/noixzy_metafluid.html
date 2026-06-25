@@ -12,6 +12,33 @@
   .app { display:flex; flex-direction:row; align-items:stretch; height:calc(100vh - 28px); }
   .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
   .stage canvas { display:block; width:100%; height:100%; }
+  .stageTools {
+    position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    z-index:21; display:flex; align-items:center; gap:14px;
+    padding:8px 10px; border-radius:12px;
+    background:rgba(0,0,0,0.50); border:1px solid rgba(72,223,255,0.24);
+    -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  }
+  .stageToolGroup { display:flex; align-items:center; gap:6px; }
+  .stageTools button, .stageTools select {
+    min-height:32px; background:rgba(0,0,0,0.50); border-color:rgba(255,255,255,0.16);
+    padding:5px 9px; margin:0; white-space:nowrap;
+  }
+  .stageTools select { width:auto; min-width:58px; }
+  .stageThumbs { pointer-events:auto;
+    position:absolute; left:14px; top:50%; transform:translateY(-50%); z-index:20;
+    width:70px; max-height:min(640px,74vh);
+    padding:8px; border-radius:12px;
+    background:rgba(0,0,0,0.50); border:1px solid rgba(72,223,255,0.18);
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    opacity:.45; transition:opacity .22s ease;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .stageThumbs:hover { opacity:1; }
+  .stageThumbs .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:2px; }
+  .thumbScrollBtn { border:1px solid color-mix(in srgb, var(--accent) 45%, #333); background:rgba(0,0,0,.46); color:var(--accent); border-radius:5px; height:22px; cursor:pointer; }
+  .thumbScrollBtn:hover { border-color:var(--accent); box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
   .panel { position:relative; width:316px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
            border:1px solid rgba(72,223,255,0.20); padding:14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
@@ -29,6 +56,13 @@
   .tools { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0; }
   .presetBox { margin-top:12px; padding-top:12px; border-top:1px solid rgba(72,223,255,0.18); }
   .presetLine { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:8px; }
+.presetLine.triple { grid-template-columns:1fr auto auto; }
+  .cycleLine { display:grid; grid-template-columns:36px minmax(0,1fr) 36px; gap:8px; align-items:center; margin-top:8px; }
+  .cycleLine select { width:100%; margin:0; }
+  .cycleBtn { min-width:36px; padding-left:0; padding-right:0; }
+.consoleBtns { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .consoleBtns button { flex:1 1 calc(33.333% - 8px); min-width:82px; }
+.presetStatus { margin-top:8px; min-height:16px; color:var(--dim); font-size:11px; letter-spacing:.04em; }
   select { width:100%; margin-top:2px; }
   select:hover { border-color:var(--accent); }
   .hint { margin-top:8px; opacity:.4; font-size:11px; }
@@ -37,14 +71,19 @@
   .navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
   .navBar a:hover { color:var(--accent); }
   .navCurrent { color:var(--accent) !important; }
-  .moduleNav { margin-top:12px; padding-top:10px; border-top:1px solid #1e1e21; }
-  .moduleNav .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
-  .thumbRow { display:flex; gap:5px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+  .thumbRow {
+    display:flex; flex-direction:column; gap:6px;
+    max-height:min(500px,58vh); overflow-y:auto; overflow-x:hidden;
+    padding:0; scrollbar-width:none;
+  }
   .thumbRow::-webkit-scrollbar { display:none; }
   .navThumb { flex:0 0 auto; opacity:.55; transition:opacity .15s; }
-  .navThumb:hover,.navThumb.active { opacity:1; }
-  .navThumb img { width:46px; height:34px; object-fit:cover; border-radius:3px; border:1px solid #2a2a2d; display:block; }
-  .navThumb.active img { border-color:var(--accent); }
+  .navThumb:hover,.navThumb.active,.navThumb.selected { opacity:1; }
+  .navThumb img { width:50px; height:38px; object-fit:cover; border-radius:4px; border:1px solid #2a2a2d; display:block; }
+  .navThumb.active img { border-color:#fff; box-shadow:0 0 0 1px rgba(255,255,255,0.55); }
+  .navThumb.selected img { border-color:var(--accent); box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
+  .seedStack { display:inline-flex; flex-direction:column; align-items:center; gap:2px; vertical-align:middle; }
+  .seedRead { color:var(--dim); font-size:10px; line-height:1; letter-spacing:.08em; text-transform:uppercase; }
 </style>
 </head>
 <body>
@@ -54,20 +93,81 @@
   <a id="navNext" href="#">next →</a>
 </div>
 <div class="app">
-  <div id="stage" class="stage"></div>
+  <div id="stage" class="stage">
+    <div id="stageTools" class="stageTools">
+      <div class="stageToolGroup">
+        <button id="btnPin" type="button">★ pin</button>
+        <button id="btnCopy" type="button">copy</button>
+        <button id="btnPaste" type="button">paste</button>
+      </div>
+      <div class="stageToolGroup">
+        <button id="btnAudio" type="button">audio</button>
+      </div>
+      <div class="stageToolGroup">
+        <button id="exportFavs" type="button">export ★</button>
+        <button id="clearFavs" type="button">clear ★</button>
+      </div>
+      <div class="stageToolGroup">
+        <button id="btnThumb" type="button">→ thumb</button>
+        <button id="btnRec" type="button">video</button>
+        <select id="recDur" title="video duration">
+          <option value="2">2s</option>
+          <option value="4" selected>4s</option>
+          <option value="8">8s</option>
+          <option value="16">16s</option>
+        </select>
+        <button id="btnSave" type="button">save png</button>
+        <button id="btnSave2x" type="button">save 2x</button>
+      </div>
+    </div>
+
+    <div class="stageThumbs" id="stageThumbs">
+      <div class="label">modules</div>
+      <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+      <div class="thumbRow" id="moduleThumbStrip"></div>
+      <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    </div>
+  </div>
   <div class="panel" id="panel">
     <h1>noixzy // metafluid</h1>
 
     <div class="row" style="margin-bottom:10px">
       <label>theme</label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select id="themeSelect" style="flex:1;margin-top:2px"></select>
-        <span style="opacity:.45;font-size:11px;white-space:nowrap">[ / ]</span>
+      <div class="cycleLine">
+        <button id="themePrev" class="cycleBtn" type="button">‹</button>
+        <select id="themeSelect"></select>
+        <button id="themeNext" class="cycleBtn" type="button">›</button>
       </div>
     </div>
 
+    <div class="presetBox">
+      <div class="consoleBtns">
+        <button id="randomUnlocked" type="button">randomize unlocked</button>
+        <button id="randomForm" type="button">randomize form</button>
+        <button id="randomColor" type="button">randomize color</button>
+        <span class="seedStack"><button id="btnNewSeed" type="button">new seed</button><span id="vSeed" class="seedRead">—</span></span>
+        <button id="btnReset" type="button">reset</button>
+        <button id="btnPause" type="button">pause</button>
+      </div>
+      <div class="cycleLine">
+        <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+        <select id="starterPreset"></select>
+        <button id="starterNext" class="cycleBtn" type="button">›</button>
+      </div>
+      <div class="presetLine">
+        <input id="presetName" type="text" placeholder="preset name">
+        <button id="savePreset" type="button">save preset</button>
+      </div>
+      <div class="presetLine triple">
+        <select id="localPreset"></select>
+        <button id="loadPreset" type="button">load</button>
+        <button id="deletePreset" type="button">delete</button>
+      </div>
+      <div id="presetStatus" class="presetStatus"></div>
+    </div>
+
     <div class="row"><label>blobs <span id="vCount">—</span></label>
-      <input id="sCount" type="range" min="2" max="8" step="1" value="4"></div>
+      <input id="sCount" type="range" min="2" max="32" step="1" value="14"></div>
     <div class="row"><label>radius <span id="vRadius">—</span></label>
       <input id="sRadius" type="range" min="0" max="1" step="0.01" value="0.45"></div>
     <div class="row"><label>viscosity <span id="vSmooth">—</span></label>
@@ -101,23 +201,7 @@
       <input id="sFormVal" type="range" min="0" max="2" step="0.01" value="1"></div>
     <div class="row"><label>rim strength <span id="vRim">—</span></label>
       <input id="sRim" type="range" min="0" max="2" step="0.01" value="1"></div>
-
-    <div class="tools">
-      <button id="btnSave" type="button">save png</button>
-      <button id="btnPause" type="button">pause</button>
-      <button id="btnPin">★ pin</button>
-      <button id="btnAudio">audio</button>
-      <button id="btnThumb" type="button">→ thumb</button>
-    </div>
-
-    <div class="presetBox">
-      <div class="presetLine">
-        <select id="starterPreset"></select>
-        <button id="btnLoad" type="button">load</button>
-      </div>
-    </div>
-
-    <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#0a0a0a;border-radius:6px;font-size:12px;">
+<div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#0a0a0a;border-radius:6px;font-size:12px;">
       <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:#666;transition:border-color .2s;">
         drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span>
         <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
@@ -131,17 +215,7 @@
       <div id="audioBands"></div>
     </div>
     <div id="favPanel" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
-    <div class="tools" id="favBtns" style="display:none;">
-      <button id="exportFavs">export ★</button>
-      <button id="clearFavs">clear ★</button>
-    </div>
-
-    <div class="moduleNav">
-      <div class="label">modules</div>
-      <div class="thumbRow" id="moduleThumbStrip"></div>
-    </div>
-
-    <div class="hint">h hide · space pause · [ ] theme · s save</div>
+<div class="hint">h hide · space pause · [ ] theme · s save</div>
   </div>
 </div>
 
@@ -162,6 +236,7 @@ uniform vec2  u_res;
 uniform float u_time;
 uniform float u_azimuth;
 uniform float u_count;
+uniform float u_seed;
 uniform float u_radius;
 uniform float u_smooth;
 uniform float u_speed;
@@ -190,6 +265,8 @@ float map(vec3 p) {
   float k   = mix(0.05, 0.65, u_smooth);
   float t   = u_time * mix(0.06, 0.9, u_speed);
   float spr = mix(0.45, 1.85, u_spread);
+  float seedPhase = u_seed * 0.013;
+  t += seedPhase;
 
   vec3 p0 = spr * vec3(sin(t*1.00)*1.00, cos(t*0.70)*0.85, sin(t*0.90)*0.75);
   vec3 p1 = spr * vec3(cos(t*0.85)*0.90, sin(t*1.20)*1.00, cos(t*1.10)*0.80);
@@ -198,7 +275,31 @@ float map(vec3 p) {
   vec3 p4 = spr * vec3(sin(t*0.70+1.00)*0.85, cos(t*1.40+0.30)*0.95, sin(t*1.20+2.40)*0.70);
   vec3 p5 = spr * vec3(cos(t*1.10+2.00)*0.90, sin(t*0.80+3.10)*0.85, cos(t*1.40+0.90)*0.80);
   vec3 p6 = spr * vec3(sin(t*0.50+0.50)*1.10, cos(t*1.00+2.20)*0.70, sin(t*1.30+1.30)*0.65);
-  vec3 p7 = spr * vec3(cos(t*1.30+1.50)*0.80, sin(t*0.60+0.80)*1.00, cos(t*0.95+2.50)*0.90);
+  vec3 p7  = spr * vec3(cos(t*1.30+1.50)*0.80, sin(t*0.60+0.80)*1.00, cos(t*0.95+2.50)*0.90);
+  vec3 p8  = spr * vec3(sin(t*1.55+0.40)*0.72, cos(t*0.95+2.80)*0.92, sin(t*0.65+1.70)*0.82);
+  vec3 p9  = spr * vec3(cos(t*0.72+2.60)*1.05, sin(t*1.65+1.10)*0.62, cos(t*1.18+0.20)*0.72);
+  vec3 p10 = spr * vec3(sin(t*1.90+3.20)*0.66, cos(t*0.54+0.90)*1.05, sin(t*1.45+2.20)*0.66);
+  vec3 p11 = spr * vec3(cos(t*1.42+0.70)*0.94, sin(t*0.88+3.70)*0.76, cos(t*0.58+1.40)*1.02);
+  vec3 p12 = spr * vec3(sin(t*0.82+2.90)*1.08, cos(t*1.72+0.60)*0.58, sin(t*1.05+3.60)*0.78);
+  vec3 p13 = spr * vec3(cos(t*1.78+1.90)*0.70, sin(t*0.76+2.40)*1.02, cos(t*1.34+3.00)*0.64);
+  vec3 p14 = spr * vec3(sin(t*1.12+4.10)*0.86, cos(t*1.28+1.60)*0.74, sin(t*0.48+2.70)*1.06);
+  vec3 p15 = spr * vec3(cos(t*0.62+3.30)*1.14, sin(t*1.92+0.20)*0.54, cos(t*1.58+2.10)*0.68);
+  vec3 p16 = spr * vec3(sin(t*1.37+5.10)*0.74, cos(t*0.91+4.20)*1.12, sin(t*1.66+0.40)*0.58);
+  vec3 p17 = spr * vec3(cos(t*1.83+2.80)*1.02, sin(t*0.67+5.70)*0.62, cos(t*1.21+4.90)*0.86);
+  vec3 p18 = spr * vec3(sin(t*0.73+6.40)*1.18, cos(t*1.51+2.30)*0.50, sin(t*0.94+5.20)*0.92);
+  vec3 p19 = spr * vec3(cos(t*1.26+4.40)*0.60, sin(t*1.74+1.10)*1.06, cos(t*0.82+3.70)*0.72);
+  vec3 p20 = spr * vec3(sin(t*1.98+0.30)*0.96, cos(t*0.44+5.80)*0.68, sin(t*1.31+4.50)*1.10);
+  vec3 p21 = spr * vec3(cos(t*0.58+6.10)*1.22, sin(t*1.39+2.60)*0.48, cos(t*1.87+1.30)*0.76);
+  vec3 p22 = spr * vec3(sin(t*1.62+3.90)*0.68, cos(t*1.07+0.80)*1.18, sin(t*0.69+6.00)*0.84);
+  vec3 p23 = spr * vec3(cos(t*1.09+5.40)*0.88, sin(t*0.96+3.20)*0.94, cos(t*1.48+2.00)*1.04);
+  vec3 p24 = spr * vec3(sin(t*0.52+1.70)*1.08, cos(t*1.84+4.80)*0.56, sin(t*1.16+2.90)*0.70);
+  vec3 p25 = spr * vec3(cos(t*1.71+0.60)*0.72, sin(t*0.49+6.30)*1.14, cos(t*0.77+5.10)*0.90);
+  vec3 p26 = spr * vec3(sin(t*1.24+2.20)*0.92, cos(t*1.93+1.40)*0.80, sin(t*0.61+4.10)*1.16);
+  vec3 p27 = spr * vec3(cos(t*0.88+3.60)*1.12, sin(t*1.58+5.00)*0.66, cos(t*1.19+0.90)*0.62);
+  vec3 p28 = spr * vec3(sin(t*1.46+5.90)*0.54, cos(t*0.83+2.10)*1.20, sin(t*1.75+3.30)*0.96);
+  vec3 p29 = spr * vec3(cos(t*1.34+1.50)*0.98, sin(t*1.02+4.60)*0.58, cos(t*0.53+6.20)*1.18);
+  vec3 p30 = spr * vec3(sin(t*0.66+3.10)*1.24, cos(t*1.67+5.50)*0.72, sin(t*1.29+1.80)*0.52);
+  vec3 p31 = spr * vec3(cos(t*1.91+4.70)*0.64, sin(t*0.74+0.50)*1.22, cos(t*1.43+3.90)*0.82);
 
   float d = sdSphere(p - p0, rad);
   d = smin(d, sdSphere(p - p1, rad * 0.93), k);
@@ -207,7 +308,31 @@ float map(vec3 p) {
   d = smin(d, sdSphere(p - p4, (u_count >= 5.0) ? rad * 0.80 : 0.0001), k);
   d = smin(d, sdSphere(p - p5, (u_count >= 6.0) ? rad * 0.76 : 0.0001), k);
   d = smin(d, sdSphere(p - p6, (u_count >= 7.0) ? rad * 0.72 : 0.0001), k);
-  d = smin(d, sdSphere(p - p7, (u_count >= 8.0) ? rad * 0.68 : 0.0001), k);
+  d = smin(d, sdSphere(p - p7,  (u_count >= 8.0)  ? rad * 0.68 : 0.0001), k);
+  d = smin(d, sdSphere(p - p8,  (u_count >= 9.0)  ? rad * 0.66 : 0.0001), k);
+  d = smin(d, sdSphere(p - p9,  (u_count >= 10.0) ? rad * 0.64 : 0.0001), k);
+  d = smin(d, sdSphere(p - p10, (u_count >= 11.0) ? rad * 0.62 : 0.0001), k);
+  d = smin(d, sdSphere(p - p11, (u_count >= 12.0) ? rad * 0.60 : 0.0001), k);
+  d = smin(d, sdSphere(p - p12, (u_count >= 13.0) ? rad * 0.58 : 0.0001), k);
+  d = smin(d, sdSphere(p - p13, (u_count >= 14.0) ? rad * 0.56 : 0.0001), k);
+  d = smin(d, sdSphere(p - p14, (u_count >= 15.0) ? rad * 0.54 : 0.0001), k);
+  d = smin(d, sdSphere(p - p15, (u_count >= 16.0) ? rad * 0.52 : 0.0001), k);
+  d = smin(d, sdSphere(p - p16, (u_count >= 17.0) ? rad * 0.50 : 0.0001), k);
+  d = smin(d, sdSphere(p - p17, (u_count >= 18.0) ? rad * 0.49 : 0.0001), k);
+  d = smin(d, sdSphere(p - p18, (u_count >= 19.0) ? rad * 0.48 : 0.0001), k);
+  d = smin(d, sdSphere(p - p19, (u_count >= 20.0) ? rad * 0.47 : 0.0001), k);
+  d = smin(d, sdSphere(p - p20, (u_count >= 21.0) ? rad * 0.46 : 0.0001), k);
+  d = smin(d, sdSphere(p - p21, (u_count >= 22.0) ? rad * 0.45 : 0.0001), k);
+  d = smin(d, sdSphere(p - p22, (u_count >= 23.0) ? rad * 0.44 : 0.0001), k);
+  d = smin(d, sdSphere(p - p23, (u_count >= 24.0) ? rad * 0.43 : 0.0001), k);
+  d = smin(d, sdSphere(p - p24, (u_count >= 25.0) ? rad * 0.42 : 0.0001), k);
+  d = smin(d, sdSphere(p - p25, (u_count >= 26.0) ? rad * 0.41 : 0.0001), k);
+  d = smin(d, sdSphere(p - p26, (u_count >= 27.0) ? rad * 0.40 : 0.0001), k);
+  d = smin(d, sdSphere(p - p27, (u_count >= 28.0) ? rad * 0.39 : 0.0001), k);
+  d = smin(d, sdSphere(p - p28, (u_count >= 29.0) ? rad * 0.38 : 0.0001), k);
+  d = smin(d, sdSphere(p - p29, (u_count >= 30.0) ? rad * 0.37 : 0.0001), k);
+  d = smin(d, sdSphere(p - p30, (u_count >= 31.0) ? rad * 0.36 : 0.0001), k);
+  d = smin(d, sdSphere(p - p31, (u_count >= 32.0) ? rad * 0.35 : 0.0001), k);
 
   return d;
 }
@@ -335,16 +460,17 @@ const PALETTES = [
 const THEME_NAMES = PALETTES.map(p=>p[0]);
 
 const STARTERS = [
-  { name:"mercury",   palIdx:4, bg:"#080808", form:"#505050", hi:"#e8e8e8", bgVal:0.90, fSat:0.0, fVal:1.1, rim:1.2, count:4, radius:0.52, smooth:0.72, speed:0.22, spread:0.58, spin:0.18, dist:5.5, elev:0.6, ao:0.65 },
-  { name:"lava lamp", palIdx:0, bg:"#0a0400", form:"#7a2800", hi:"#ff9040", bgVal:0.85, fSat:1.1, fVal:0.9, rim:1.0, count:3, radius:0.60, smooth:0.50, speed:0.15, spread:0.42, spin:0.12, dist:5.0, elev:0.5, ao:0.70 },
-  { name:"plasma",    palIdx:2, bg:"#080510", form:"#3a2880", hi:"#d0b8ff", bgVal:0.80, fSat:1.2, fVal:1.0, rim:1.4, count:6, radius:0.42, smooth:0.60, speed:0.55, spread:0.65, spin:0.28, dist:4.8, elev:0.8, ao:0.55 },
-  { name:"bubble",    palIdx:5, bg:"#040a12", form:"#0f4060", hi:"#72d8ff", bgVal:0.80, fSat:0.9, fVal:1.0, rim:1.5, count:5, radius:0.38, smooth:0.28, speed:0.30, spread:0.70, spin:0.20, dist:5.5, elev:0.7, ao:0.60 },
-  { name:"toxic",     palIdx:6, bg:"#050a03", form:"#2d5010", hi:"#c7ff4a", bgVal:0.75, fSat:1.3, fVal:0.85,rim:1.1, count:8, radius:0.32, smooth:0.45, speed:0.68, spread:0.80, spin:0.30, dist:5.0, elev:0.9, ao:0.50 },
+  { name:"mercury",   palIdx:4, bg:"#080808", form:"#505050", hi:"#e8e8e8", bgVal:0.90, fSat:0.0, fVal:1.1, rim:1.2, count:16, radius:0.52, smooth:0.72, speed:0.22, spread:0.58, spin:0.18, dist:5.5, elev:0.6, ao:0.65 },
+  { name:"lava lamp", palIdx:0, bg:"#0a0400", form:"#7a2800", hi:"#ff9040", bgVal:0.85, fSat:1.1, fVal:0.9, rim:1.0, count:6, radius:0.60, smooth:0.50, speed:0.15, spread:0.42, spin:0.12, dist:5.0, elev:0.5, ao:0.70 },
+  { name:"plasma",    palIdx:2, bg:"#080510", form:"#3a2880", hi:"#d0b8ff", bgVal:0.80, fSat:1.2, fVal:1.0, rim:1.4, count:12, radius:0.42, smooth:0.60, speed:0.55, spread:0.65, spin:0.28, dist:4.8, elev:0.8, ao:0.55 },
+  { name:"bubble",    palIdx:5, bg:"#040a12", form:"#0f4060", hi:"#72d8ff", bgVal:0.80, fSat:0.9, fVal:1.0, rim:1.5, count:10, radius:0.38, smooth:0.28, speed:0.30, spread:0.70, spin:0.20, dist:5.5, elev:0.7, ao:0.60 },
+  { name:"toxic",     palIdx:6, bg:"#050a03", form:"#2d5010", hi:"#c7ff4a", bgVal:0.75, fSat:1.3, fVal:0.85,rim:1.1, count:16, radius:0.32, smooth:0.45, speed:0.68, spread:0.80, spin:0.30, dist:5.0, elev:0.9, ao:0.50 },
 ];
 
 let cs = { bg:"#0c0c0c", form:"#3a3a3a", hi:"#f2f2f2", bgVal:1, fSat:1, fVal:1, rim:1 };
-let P  = { count:4, radius:0.45, smooth:0.55, speed:0.28, spread:0.58, spin:0.2, dist:5.5, elev:0.7, ao:0.65 };
+let P  = { count:14, radius:0.45, smooth:0.55, speed:0.28, spread:0.58, spin:0.2, dist:5.5, elev:0.7, ao:0.65 };
 let t0, paused=false, pauseT=0, theShader;
+let mfSeed = Math.floor(Math.random()*1000000);
 let _camAzimuth=0, _drag={active:false, x:0, y:0};
 
 function _initOrbit(stg){
@@ -384,11 +510,21 @@ const _pAudioParams = [
 function hexToRGB(h){ return [parseInt(h.slice(1,3),16)/255, parseInt(h.slice(3,5),16)/255, parseInt(h.slice(5,7),16)/255]; }
 function clampV(v,a,b){ return Math.min(b,Math.max(a,v)); }
 
-function applyPalette(idx) {
-  const pal = PALETTES[clampV(Math.round(idx),0,PALETTES.length-1)];
-  cs.bg=pal[1]; cs.form=pal[2]; cs.hi=pal[3];
-  cs.bgVal=1; cs.fSat=1; cs.fVal=1; cs.rim=1;
+function applyPalette(idx, opts={}) {
+  const palIdx = clampV(Math.round(idx),0,PALETTES.length-1);
+  const pal = PALETTES[palIdx];
+  cs.bg = pal[1];
+  cs.form = pal[2];
+  cs.hi = pal[3];
+  if(opts.resetColorShape){
+    cs.bgVal = 1;
+    cs.fSat = 1;
+    cs.fVal = 1;
+    cs.rim = 1;
+  }
+  document.documentElement.style.setProperty("--accent", pal[3]);
   syncColorUI();
+  return palIdx;
 }
 
 function syncColorUI() {
@@ -422,16 +558,25 @@ function syncParamUI() {
   });
 }
 
-function loadStarter(s) {
+function loadStarter(s, opts={}) {
   P.count=s.count; P.radius=s.radius; P.smooth=s.smooth;
   P.speed=s.speed; P.spread=s.spread; P.spin=s.spin;
   P.dist=s.dist;   P.elev=s.elev;    P.ao=s.ao;
-  cs.bg=s.bg; cs.form=s.form; cs.hi=s.hi;
-  cs.bgVal=s.bgVal; cs.fSat=s.fSat; cs.fVal=s.fVal; cs.rim=s.rim;
-  document.getElementById("sPal").value = s.palIdx;
-  document.getElementById("vPal").textContent = `${s.palIdx} ${PALETTES[s.palIdx][0]}`;
+  cs.bgVal=s.bgVal ?? cs.bgVal;
+  cs.fSat=s.fSat ?? cs.fSat;
+  cs.fVal=s.fVal ?? cs.fVal;
+  cs.rim=s.rim ?? cs.rim;
   syncParamUI();
-  syncColorUI();
+  if(opts.applyStarterPalette){
+    const idx = applyPalette(s.palIdx ?? 0);
+    const name = PALETTES[idx][0];
+    activeTheme = name;
+    const sel=document.getElementById("themeSelect"); if(sel) sel.value=name;
+    document.getElementById("sPal").value = idx;
+    document.getElementById("vPal").textContent = `${idx} ${name}`;
+  } else {
+    syncColorUI();
+  }
 }
 
 let activeTheme = null;
@@ -439,15 +584,25 @@ function applyTheme(name) {
   const idx = THEME_NAMES.indexOf(name);
   if(idx < 0) return;
   activeTheme = name;
-  applyPalette(idx);
-  document.getElementById("sPal").value = idx;
-  document.getElementById("vPal").textContent = `${idx} ${name}`;
-  const sel=document.getElementById("themeSelect"); if(sel) sel.value=name;
-  try{ localStorage.setItem(THEMEKEY, name); }catch(e){}
+  const safeIdx = applyPalette(idx);
+  const safeName = PALETTES[safeIdx][0];
+  const palSlider=document.getElementById("sPal"); if(palSlider) palSlider.value = safeIdx;
+  const palLabel=document.getElementById("vPal"); if(palLabel) palLabel.textContent = `${safeIdx} ${safeName}`;
+  const sel=document.getElementById("themeSelect"); if(sel) sel.value=safeName;
+  try{ localStorage.setItem(THEMEKEY, safeName); }catch(e){}
 }
 function cycleTheme(dir) {
   const idx = THEME_NAMES.indexOf(activeTheme);
   applyTheme(THEME_NAMES[((idx<0?0:idx)+dir+THEME_NAMES.length)%THEME_NAMES.length]);
+}
+function cycleStarter(dir) {
+  const sel=document.getElementById("starterPreset");
+  if(!sel || !STARTERS.length) return;
+  const idx=parseInt(sel.value||"0",10);
+  const next=(idx+dir+STARTERS.length)%STARTERS.length;
+  sel.value=next;
+  loadStarter(STARTERS[next]);
+  _flashConsole("loaded "+STARTERS[next].name);
 }
 
 const _FAV_KEY = "noixzy_"+PIECE+"_favs";
@@ -472,7 +627,6 @@ function _saveFavs(){ try{localStorage.setItem(_FAV_KEY,JSON.stringify(_favs));}
 function _pinFav(){ _favs.push({P:{...P},cs:{...cs}}); _saveFavs(); _renderFavs(); }
 function _renderFavs(){
   const fp=document.getElementById("favPanel"); if(!fp) return; fp.innerHTML="";
-  const fb=document.getElementById("favBtns"); if(fb) fb.style.display=_favs.length?"grid":"none";
   _favs.forEach((f,i)=>{
     const b=document.createElement("button"); b.textContent="★ "+(i+1); b.style.cssText="font-size:11px;padding:4px;";
     b.addEventListener("click",()=>{ Object.assign(P,f.P); if(f.cs) Object.assign(cs,f.cs); syncParamUI(); syncColorUI(); });
@@ -521,6 +675,200 @@ function _buildAudioUI(){
   document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
 }
 
+// Metafluid advanced console utilities
+const META_PRESET_STORAGE_KEY = "noixzy_metafluid_presets_v1";
+function _flashConsole(msg){
+  const el=document.getElementById("presetStatus");
+  if(el) el.textContent=msg;
+}
+function _flashBtn(id,msg,ms=900){
+  const b=document.getElementById(id); if(!b) return;
+  const old=b.textContent; b.textContent=msg;
+  setTimeout(()=>b.textContent=old,ms);
+}
+function _mfState(){
+  return {
+    version:"metafluid_state_v1",
+    P:{...P},
+    cs:{...cs},
+    activeTheme,
+    seed:mfSeed,
+    cam:_camAzimuth
+  };
+}
+function _mfApplyState(s){
+  if(!s) return;
+  if(s.P) Object.assign(P,s.P);
+  if(s.cs) Object.assign(cs,s.cs);
+  if(Number.isFinite(s.seed)){ mfSeed=s.seed; _syncSeedUI(); }
+  if(typeof s.cam==="number") _camAzimuth=s.cam;
+  syncParamUI();
+  syncColorUI();
+  if(s.activeTheme && THEME_NAMES.includes(s.activeTheme)){
+    activeTheme=s.activeTheme;
+    const sel=document.getElementById("themeSelect"); if(sel) sel.value=s.activeTheme;
+  }
+}
+function _readLocalPresets(){
+  try{return JSON.parse(localStorage.getItem(META_PRESET_STORAGE_KEY)||"{}")||{};}
+  catch(e){return {};}
+}
+function _writeLocalPresets(presets){
+  localStorage.setItem(META_PRESET_STORAGE_KEY,JSON.stringify(presets));
+}
+function _renderLocalPresets(){
+  const sel=document.getElementById("localPreset");
+  if(!sel) return;
+  const presets=_readLocalPresets();
+  const names=Object.keys(presets).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML="";
+  if(!names.length){
+    const o=document.createElement("option");
+    o.value=""; o.textContent="no local presets";
+    sel.appendChild(o);
+    return;
+  }
+  names.forEach(n=>{
+    const o=document.createElement("option");
+    o.value=n; o.textContent=n;
+    sel.appendChild(o);
+  });
+}
+async function _copyMfState(){
+  const payload=JSON.stringify(_mfState());
+  try{ await navigator.clipboard.writeText(payload); _flashBtn("btnCopy","copied ✓"); }
+  catch(e){ prompt("copy state",payload); }
+}
+async function _pasteMfState(){
+  try{
+    const raw=await navigator.clipboard.readText();
+    _mfApplyState(JSON.parse(raw));
+    _flashBtn("btnPaste","pasted ✓");
+  }catch(e){ _flashBtn("btnPaste","paste ✗",1200); }
+}
+function _syncSeedUI(){ const el=document.getElementById("vSeed"); if(el) el.textContent=String(mfSeed); }
+function _newMfSeed(){ mfSeed=Math.floor(Math.random()*1000000); _syncSeedUI(); _flashConsole("new seed "+mfSeed); }
+
+function _resetMf(){
+  location.reload();
+}
+function _saveMf2x(){
+  const src=document.querySelector("canvas");
+  if(!src) return _flashBtn("btnSave2x","no canvas",1200);
+  const out=document.createElement("canvas");
+  out.width=src.width*2;
+  out.height=src.height*2;
+  const ctx=out.getContext("2d");
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(src,0,0,out.width,out.height);
+  const a=document.createElement("a");
+  a.download=`noixzy_${PIECE}_${Math.floor(millis())}_2x.png`;
+  a.href=out.toDataURL("image/png");
+  a.click();
+  _flashBtn("btnSave2x","saved ✓");
+}
+let _mfRecorder=null,_mfRecChunks=[];
+function _recMf(){
+  const btn=document.getElementById("btnRec");
+  const src=document.querySelector("canvas");
+  if(!src) return;
+  if(_mfRecorder && _mfRecorder.state==="recording"){
+    _mfRecorder.stop(); return;
+  }
+  const seconds=parseInt(document.getElementById("recDur")?.value||"4",10)||4;
+  const stream=src.captureStream(30);
+  _mfRecChunks=[];
+  _mfRecorder=new MediaRecorder(stream,{mimeType:"video/webm"});
+  _mfRecorder.ondataavailable=e=>{ if(e.data&&e.data.size) _mfRecChunks.push(e.data); };
+  _mfRecorder.onstop=()=>{
+    const blob=new Blob(_mfRecChunks,{type:"video/webm"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.download=`noixzy_${PIECE}_${Math.floor(millis())}_${seconds}s.webm`;
+    a.href=url; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(btn) btn.textContent="video";
+  };
+  _mfRecorder.start();
+  if(btn) btn.textContent="stop";
+  setTimeout(()=>{ if(_mfRecorder&&_mfRecorder.state==="recording") _mfRecorder.stop(); },seconds*1000);
+}
+function _rand(min,max,step=0.01){
+  const v=min+Math.random()*(max-min);
+  return step>=1?Math.round(v):+v.toFixed(3);
+}
+function _randomizeForm(){
+  P.count=_rand(2,16,1);
+  P.radius=_rand(0,1);
+  P.smooth=_rand(0,1);
+  P.speed=_rand(0,1);
+  P.spread=_rand(0,1);
+  P.spin=_rand(0,1);
+  P.dist=_rand(3.5,8,0.05);
+  P.elev=_rand(-1.5,2.5,0.05);
+  P.ao=_rand(0,1);
+  syncParamUI();
+  _flashConsole("form randomized");
+}
+function _randomizeColor(){
+  const idx=Math.floor(Math.random()*PALETTES.length);
+  applyPalette(idx);
+  document.getElementById("sPal").value=idx;
+  document.getElementById("vPal").textContent=`${idx} ${PALETTES[idx][0]}`;
+  cs.bgVal=_rand(0,2);
+  cs.fSat=_rand(0,2);
+  cs.fVal=_rand(0,2);
+  cs.rim=_rand(0,2);
+  syncColorUI();
+  _flashConsole("color randomized");
+}
+function _randomizeUnlocked(){
+  _randomizeForm();
+  _randomizeColor();
+  _flashConsole("unlocked randomized");
+}
+function _bindConsoleUtilities(){
+  document.getElementById("btnReset")?.addEventListener("click",_resetMf);
+  document.getElementById("btnNewSeed")?.addEventListener("click",_newMfSeed);
+  _syncSeedUI();
+  document.getElementById("btnCopy")?.addEventListener("click",_copyMfState);
+  document.getElementById("btnPaste")?.addEventListener("click",_pasteMfState);
+  document.getElementById("btnSave2x")?.addEventListener("click",_saveMf2x);
+  document.getElementById("btnRec")?.addEventListener("click",_recMf);
+
+  document.getElementById("randomUnlocked")?.addEventListener("click",_randomizeUnlocked);
+  document.getElementById("randomForm")?.addEventListener("click",_randomizeForm);
+  document.getElementById("randomColor")?.addEventListener("click",_randomizeColor);
+
+  document.getElementById("savePreset")?.addEventListener("click",()=>{
+    const name=(document.getElementById("presetName")?.value||"").trim();
+    if(!name){ _flashConsole("name needed"); return; }
+    const presets=_readLocalPresets();
+    presets[name]=_mfState();
+    _writeLocalPresets(presets);
+    _renderLocalPresets();
+    const sel=document.getElementById("localPreset"); if(sel) sel.value=name;
+    _flashConsole("saved "+name);
+  });
+  document.getElementById("loadPreset")?.addEventListener("click",()=>{
+    const name=document.getElementById("localPreset")?.value;
+    const presets=_readLocalPresets();
+    if(!name||!presets[name]){ _flashConsole("preset missing"); return; }
+    _mfApplyState(presets[name]);
+    _flashConsole("loaded "+name);
+  });
+  document.getElementById("deletePreset")?.addEventListener("click",()=>{
+    const name=document.getElementById("localPreset")?.value;
+    const presets=_readLocalPresets();
+    if(!name||!presets[name]){ _flashConsole("preset missing"); return; }
+    delete presets[name];
+    _writeLocalPresets(presets);
+    _renderLocalPresets();
+    _flashConsole("deleted "+name);
+  });
+  _renderLocalPresets();
+}
+
 function setup() {
   const stage = document.getElementById("stage");
   const c = createCanvas(stage.clientWidth, stage.clientHeight, WEBGL);
@@ -537,6 +885,8 @@ function setup() {
   const tSel = document.getElementById("themeSelect");
   THEME_NAMES.forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n; tSel.appendChild(o); });
   tSel.addEventListener("change", e=>applyTheme(e.target.value));
+  document.getElementById("themePrev").addEventListener("click",()=>cycleTheme(-1));
+  document.getElementById("themeNext").addEventListener("click",()=>cycleTheme(1));
 
   const paramCfg = [
     {id:"sCount",  vid:"vCount",  key:"count",  fmt:v=>Math.round(v).toString()},
@@ -570,16 +920,21 @@ function setup() {
   document.getElementById("sRim").addEventListener("input",       e=>{ cs.rim  =parseFloat(e.target.value); document.getElementById("vRim").textContent=cs.rim.toFixed(2); });
 
   document.getElementById("sPal").addEventListener("input", e=>{
-    const idx=parseInt(e.target.value);
-    document.getElementById("vPal").textContent=`${idx} ${PALETTES[idx][0]}`;
-    applyPalette(idx);
-    activeTheme=PALETTES[idx][0];
-    const sel=document.getElementById("themeSelect"); if(idx<THEME_NAMES.length&&sel) sel.value=PALETTES[idx][0];
+    const idx=clampV(parseInt(e.target.value),0,PALETTES.length-1);
+    applyTheme(PALETTES[idx][0]);
   });
 
   const starterSel = document.getElementById("starterPreset");
   STARTERS.forEach((s,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=s.name; starterSel.appendChild(o); });
-  document.getElementById("btnLoad").addEventListener("click", ()=>{ loadStarter(STARTERS[parseInt(starterSel.value)]); });
+  starterSel.value = "0";
+  loadStarter(STARTERS[0], {applyStarterPalette:false});
+  let savedTheme = null;
+  try{ savedTheme = localStorage.getItem(THEMEKEY); }catch(e){}
+  applyTheme(THEME_NAMES.includes(savedTheme) ? savedTheme : "neutral");
+  document.getElementById("starterPrev").addEventListener("click",()=>cycleStarter(-1));
+  document.getElementById("starterNext").addEventListener("click",()=>cycleStarter(1));
+  starterSel.addEventListener("change",()=>{ loadStarter(STARTERS[parseInt(starterSel.value)]); _flashConsole("loaded "+STARTERS[parseInt(starterSel.value)].name); });
+_bindConsoleUtilities();
 
   document.getElementById("btnSave").addEventListener("click", ()=>{ saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`, "png"); });
   document.getElementById("btnThumb").addEventListener("click", saveThumb);
@@ -611,7 +966,6 @@ function setup() {
   _loadFavs();
   _initOrbit(stage);
   buildNav();
-
   window.addEventListener("resize", ()=>{ resizeCanvas(stage.clientWidth, stage.clientHeight); });
 }
 
@@ -625,6 +979,7 @@ function draw() {
   theShader.setUniform("u_time",      t);
   theShader.setUniform("u_azimuth",   _camAzimuth);
   theShader.setUniform("u_count",     P.count);
+  theShader.setUniform("u_seed",      mfSeed);
   theShader.setUniform("u_radius",    P.radius);
   theShader.setUniform("u_smooth",    P.smooth);
   theShader.setUniform("u_speed",     P.speed);
@@ -672,19 +1027,49 @@ const ALL_MODULES=[
 ];
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
-  if(idx<0) return;
-  const prev=ALL_MODULES[(idx-1+ALL_MODULES.length)%ALL_MODULES.length];
-  const next=ALL_MODULES[(idx+1)%ALL_MODULES.length];
+  const safeIdx=idx>=0?idx:0;
+  const prev=ALL_MODULES[(safeIdx-1+ALL_MODULES.length)%ALL_MODULES.length];
+  const next=ALL_MODULES[(safeIdx+1)%ALL_MODULES.length];
+
   const np=document.getElementById("navPrev"); if(np){ np.href="../"+prev.id+"/noixzy_"+prev.id+".html"; np.title=prev.title; }
   const nn=document.getElementById("navNext"); if(nn){ nn.href="../"+next.id+"/noixzy_"+next.id+".html"; nn.title=next.title; }
+
+  const rail=document.getElementById("stageThumbs");
+  if(rail){
+    ["pointerdown","mousedown","mouseup","touchstart"].forEach(type=>{
+      rail.addEventListener(type,e=>e.stopPropagation(),true);
+    });
+  }
+
   const strip=document.getElementById("moduleThumbStrip"); if(!strip) return;
+  strip.innerHTML="";
+  let railSelected=safeIdx;
+
+  function selectThumb(i){
+    const links=[...strip.querySelectorAll(".navThumb")];
+    if(!links.length) return;
+    railSelected=(i+links.length)%links.length;
+    links.forEach(a=>a.classList.remove("selected"));
+    links[railSelected].classList.add("selected");
+    links[railSelected].scrollIntoView({block:"nearest",inline:"nearest",behavior:"smooth"});
+  }
+
   ALL_MODULES.forEach(m=>{
-    const a=document.createElement("a"); a.href="../"+m.id+"/noixzy_"+m.id+".html"; a.title=m.title;
+    const a=document.createElement("a");
+    a.href="../"+m.id+"/noixzy_"+m.id+".html";
+    a.title=m.title;
     a.className="navThumb"+(m.id===PIECE?" active":"");
+    a.onclick=e=>{ e.preventDefault(); e.stopPropagation(); window.location.href=a.href; };
     const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
     a.appendChild(img); strip.appendChild(a);
   });
-  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){const off=el.offsetLeft-strip.offsetWidth/2+el.offsetWidth/2; strip.scrollLeft=Math.max(0,off);} },50);
+
+  const up=document.getElementById("thumbUp");
+  const down=document.getElementById("thumbDown");
+  if(up){ up.onclick=e=>{ e.preventDefault(); e.stopPropagation(); selectThumb(railSelected-1); }; }
+  if(down){ down.onclick=e=>{ e.preventDefault(); e.stopPropagation(); selectThumb(railSelected+1); }; }
+
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){ el.scrollIntoView({block:"center",inline:"nearest"}); } },50);
 }
 </script>
 </body>
