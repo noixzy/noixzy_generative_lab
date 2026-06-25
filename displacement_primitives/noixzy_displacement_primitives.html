@@ -502,7 +502,13 @@ function _audioApply(){
 function _audioRestore(){for(const k of Object.keys(_audioSaved))P[k]=_audioSaved[k];_audioSaved={};}
 function _loadFavs(){try{_favs=JSON.parse(localStorage.getItem(_FAV_KEY)||"[]");}catch(e){_favs=[];}_renderFavs();}
 function _saveFavs(){try{localStorage.setItem(_FAV_KEY,JSON.stringify(_favs));}catch(e){}}
-function _pinFav(){_favs.push({P:{...P},cs:{...cs}});_saveFavs();_renderFavs();}
+function _pinFav(){
+  _favs.push({P:{...P},cs:{...cs}});
+  _saveFavs();
+  _renderFavs();
+  const b=document.getElementById("btnPin");
+  if(b){b.textContent="★ pinned";setTimeout(()=>b.textContent="★ pin",900);}
+}
 function _renderFavs(){
   const fp=document.getElementById("favPanel");if(!fp)return;fp.innerHTML="";
   const fb=document.getElementById("favBtns");if(fb)fb.style.display=_favs.length?"grid":"none";
@@ -621,7 +627,15 @@ function setup() {
   const stage = document.getElementById("stage");
   const c = createCanvas(stage.clientWidth, stage.clientHeight, WEBGL);
   c.parent(stage);
+  stage.insertBefore(c.elt, stage.firstChild);
   _pCanvas = c.elt;
+
+  const stageTools = document.getElementById("stageTools");
+  if (stageTools) {
+    ["pointerdown","pointermove","pointerup","click","dblclick","wheel"].forEach(type => {
+      stageTools.addEventListener(type, e => e.stopPropagation(), { passive:false });
+    });
+  }
 
   theShader = createShader(
     document.getElementById("vert").textContent,
