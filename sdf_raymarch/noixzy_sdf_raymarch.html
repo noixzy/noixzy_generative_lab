@@ -365,9 +365,9 @@
     </div>
     <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#0a0a0a;border-radius:6px;font-size:12px;">
       <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:#666;transition:border-color .2s;">
-        <button id="audioUpload" type="button" style="margin-bottom:6px;">upload audio</button>
-        <div>drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span></div>
-        <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
+        <label for="audioFileInput" class="audioUploadBtn" style="display:inline-block;margin-bottom:6px;background:#000;color:var(--ink);border:1px solid #333;padding:6px 9px;border-radius:4px;cursor:pointer;">upload audio</label>
+        <input type="file" id="audioFileInput" accept="audio/*" style="display:block;width:100%;max-width:100%;box-sizing:border-box;margin:0 auto 6px;color:#666;font:inherit;">
+        <div>drop audio file here</div>
       </div>
       <div id="audioStatus" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
         <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
@@ -1395,7 +1395,6 @@ function _buildAudioUI(){
   const btnAudio=document.getElementById("btnAudio");
   const audioPanel=document.getElementById("audioPanel");
   const audioDropZone=document.getElementById("audioDropZone");
-  const audioUpload=document.getElementById("audioUpload");
   const audioFileInput=document.getElementById("audioFileInput");
   const audioStatus=document.getElementById("audioStatus");
   const audioPlayPause=document.getElementById("audioPlayPause");
@@ -1408,8 +1407,6 @@ function _buildAudioUI(){
   function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
   audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
   const _lfd=async f=>{if(f&&f.type.startsWith("audio/"))await _loadFile(f);};
-  if(audioUpload) audioUpload.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();audioFileInput.click();});
-  audioDropZone.addEventListener("click",()=>audioFileInput.click());
   audioFileInput.addEventListener("change",e=>{if(e.target.files[0])_lfd(e.target.files[0]);});
   audioDropZone.addEventListener("dragover",e=>{e.preventDefault();audioDropZone.style.borderColor="var(--accent)";});
   audioDropZone.addEventListener("dragleave",()=>{audioDropZone.style.borderColor="#444";});
