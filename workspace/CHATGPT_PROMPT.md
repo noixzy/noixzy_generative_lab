@@ -1,148 +1,150 @@
 # ChatGPT working prompt — noixzy generative lab
+# Updated: 2026-06-24
 
-> **How to use this:** Copy everything below the line, paste into ChatGPT as your first message. Then in a second message, paste the full contents of `build_lab.js` (the generator). If the task involves a hand-authored flagship, paste that HTML file instead (or in addition).
+> **How to use:** Copy everything below the line, paste into ChatGPT as your first message. Then paste the full `build_lab.js` as a second message. For flagship tasks, paste that flagship's HTML instead (or in addition).
 
 ---
 
-You are helping me extend a generative art project. I'm going to give you source files to read carefully before doing anything.
+You are helping me extend a generative art project. Read the source files carefully before doing anything.
 
 ## Project overview
 
-I have 15 self-contained generative art modules. Each is a single HTML file that runs in the browser with no server — just double-click. They use p5.js 1.9.0 in global mode.
+18 self-contained generative art modules. Each is a single HTML file — no server, just open in browser. p5.js 1.9.0 global mode.
 
-**File locations on my machine:**
+**Locations:**
 - Working directory: `~/Downloads/noixzy_generative_lab/`
-- Canonical mirror: `~/noixzy_generative_lab/`
-- Generator: `~/Downloads/noixzy_generative_lab/build_lab.js`
-- Generated outputs: one folder per piece, e.g. `truchet/noixzy_truchet.html`
-- Hand-authored flagships (NOT generated — edit directly): `grid_extrude`, `sdf_raymarch`, `gyroid`, `displacement`, `mandelbulb`, `fold`
+- Mirror: `~/noixzy_generative_lab/`
+- Generator: `build_lab.js` — run `node build_lab.js` after edits
+- GitHub (canonical): `https://github.com/noixzy/noixzy_generative_lab`
+- Live gallery: `https://noixzy.github.io/noixzy_generative_lab/gallery/`
 
-**The 9 generated pieces** (produced by running `node build_lab.js`):
-`flow_field`, `reaction_diffusion`, `voronoi`, `contour_field`, `truchet`, `truchet_b`, `l_system`, `cellular_erosion`, `recursive_grid`
+**12 generated pieces** (edit `build_lab.js` only — never touch their HTML):
+`flow_field`, `reaction_diffusion`, `voronoi`, `contour_field`, `truchet`, `truchet_b`, `l_system`, `cellular_erosion`, `recursive_grid`, `wave_interference`, `sdf`, `stipple`
 
-**The 6 hand-authored flagships** (edit directly, never regenerate):
+**6 hand-authored flagships** (edit HTML directly):
 `grid_extrude`, `sdf_raymarch`, `gyroid`, `displacement`, `mandelbulb`, `fold`
 
 ## Non-negotiable rules
 
-1. **Never hand-edit generated HTML files.** All changes go into `build_lab.js`. After editing, I run `node build_lab.js` and it regenerates all 9 pieces.
-2. **p5.js global mode.** `setup()`, `draw()`, `noise()`, `random()`, `map()`, `lerp()` etc. are all globals. Do not wrap in a `new p5(...)` instance.
-3. **UI binds in `setup()`**, never in `DOMContentLoaded`.
-4. Each generated piece defines: `build()` (called once per seed), `render(g, pal)` (draws into offscreen buffer), and optionally `heightField(G)` (returns `Float32Array(G*G)` for isometric extrude).
-5. `pal` is always `[[r,g,b],[r,g,b],[r,g,b]]` — index 0 = background, 1 = accent, 2 = ink.
-6. No external dependencies beyond p5.js. Everything inline.
-7. For hand-authored flagships: they share the same 12-palette PALETTES array and `localStorage` theme key (`"noixzy_lab_theme"`), but have their own UI and camera code. Do not try to use build_lab.js engine functions inside them.
-8. After any change to `build_lab.js`, give me the **complete updated file** — not a diff, not a snippet. The full file, ready to paste and save.
-9. After any change to a flagship HTML, give me the **complete updated HTML file**.
+1. Never hand-edit generated HTML. Changes go in `build_lab.js` then `node build_lab.js`.
+2. p5.js global mode. `setup()`, `draw()`, `noise()`, `random()`, `map()`, `lerp()` are globals. No `new p5(...)`.
+3. UI must bind in `setup()`, never in `DOMContentLoaded`.
+4. Each generated piece defines `build()`, `render(g, pal)`, and optionally `heightField(G)`.
+5. `pal` is always `[[r,g,b],[r,g,b],[r,g,b]]` — 0=background, 1=mid, 2=highlight.
+6. No external deps beyond p5.js. Everything inline.
+7. Always return the complete updated file — never a diff or snippet.
 
-## How the generated engine works
+## Engine architecture (generated modules)
 
-- `PIECES` array at the bottom of `build_lab.js` — each entry has `id`, `title`, `system[]` (param definitions), and `code` (template literal with the piece's render functions).
-- `system[]` params: `k` (key), `label`, `min`, `max`, `step`, `v` (default), optional `g` (group), optional `rr:true` (re-render on change), optional `sys:true` (rebuild simulation on change).
-- **SHARED params** — injected into every piece automatically: `zoom`, `rot`, `mirror`, `metallic`, `rough`, `sheen`, `alpha`, `contrast`, `vig`, `grain`, `glow`, `speed`, `drift`.
+- `PIECES` array in `build_lab.js` — each entry: `id`, `title`, `system[]`, `code`.
+- `system[]` param fields: `k`, `label`, `min`, `max`, `step`, `v` (default), optional `g` (group), optional `rr:true` (re-render, no rebuild), optional `sys:true` (rebuild sim).
+- `SHARED` params auto-injected: `metallic`, `rough`, `sheen`, `alpha`, `zoom`, `rot`, `cx`, `cy`, `mirror`, `contrast`, `vig`, `glow`, `speed`, `drift`. (grain is gone — removed.)
 - Groups: `["system","extrude","material","frame","look","motion"]`.
-- `renderHeightfield(g, heights, G, pal)` — shared isometric renderer. Pieces that want extrude define `heightField(G)` and add `height`, `hvar`, `light` params with `g:"extrude"`.
-- `animT` — global seconds counter, incremented in `draw()`.
-- `dirty` — set to `true` by param changes to force re-render while paused.
-- `colorState {bg, acc, ink}` — live-editable colors. `getPal()` converts them to the `pal` array.
-- Theme system — 12 palettes (ember, mineral, violet, amber, graphite, cyan, acid, magenta, gold, neutral, copper, ice) persisted in `localStorage`.
+- Slider IDs in generated HTML: `p_{k}` for value, `v_{k}` for display span.
+- Heightfield: when `P.height > 0.01`, engine calls `heightField(G)` (G=220, returns `Float32Array(G*G)`) and `renderHeightfield()` instead of `render()`.
+- `_pxQ(out, G)` — shared block-quantise helper using `P.pix`. Call before `return out` in heightField.
+- `renderHeightfield()` supports `P.caps`: 0=flat, 1=semicircle, 2=360-degree sphere tops.
+- `animT` — global time in seconds.
+- `dirty` — set true by param changes; forces re-render while paused.
+- Mouse controls built into engine draw loop: drag=pan (cx/cy), alt+drag=rotate, scroll=zoom. Do not duplicate.
+- Double-click any slider resets to default — wired in `buildUI()` via dblclick listener using `p.v`.
+- `buildNav()` — builds prev/next navBar links and thumbnail strip from `ALL_MODULES` array and `PIECE` constant.
+- `saveThumb()` — File System Access API, saves 400x300 PNG to user-chosen folder. Falls back to download.
+- Audio — Web Audio API, file upload primary, mic secondary. `_audioApply()`/`_audioRestore()` wrap renderScene(). `AMAP {bass,mid,high,presence}` maps bands to param keys. `ADEPTH` controls intensity.
+- Pin/fav — star pin button saves `{P, theme}` to localStorage. Chips shown in panel.
 
-## How the SDF flagship modules work
+## Generated piece current state
 
-All five SDF modules (sdf_raymarch, gyroid, displacement, mandelbulb, fold) share this pattern:
+| Piece | Key params | Extrude | heightField | Notes |
+|---|---|---|---|---|
+| flow_field | density, scale, turbulence, pal | no | no | connected curveVertex splines, not dots |
+| reaction_diffusion | feed, kill, spots, pix, pal | yes | yes | gray-scott simulation |
+| voronoi | cells, jitter, pix, pal | yes | yes | |
+| contour_field | threshold, frequency, smooth, pal | no | no | |
+| truchet | density, weight, clustering, pal | yes | yes | |
+| truchet_b | same + color params | yes | yes | |
+| l_system | depth, angle, decay, pal | no | no | |
+| cellular_erosion | density, erosion, speed, pix, pal | yes | yes | |
+| recursive_grid | depth, split, pal | no | no | |
+| wave_interference | sources, freq, pix, pal | yes | yes | |
+| sdf | sdf params, pix, pal | yes | yes | |
+| stipple | density, dotsize, softness, pal, height, colsize, caps, hvar, light | yes | yes | default palette=4 (graphite/b&w) |
 
-- **WebGL fragment shader** — fullscreen quad via p5.js WEBGL mode, `quad(-1,-1,1,-1,1,1,-1,1)`
-- **Orbit camera** — `vec3 ro = vec3(sin(a)*R, el, cos(a)*R)` where `a` is time × u_spin
-- **`map(vec3 p)`** — scene SDF or fractal DE
-- **`calcNormal()`** — tetrahedron finite difference normals
-- **`calcAO()`** — ambient occlusion
-- **Lighting** — diffuse + specular + AO + rim
-- **Uniforms** — `u_time`, `u_spin`, `u_ao`, `u_pal`, `u_bg`/`u_acc`/`u_ink`, plus per-module params
-- **Same 12-palette PALETTES array** as generated modules, synced via localStorage
+**Stipple:** rejection-sampled dots weighted by noise luminance. In extrude mode, each dot paints a circle into G*G heightfield at radius from `P.dotsize`. `P.colsize` drives block quantisation. `P.caps` 0/1/2 = flat/semicircle/sphere.
 
-## Current state of each generated piece
+## Flagship current state
 
-| Piece | Params | Extrude group | heightField |
-|---|---|---|---|
-| flow_field | density, curl, speed, pal | no | no |
-| reaction_diffusion | feed, kill, speed, pal | yes (height/hvar/light) | yes |
-| voronoi | density, jitter, speed, pal | yes | yes |
-| contour_field | threshold, frequency, smooth, pal | no | no |
-| truchet | density, weight, clustering, pal | yes | yes |
-| truchet_b | density, weight, clustering, pal + color params | yes | yes |
-| l_system | depth, angle, decay, pal | no | no |
-| cellular_erosion | density, erosion, speed, pal | yes | yes |
-| recursive_grid | depth, split, pal | no | no |
+| Module | Audio | Pin/fav | thumb btn | Nav | dbl-click reset |
+|---|---|---|---|---|---|
+| grid_extrude | yes | yes | yes | yes | yes |
+| sdf_raymarch | NO — pending | NO — pending | yes | yes | yes (via P_CONTROLS) |
+| gyroid | yes | yes | yes | yes | yes |
+| displacement | yes | yes | yes | yes | yes |
+| mandelbulb | yes | yes | yes | yes | yes |
+| fold | yes | yes | yes | yes | yes |
 
-## Current state of each flagship
+All 6 flagships have: thin navBar (prev/next + gallery link), thumbnail strip at panel bottom, → thumb button using File System Access API.
 
-| Module | Camera | Special controls |
-|---|---|---|
-| grid_extrude | zoom, cx, cy, rot, mirror | symmetry mode, fully complete — do not disturb |
-| sdf_raymarch | spin (time-driven) | AO, bg/form/highlight color |
-| gyroid | spin (time-driven) | scale, threshold, phase, ao |
-| displacement | spin (time-driven) | amount, freq, roughness, speed, ao |
-| mandelbulb | spin (time-driven) | power, morph, detail, glow, ao |
-| fold | spin (time-driven) | scale, offset, twist, morph, ao |
+### gyroid / displacement / mandelbulb / fold — shared JS pattern
 
-## After every code change I will:
+```js
+let P = { key: value, ... };           // named param object
+let cs = { bg, form, hi, bgVal, fSat, fVal, rim }; // color state
+const _pAudioParams = [{k, sid, label, min, max}]; // per-module, used for audio dropdowns + slider sync
+// _buildAudioUI(), _audioApply(), _audioRestore() — audio system
+// _pinFav(), _renderFavs(), _loadFavs() — pin/fav system
+// saveThumb() — File System Access API thumb export
+// buildNav() — inter-module navigation
+// ALL_MODULES array — list of all 17 modules with id+title
+```
+
+Slider wiring: gyroid/displacement use `paramCfg = [{id, vid, key}].forEach(...)`, mandelbulb/fold use inline `[[sid,vid,k]].forEach(...)`. Both have dblclick reset via `el.defaultValue`.
+
+### sdf_raymarch — different architecture
+
+Uses **numeric `P[]` array** (not named keys) and `P_CONTROLS` dict:
+```js
+let P = [0.5, 0.55, 0.35, ...]; // density, blend, turb, palette, spin, extrude, displace, spread, blob, ao, dist, elev
+const P_CONTROLS = {
+  p0: { index:0, out:"v0", rebuild:true },
+  p1: { index:1, out:"v1" },
+  // ...
+};
+```
+Has its own full preset system (save/load named presets to localStorage). Audio and pin/fav are the pending addition.
+
+## Deploy workflow
 
 ```bash
 node build_lab.js
-# then mirror:
 cp build_lab.js ~/noixzy_generative_lab/build_lab.js
+# mirror changed generated HTML files:
 cp flow_field/noixzy_flow_field.html ~/noixzy_generative_lab/flow_field/noixzy_flow_field.html
-# (repeat for whatever pieces changed)
+# mirror changed flagships:
+cp gyroid/noixzy_gyroid.html ~/noixzy_generative_lab/gyroid/noixzy_gyroid.html
+# push to GitHub (this deploys to GitHub Pages):
+git add -A && git commit -m "..." && git push
 ```
 
----
+## Pending tasks
 
-## What I want to build — current task
+1. **sdf_raymarch — add audio + pin/fav** (only flagship missing these)
+   - Build `_pAudioParams` from P_CONTROLS entries + their slider element min/max
+   - Favorites save `{P: [...P], turbType, displaceType, colorState}` to localStorage
+   - Port the audio panel HTML from gyroid (already present in other flagships)
 
-### Phase 1: Add cx / cy pan to generated modules (edit build_lab.js)
+2. **Gallery thumbnails** — → thumb button in every module, picks folder once per session. Or run `node workspace/gen_thumbs.js` for batch Playwright capture.
 
-The SHARED params array already has `zoom` and `rot`. I want to add `cx` (center X) and `cy` (center Y) pan controls so the composition can be reframed.
+3. **Stipple caps=2 visual check** — test at colsize >= 0.6, low density to verify 360-degree sphere tops are visible.
 
-**What to do:**
-1. Add to SHARED params array (in the `frame` group, after `zoom` and `rot`):
-   ```js
-   {k:"cx", label:"center x", g:"frame", min:-1, max:1, step:0.01, v:0},
-   {k:"cy", label:"center y", g:"frame", min:-1, max:1, step:0.01, v:0},
-   ```
-2. In `draw()`, change the existing `translate(W/2, H/2)` to apply the pan offset:
-   ```js
-   translate(W/2 + P.cx * W * 0.45, H/2 - P.cy * H * 0.45)
-   ```
-   (Invert cy so positive = up. Pan must come before scale/rotate in the transform chain.)
-3. Return the complete updated `build_lab.js`.
+4. **Mouse drag/rotate/zoom for GLSL flagships** — engine modules have it. The 5 GLSL flagships don't yet. Would map drag delta to camera uniforms (u_dist, u_elev, u_spin) rather than P.zoom/P.rot.
 
-**Constraints:**
-- Defaults are 0 so all existing renders are unchanged.
-- Do not touch anything else in the engine.
-- Do not touch the flagship HTML files.
+5. **Commit + push session work to GitHub.**
 
 ---
 
-### Phase 2: Add distance + elevation to SDF modules (edit one flagship at a time)
+## Current task
 
-After Phase 1 is verified, I want to add `u_dist` (orbit radius) and `u_elev` (elevation angle) to each SDF flagship.
+[REPLACE THIS with the specific task before pasting to ChatGPT]
 
-**Order:** gyroid → displacement → mandelbulb → fold → sdf_raymarch
-
-For each module:
-1. Add `u_dist` and `u_elev` uniforms to the fragment shader
-2. Replace hardcoded orbit radius and elevation with:
-   ```glsl
-   float R  = mix(R_min, R_max, u_dist);   // replace hardcoded R
-   float el = mix(0.2, 1.1, u_elev);       // replace hardcoded el
-   ```
-   (Use module-appropriate R_min/R_max — e.g. gyroid uses 4.8, so R_min=2.5 R_max=7.0)
-3. Add sliders to the panel HTML (in the camera section, near the spin slider)
-4. Add `setUniform("u_dist", P.dist)` and `setUniform("u_elev", P.elev)` in JS draw()
-5. Return the complete updated HTML file
-
-**Start with gyroid** — I'll paste `gyroid/noixzy_gyroid.html` as the second message.
-
----
-
-Please confirm you understand the architecture, then tell me if you need the source file(s) before starting.
+Example: "Add audio + pin/fav to sdf_raymarch. Pasting sdf_raymarch HTML as second message."
