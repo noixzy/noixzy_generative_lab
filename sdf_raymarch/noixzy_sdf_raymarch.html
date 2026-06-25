@@ -193,6 +193,19 @@
     font-family: var(--noixzy-ui-font) !important;
   }
 
+  /* NOIXZY_SDF_VISIBLE_THEME_LABEL_FIX_CSS */
+  .panel .consoleLabel,
+  .panel [data-noixzy-sdf-theme-label="1"] {
+    display:block !important;
+    margin:10px 0 6px !important;
+    color:var(--dim) !important;
+    text-transform:uppercase !important;
+    letter-spacing:.12em !important;
+    font-size:10px !important;
+    font-weight:400 !important;
+    line-height:1.1 !important;
+  }
+
 </style>
 </head>
 <body>
@@ -1781,6 +1794,36 @@ const ALL_MODULES=[
   {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
   {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
 ];
+
+/* NOIXZY_SDF_VISIBLE_THEME_LABEL_FIX_START */
+function _noixzyEnsureSdfThemeLabelVisible(){
+  const panel=document.querySelector(".panel");
+  const themeSelect=document.getElementById("themeSelect");
+  if(!panel || !themeSelect) return;
+
+  const themeLine=themeSelect.closest(".cycleLine") || themeSelect.parentElement;
+  if(!themeLine) return;
+
+  let label=panel.querySelector('[data-noixzy-sdf-theme-label="1"]');
+
+  if(!label){
+    label=document.createElement("div");
+    label.className="consoleLabel";
+    label.dataset.noixzySdfThemeLabel="1";
+    label.textContent="theme";
+  }
+
+  if(label.nextSibling !== themeLine){
+    panel.insertBefore(label, themeLine);
+  }
+}
+
+window.addEventListener("load",()=>{
+  setTimeout(()=>{ try{ _noixzyEnsureSdfThemeLabelVisible(); }catch(e){} },40);
+  setTimeout(()=>{ try{ _noixzyEnsureSdfThemeLabelVisible(); }catch(e){} },260);
+});
+/* NOIXZY_SDF_VISIBLE_THEME_LABEL_FIX_END */
+
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
   const safeIdx=idx>=0?idx:0;
