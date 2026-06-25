@@ -11,6 +11,7 @@
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
   .app { display:flex; flex-direction:row; align-items:stretch; height:calc(100vh - 28px); }
   .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+.stage.transparentPreview { background:#fff; }
   .stage canvas { display:block; width:100%; height:100%; }
   .panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
@@ -238,6 +239,7 @@
       </div>
       <div class="stageToolGroup">
         <button id="btnAudio" type="button">audio</button>
+        <button id="btnTransparentBg" type="button">bg alpha</button>
         <button id="exportFavs" type="button">export ★</button>
         <button id="clearFavs" type="button">clear ★</button>
       </div>
@@ -361,6 +363,7 @@ uniform float u_dist;
 uniform float u_elev;
 uniform float u_ao;
 uniform vec3  u_bgColor;
+uniform int   u_transparentBg; // 1 = transparent background, geometry remains opaque
 uniform vec3  u_formColor;
 uniform vec3  u_hiColor;
 uniform float u_bgValue;
@@ -487,12 +490,14 @@ void main() {
   float vig = smoothstep(1.42, 0.15, length(vUv));
   col *= mix(0.74, 1.0, vig);
   col  = pow(clamp(col, 0.0, 1.0), vec3(0.83));
-  gl_FragColor = vec4(col, 1.0);
+  float alpha = (u_transparentBg == 1 && !hit) ? 0.0 : 1.0;
+  gl_FragColor = vec4(col, alpha);
 }
 </script>
 
 <script>
 const PIECE = "mandelbulb";
+let transparentBg = false;
 function _flashConsole(msg){ const el=document.getElementById("presetStatus"); if(el) el.textContent=msg; }
 let _thumbDir=null,_pCanvas=null;
 function saveThumb(){
@@ -752,7 +757,25 @@ function _buildAudioUI(){
   document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
 }
 
+
+function bindTransparentBgToggle(){
+  const btn=document.getElementById("btnTransparentBg");
+  const stage=document.getElementById("stage");
+  if(!btn) return;
+  const sync=()=>{
+    btn.textContent = transparentBg ? "bg alpha ✓" : "bg alpha";
+    btn.style.color = transparentBg ? "var(--accent)" : "";
+    if(stage) stage.classList.toggle("transparentPreview", transparentBg);
+  };
+  btn.addEventListener("click",()=>{
+    transparentBg = !transparentBg;
+    sync();
+  });
+  sync();
+}
+
 function setup() {
+  setTimeout(bindTransparentBgToggle, 0);
   const stage = document.getElementById("stage");
   const c = createCanvas(stage.clientWidth, stage.clientHeight, WEBGL);
   c.parent(stage);
@@ -915,6 +938,7 @@ function draw() {
   theShader.setUniform("u_formSat",   cs.fSat);
   theShader.setUniform("u_formValue", cs.fVal);
   theShader.setUniform("u_rim",       cs.rim);
+  theShader.setUniform("u_transparentBg", transparentBg ? 1 : 0);
   noStroke();
   quad(-1,-1, 1,-1, 1,1, -1,1);
   _audioRestore();
@@ -950,7 +974,7 @@ function _noixzyHandAuthoredGridUi(){
     tools.dataset.noixzyGridOrdered="1";
     const groups = [
       ["btnPin","exportFavs","btnCopy","btnPaste"],
-      ["btnAudio","clearFavs"],
+      ["btnAudio","btnTransparentBg","clearFavs"],
       ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
     ];
     const made=[];
@@ -1334,6 +1358,7 @@ function _noixzyEnsureBottomFavButtons(){
   const paste = document.getElementById("btnPaste");
 
   const audio = document.getElementById("btnAudio");
+  const bgAlpha = makeBtn("btnTransparentBg", "bg alpha");
   const clear = makeBtn("clearFavs", "clear ★");
 
   const thumb = document.getElementById("btnThumb");
@@ -1344,7 +1369,7 @@ function _noixzyEnsureBottomFavButtons(){
 
   const groups = [
     [pin, exp, copy, paste],
-    [audio, clear],
+    [audio, bgAlpha, clear],
     [thumb, video, dur, save, save2]
   ];
 
