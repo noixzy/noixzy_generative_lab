@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // vector scope</title>
+<title>noixzy // signal weave</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // vector scope</h1>
+  <h1>noixzy // signal weave</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="vector_scope", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="signal_weave", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"traces","label":"traces","min":0,"max":1,"step":0.01,"v":0.48,"sys":true},{"k":"gain","label":"gain","min":0,"max":1,"step":0.01,"v":0.55,"rr":true},{"k":"phase","label":"phase","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"fold","label":"fold","min":0,"max":1,"step":0.01,"v":0.36,"rr":true},{"k":"glow","label":"glow","min":0,"max":1,"step":0.01,"v":0.6,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.38},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.54,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
+const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.52,"sys":true},{"k":"weave","label":"weave","min":0,"max":1,"step":0.01,"v":0.58,"rr":true},{"k":"phase","label":"phase","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"thickness","label":"thickness","min":0,"max":1,"step":0.01,"v":0.44,"rr":true},{"k":"tail","label":"tail","min":0,"max":1,"step":0.01,"v":0.36,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.32},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.58,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -393,52 +393,58 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 /* ================= PIECE CODE ================= */
 
 function build(){}
-function _scopePoint(u,t,layer){
-  const gain=map(P.gain,0,1,.22,.48);
-  const ph=map(P.phase,0,1,0,TWO_PI);
-  const fold=Math.floor(map(P.fold,0,1,1,7));
-  const a=u*TWO_PI;
-  const x=Math.sin(a*(2+fold)+ph+t*.9+layer*.7)*gain + Math.sin(a*3+t*.4)*gain*.28;
-  const y=Math.sin(a*(3+fold*.5)-ph+t*1.1+layer*1.3)*gain + Math.cos(a*2-t*.5)*gain*.24;
-  return [.5+x,.5+y];
+function _swVal(x,y,t){
+  const f=map(P.density,0,1,8,46);
+  const w=map(P.weave,0,1,.08,.72);
+  const ph=map(P.phase,0,1,-PI,PI);
+  const a=Math.sin((x*f+t*.7)+Math.sin(y*f*.72+ph)*w*TWO_PI);
+  const b=Math.sin((y*f-t*.52)-Math.cos(x*f*.64-ph)*w*TWO_PI);
+  const c=noise(x*4.5+seed*.01,y*4.5+33,t*.12);
+  return Math.max(0,Math.min(1,(a*b*.5+.5)*.75+c*.25));
 }
 function render(g,pal){
   const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
-  const t=animT*map(P.speed,0,1,.08,1.45);
-  const layers=Math.floor(map(P.traces,0,1,2,14));
-  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  const rows=Math.floor(map(P.density,0,1,22,86));
+  const amp=map(P.weave,0,1,8,70);
+  g.background(Math.min(255,pal[0][0]*1.12+10),Math.min(255,pal[0][1]*1.12+10),Math.min(255,pal[0][2]*1.12+10));
   g.noFill();
   g.blendMode(ADD);
-  for(let L=0;L<layers;L++){
-    const col=L%2?pal[1]:pal[2];
-    const z=(L/(layers-1||1))*2-1;
-    const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
-    g.stroke(col[0],col[1],col[2],map(P.glow,0,1,45,190));
-    g.strokeWeight(map(P.glow,0,1,.8,3.8));
-    g.beginShape();
-    for(let i=0;i<=360;i++){
-      const p=_scopePoint(i/360,t,L);
-      g.curveVertex(cx+(p[0]*W-cx)*scl,cy+(p[1]*H-cy)*scl+z*cy*.14*dep);
+  for(let pass=0;pass<2;pass++){
+    const vertical=pass===1;
+    const col=vertical?pal[1]:pal[2];
+    g.stroke(Math.min(255,col[0]*1.18+18),Math.min(255,col[1]*1.18+18),Math.min(255,col[2]*1.18+18),vertical?145:115);
+    g.strokeWeight(map(P.thickness,0,1,.45,3.6));
+    for(let r=0;r<rows;r++){
+      const a=(r+.5)/rows;
+      g.beginShape();
+      for(let i=0;i<=110;i++){
+        const b=i/110;
+        let x=vertical?a:b, y=vertical?b:a;
+        const v=_swVal(x,y,t+pass*.16);
+        const z=(v-.5)*2;
+        const scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+        const wob=(v-.5)*amp;
+        let px=cx+(x*W-cx)*scl + (vertical?wob:0);
+        let py=cy+(y*H-cy)*scl + (vertical?0:wob) + z*cy*.13*dep;
+        if(P.tail>.01){
+          const tx=(vertical?-1:1)*P.tail*14*z;
+          const ty=P.tail*18*z;
+          g.curveVertex(px-tx,py-ty);
+        }
+        g.curveVertex(px,py);
+      }
+      g.endShape();
     }
-    g.endShape(CLOSE);
   }
   g.blendMode(BLEND);
 }
 function heightField(G){
   const out=new Float32Array(G*G);
-  const t=animT*map(P.speed,0,1,.08,1.45);
-  const layers=Math.floor(map(P.traces,0,1,2,14));
-  const stamp=(x,y,r,val)=>{
-    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
-    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
-    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
-      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
-    }
-  };
-  for(let L=0;L<layers;L++)for(let i=0;i<260;i++){
-    const p=_scopePoint(i/260,t,L);
-    stamp(p[0],p[1],.018,.22+L/layers*.55);
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_swVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.thickness,0,1,1.65,.68));
   }
   _edgeMask(out,G); return out;
 }
