@@ -469,7 +469,7 @@ function buildNav(){
     const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
     a.appendChild(img); strip.appendChild(a);
   });
-  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el) el.scrollIntoView({inline:"center",block:"nearest"}); },50);
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){ const off=el.offsetLeft-strip.offsetWidth/2+el.offsetWidth/2; strip.scrollLeft=Math.max(0,off); } },50);
 }
 let _dragOnCanvas=false;
 function mousePressed(){

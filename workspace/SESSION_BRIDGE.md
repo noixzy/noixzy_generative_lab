@@ -68,7 +68,6 @@ const ALL_MODULES=[
 
 ### Known issues / still pending
 
-- ⚠️ **`→ thumb` in GLSL flagships may still not work** — the stray syntax error was the primary bug; after that fix the scripts now load. But thumb capture relies on `requestAnimationFrame` + `preserveDrawingBuffer:true`. If thumb still fails, check: (1) `_pCanvas=c.elt` stored in setup, (2) no second `saveThumb` function defined, (3) no lingering syntax errors in the file.
 - ⏳ **`displacement_primitives`** — still missing: audio, pin/fav, `→ thumb` button. Has nav + camera orbit + theme. Priority task.
 - ⏳ **Gallery thumbnails** for 4 new modules — need manual browser capture: open each, click `→ thumb`, pick `gallery/thumbs/` folder.
 - ⏳ **Pin/fav + dbl-click reset** not yet on the 4 new modules (hex_grid, rose_curve, lissajous_mesh, torus_knot).
@@ -92,7 +91,16 @@ const ALL_MODULES=[
 
 ## Session log
 
-### 2026-06-25
+### 2026-06-25 (continued)
+- **flow_field density** — slider was capped at max:0.20 but render mapped 0→1; fixed to full 0→1 range, raised ceiling to 6000 strands
+- **navBar gallery link** — generated modules showed module title as center link text; changed to "⊞ gallery" matching hand-authored modules. Also removed `pointer-events:none` so the link is clickable.
+- **`_edgeMask(out,G)` engine helper** — added to build_lab.js, applied at every `heightField()` return point in all 12 generated modules. Heights fade to 0 within 15% of each edge (smoothstep 0.15→0.30), inner ~70% extrudes at full strength. Borders stay flat.
+- **Modules opening from page bottom** — root cause: generated modules used `el.scrollIntoView({block:"nearest"})` in `buildNav()`, which scrolled the panel vertically to show the thumb strip. Fixed by switching to `strip.scrollLeft` horizontal-only offset (matching hand-authored modules).
+- **`→ thumb` click listener missing** — gyroid, displacement, mandelbulb, fold all had the button in HTML and `saveThumb()` defined but no `addEventListener`. Added to all four.
+- **contour_field extrude** — added `height`, `hvar`, `light` params + `heightField(G)` using the same 4-octave noise as the contour lines.
+- **contour_field depth** — added `depth` slider. Each contour level gets z position (−1 back → +1 front): back levels scale smaller + shift up, front levels scale larger + shift down, alpha and stroke weight increase toward front. Chains sorted back-to-front. `t` stored on segments and propagated through `chainContours`.
+
+### 2026-06-25 (earlier)
 - Fixed stray `}catch(e){_captureThumb()...}` syntax error in gyroid, sdf_raymarch, displacement, displacement_primitives, mandelbulb — all were broken (blank canvas, thumb not working)
 - Added isometric extrude (hex_grid), z-depth (rose_curve, lissajous_mesh), color pickers (all 4 new modules), torus_knot color controls
 - Updated CHATGPT_PROMPT.md, SESSION_BRIDGE.md, NEXT_MODULES.md to reflect 22-module state

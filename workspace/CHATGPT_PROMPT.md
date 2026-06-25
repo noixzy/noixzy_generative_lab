@@ -1,5 +1,5 @@
 # ChatGPT working prompt — noixzy generative lab
-# Updated: 2026-06-25
+# Updated: 2026-06-25 (rev 2)
 
 > **How to use:** Paste everything below the line as your first message to ChatGPT.
 > Then paste the relevant file(s) as follow-up messages — either `build_lab.js` (for generated modules) or the specific flagship HTML file(s) you're working on.
@@ -86,22 +86,32 @@ When `P.height > 0.01`, engine calls `heightField(G)` (G=220, returns `Float32Ar
 - Audio: Web Audio API, file upload + mic. `AMAP {bass,mid,high,presence}` → param keys. `ADEPTH` controls intensity.
 - Pin/fav: star button saves `{P, theme}` to localStorage
 
+### Engine helper: `_edgeMask(out, G)`
+
+Called before every `heightField()` return. Multiplies heights by a smoothstep ramp — zero for the outer 15% border, smooth transition 15→30%, full value for the inner 70%. Keeps edges flat on all extruded modules. **Always call `_edgeMask(out,G)` before returning from any new `heightField()` function.**
+
+### `buildNav()` scroll — use `strip.scrollLeft`, not `scrollIntoView`
+
+Generated modules must use `strip.scrollLeft = offset` (horizontal-only) to center the active thumb. **Never use `el.scrollIntoView({block:...})` — it scrolls the panel vertically, making every module open at the bottom of the page.**
+
 ### Generated module current state
 
-| Piece | Key params | Extrude | heightField |
-|---|---|---|---|
-| flow_field | density, scale, turbulence, pal | no | no |
-| reaction_diffusion | feed, kill, spots, pix, pal | yes | yes |
-| voronoi | cells, jitter, pix, pal | yes | yes |
-| contour_field | threshold, frequency, smooth, pal | no | no |
-| truchet | density, weight, clustering, pal | yes | yes |
-| truchet_b | same + color params | yes | yes |
-| l_system | depth, angle, decay, pal | no | no |
-| cellular_erosion | density, erosion, speed, pix, pal | yes | yes |
-| recursive_grid | depth, split, pal | no | no |
-| wave_interference | sources, freq, pix, pal | yes | yes |
-| sdf | sdf params, pix, pal | yes | yes |
-| stipple | density, dotsize, softness, height, colsize, caps, hvar, light | yes | yes |
+| Piece | Key params | Extrude | heightField | depth |
+|---|---|---|---|---|
+| flow_field | density (0–1, 80–6000 strands), scale, turbulence, pal | no | no | no |
+| reaction_diffusion | feed, kill, spots, pix, pal | yes | yes | no |
+| voronoi | cells, jitter, pix, pal | yes | yes | no |
+| contour_field | scale, levels, turbulence, **depth**, pal | yes | yes | **yes** |
+| truchet | density, weight, clustering, pal | yes | yes | no |
+| truchet_b | same + color params | yes | yes | no |
+| l_system | depth, angle, decay, pal | no | yes | no |
+| cellular_erosion | density, erosion, speed, pix, pal | yes | yes | no |
+| recursive_grid | depth, split, pal | no | no | no |
+| wave_interference | sources, freq, pix, pal | yes | yes | no |
+| sdf | sdf params, pix, pal | yes | yes | no |
+| stipple | density, dotsize, softness, height, colsize, caps, hvar, light | yes | yes | no |
+
+**contour_field depth detail:** each contour level gets z ∈ [−1,+1] (back→front). Points are transformed: `x' = cx + (x−cx)*scl`, `y' = cy + (y−cy)*scl + yOff`, where `scl = 1 − z*0.22*depth`, `yOff = z*cy*0.18*depth`. Alpha and stroke weight increase toward front. Chains sorted back-to-front. Level fraction `t` stored on segments and propagated through `chainContours`.
 
 ---
 
@@ -256,6 +266,12 @@ Gallery entry format (`gallery/index.html` pieces array):
 ---
 
 ## Pending tasks (priority order)
+
+### 0 — Known engine rules (do not break)
+- `_edgeMask(out,G)` before every `heightField()` return — keeps borders flat
+- `buildNav()` uses `strip.scrollLeft` not `scrollIntoView` — prevents page-bottom scroll
+- `→ thumb` button needs both: (a) `saveThumb()` function defined, AND (b) `getElementById("btnThumb").addEventListener("click", saveThumb)` in setup. Missing either = silent failure.
+- No stray `}catch(e){` after the closing `}` of `saveThumb()` — causes syntax error, kills entire script
 
 ### 1 — displacement_primitives: add audio + pin/fav + thumb
 

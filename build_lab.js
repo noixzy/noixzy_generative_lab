@@ -411,7 +411,7 @@ function buildNav(){
     const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
     a.appendChild(img); strip.appendChild(a);
   });
-  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el) el.scrollIntoView({inline:"center",block:"nearest"}); },50);
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){ const off=el.offsetLeft-strip.offsetWidth/2+el.offsetWidth/2; strip.scrollLeft=Math.max(0,off); } },50);
 }
 let _dragOnCanvas=false;
 function mousePressed(){
@@ -972,7 +972,7 @@ function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
   _edgeMask(out,G); _pxQ(out,G); return out; }` },
 
 { id:"contour_field", title:"contour field",
-  system:[{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"levels",label:"levels",min:0,max:1,step:.01,v:.5},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.4},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
+  system:[{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"levels",label:"levels",min:0,max:1,step:.01,v:.5},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.4},{k:"depth",label:"depth",min:0,max:1,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.6,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 function build(){}
 function contourSegments(w,h,pal){ const R=Math.max(5,Math.floor(w/200)), C=Math.floor(w/R), Rj=Math.floor(h/R);
@@ -990,7 +990,7 @@ function contourSegments(w,h,pal){ const R=Math.max(5,Math.floor(w/200)), C=Math
       const TL=[x,y],TR=[x+R,y],BR=[x+R,y+R],BL=[x,y+R];
       let st=(a>thr?8:0)|(b>thr?4:0)|(c>thr?2:0)|(d>thr?1:0);
       const e={top:ix(TL,TR,a,b),right:ix(TR,BR,b,c),bottom:ix(BL,BR,d,c),left:ix(TL,BL,a,d)};
-      const sg=(p,q)=>segs.push({p:p,q:q,c:col});
+      const sg=(p,q)=>segs.push({p:p,q:q,c:col,t:t});
       if(st===1||st===14)sg(e.left,e.bottom); else if(st===2||st===13)sg(e.bottom,e.right);
       else if(st===3||st===12)sg(e.left,e.right); else if(st===4||st===11)sg(e.top,e.right);
       else if(st===5){sg(e.left,e.top);sg(e.bottom,e.right);} else if(st===6||st===9)sg(e.top,e.bottom);
@@ -1008,7 +1008,7 @@ function chainContours(segs){
   const chains=[];
   for(let i=0;i<segs.length;i++){
     if(used[i]) continue; used[i]=1;
-    const ch={pts:[segs[i].p,segs[i].q],c:segs[i].c};
+    const ch={pts:[segs[i].p,segs[i].q],c:segs[i].c,t:segs[i].t};
     for(let pass=0;pass<2;pass++){
       let go=true;
       while(go){ go=false;
@@ -1027,16 +1027,42 @@ function chainContours(segs){
 }
 function render(g,pal){
   const chains=chainContours(contourSegments(g.width,g.height,pal));
-  g.strokeWeight(1.1); g.noFill();
+  const dep=P.depth||0;
+  const cx=g.width/2, cy=g.height/2;
+  // sort back-to-front so front levels paint over back levels
+  if(dep>0.01) chains.sort((a,b)=>(a.t||0)-(b.t||0));
+  g.noFill();
   for(const ch of chains){
-    g.stroke(ch.c[0],ch.c[1],ch.c[2]);
+    const tf=ch.t||0;
+    const z=tf*2-1; // -1=back, +1=front
+    const scl=dep>0.01?1-z*0.22*dep:1;
+    const yOff=dep>0.01?z*cy*0.18*dep:0;
+    const alpha=dep>0.01?Math.floor(lerp(80,255,tf*(1+dep*0.4))):255;
+    const sw=dep>0.01?1.1*(1+z*0.5*dep):1.1;
+    g.strokeWeight(sw);
+    g.stroke(ch.c[0],ch.c[1],ch.c[2],alpha);
     const pts=ch.pts; if(pts.length<2) continue;
     g.beginShape();
-    g.curveVertex(pts[0][0],pts[0][1]);
-    for(const p of pts) g.curveVertex(p[0],p[1]);
-    g.curveVertex(pts[pts.length-1][0],pts[pts.length-1][1]);
+    const tx=p=>[cx+(p[0]-cx)*scl, cy+(p[1]-cy)*scl+yOff];
+    const f=tx(pts[0]); g.curveVertex(f[0],f[1]);
+    for(const p of pts){const r=tx(p);g.curveVertex(r[0],r[1]);}
+    const l=tx(pts[pts.length-1]); g.curveVertex(l[0],l[1]);
     g.endShape();
   }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const s=map(P.scale,0,1,0.002,0.012), turb=map(P.turbulence,0,1,1,4);
+  let mn=1e9,mx=-1e9;
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    let v=0,amp=1,fr=1;
+    for(let o=0;o<4;o++){v+=noise(i*s*fr,j*s*fr,animT*P.speed*0.35+o*2.3)*amp;amp*=.5;fr*=1.6*turb;}
+    out[i+j*G]=v; mn=Math.min(mn,v); mx=Math.max(mx,v);
+  }
+  const rng=mx-mn||1;
+  const hv=map(P.hvar,0,1,0.2,1.0);
+  for(let k=0;k<out.length;k++) out[k]=Math.pow((out[k]-mn)/rng,1)*hv;
+  _edgeMask(out,G); return out;
 }
 function renderSVG(){
   randomSeed(seed); noiseSeed(seed);
