@@ -23,6 +23,12 @@
   .desc { color:var(--dim); margin-top:4px; font-size:12px; }
   .tag { display:inline-block; margin-top:8px; padding:2px 7px; border:1px solid #333;
     border-radius:3px; color:var(--dim); font-size:11px; }
+  .badge { position:absolute; top:8px; right:8px; padding:2px 6px;
+    border-radius:3px; font-size:10px; letter-spacing:.07em; line-height:1.4; }
+  .badge-h { background:rgba(237,87,0,.18); border:1px solid rgba(237,87,0,.4);
+    color:var(--accent); }
+  .badge-e { background:rgba(255,255,255,.05); border:1px solid #2a2a2a;
+    color:var(--dim); }
 </style>
 </head>
 <body>
@@ -35,30 +41,33 @@
 <div class="grid" id="grid"></div>
 <script>
 const pieces=[
-  ["grid_extrude","grid extrude ★","2.5D extruded blocks · stacked param layers","loop / still / scene"],
-  ["sdf_raymarch","sdf raymarch","metaball field, smooth booleans, orbit loop","loop / still"],
-  ["gyroid","gyroid","TPMS shell SDF · animated phase orbit","loop / still"],
-  ["displacement","displacement sphere","noise-displaced sphere · fbm breathing surface","loop / still"],
-  ["displacement_primitives","displacement primitives","branched displacement module · primitive type tests","loop / shape / displacement"],
-  ["mandelbulb","mandelbulb","power-8 fractal DE · orbit trap coloring · morph","loop / still"],
-  ["fold","fold","kaleidoscopic IFS · menger-style space folding","loop / still"],
-  ["flow_field","flow field","noise-advected particles leaving trails","still / loop"],
-  ["reaction_diffusion","reaction diffusion","gray-scott organic spots & tendrils","texture / displacement"],
-  ["voronoi","voronoi","relaxed cell field, edge↔fill","scaffold / texture"],
-  ["contour_field","contour field","marching-squares isolines over noise","still / loop"],
-  ["truchet","truchet","flipped arc tiles → flowing curves","tileable texture"],
-  ["truchet_b","truchet // color","arc tiles · noise-gradated color field · round cap","still / loop"],
-  ["l_system","l-system","stochastic turtle branching","asset / overlay"],
-  ["cellular_erosion","cellular erosion","CA-smoothed worn surface depth","displacement + roughness"],
-  ["recursive_grid","recursive grid","noise-thresholded quad subdivision","layout / structure"],
-  ["wave_interference","wave interference","multi-source ripple field · moiré zones · interference rings","still / loop / texture"],
-  ["stipple","stipple","rejection-sampled dot field · luminance-driven density · breathing dots","still / texture"],
+  ["grid_extrude","grid extrude","2.5D extruded blocks · stacked param layers","loop / still / scene","h"],
+  ["sdf_raymarch","sdf raymarch","metaball field, smooth booleans, orbit loop","loop / still","h"],
+  ["gyroid","gyroid","TPMS shell SDF · animated phase orbit","loop / still","h"],
+  ["displacement","displacement sphere","noise-displaced sphere · fbm breathing surface","loop / still","h"],
+  ["displacement_primitives","displacement primitives","branched displacement module · primitive type tests","loop / shape / displacement","h"],
+  ["mandelbulb","mandelbulb","power-8 fractal DE · orbit trap coloring · morph","loop / still","h"],
+  ["fold","fold","kaleidoscopic IFS · menger-style space folding","loop / still","h"],
+  ["flow_field","flow field","noise-advected particles leaving trails","still / loop","e"],
+  ["reaction_diffusion","reaction diffusion","gray-scott organic spots & tendrils","texture / displacement","e"],
+  ["voronoi","voronoi","relaxed cell field, edge↔fill","scaffold / texture","e"],
+  ["contour_field","contour field","marching-squares isolines over noise","still / loop","e"],
+  ["truchet","truchet","flipped arc tiles → flowing curves","tileable texture","e"],
+  ["truchet_b","truchet // color","arc tiles · noise-gradated color field · round cap","still / loop","e"],
+  ["l_system","l-system","stochastic turtle branching","asset / overlay","e"],
+  ["cellular_erosion","cellular erosion","CA-smoothed worn surface depth","displacement + roughness","e"],
+  ["recursive_grid","recursive grid","noise-thresholded quad subdivision","layout / structure","e"],
+  ["wave_interference","wave interference","multi-source ripple field · moiré zones · interference rings","still / loop / texture","e"],
+  ["stipple","stipple","rejection-sampled dot field · luminance-driven density · breathing dots","still / texture","e"],
 ];
 const g=document.getElementById("grid");
-for(const [dir,name,desc,tag] of pieces){
+for(const [dir,name,desc,tag,type] of pieces){
   const a=document.createElement("a");
   a.className="card"; a.href=`../${dir}/noixzy_${dir}.html`;
-  a.innerHTML=`<div class="thumb"><img src="thumbs/${dir}.png" alt="${name}"></div>
+  const badgeCls=type==="h"?"badge badge-h":"badge badge-e";
+  const badgeTxt=type==="h"?"✦ authored":"◎ generated";
+  a.innerHTML=`<div class="thumb"><img src="thumbs/${dir}.png" alt="${name}">
+      <span class="${badgeCls}">${badgeTxt}</span></div>
     <div class="meta"><div class="name">${name}</div>
     <div class="desc">${desc}</div><span class="tag">${tag}</span></div>`;
   g.appendChild(a);

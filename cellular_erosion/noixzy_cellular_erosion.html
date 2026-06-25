@@ -9,8 +9,9 @@
 <style>
   :root { --bg:#0e0e10; --panel:#1a1a1d; --ink:#e8e8ea; --accent:#ed5700; --dim:#7a7a7e; }
 html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+body { display:flex; flex-direction:column; }
 /* App layout: stage (flexible) + panel (fixed-width side panel). */
-.app { display:flex; flex-direction:row; align-items:stretch; height:100vh; }
+.app { display:flex; flex-direction:row; align-items:stretch; flex:1; min-height:0; }
 .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
 .stage canvas { display:block; width:100%; height:100%; }
 .panel { position:relative; width:248px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 28px); overflow-y:auto;
@@ -57,9 +58,28 @@ select:hover { border-color:var(--accent); }
 .pbrHint { grid-column:1/-1; text-align:center; font-size:11px; opacity:.4; margin-top:4px; }
 /* Responsive: stack panel below preview on narrow screens */
 @media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
+/* Module nav bar */
+.navBar { flex:0 0 28px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:#0a0a0c; border-bottom:1px solid #1c1c1f; z-index:10; }
+.navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
+.navBar a:hover { color:var(--accent); }
+.navCurrent { color:var(--ink) !important; pointer-events:none; }
+/* Thumb strip */
+.moduleNav { margin-top:12px; padding-top:10px; border-top:1px solid #1e1e21; }
+.moduleNav .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
+.thumbRow { display:flex; gap:5px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+.thumbRow::-webkit-scrollbar { display:none; }
+.navThumb { flex:0 0 auto; opacity:.55; transition:opacity .15s; }
+.navThumb:hover,.navThumb.active { opacity:1; }
+.navThumb img { width:46px; height:34px; object-fit:cover; border-radius:3px; border:1px solid #2a2a2d; display:block; }
+.navThumb.active img { border-color:var(--accent); }
 </style>
 </head>
 <body>
+<div class="navBar">
+  <a id="navPrev" href="#">← prev</a>
+  <a href="../gallery/index.html" class="navCurrent">cellular erosion</a>
+  <a id="navNext" href="#">next →</a>
+</div>
 <div class="app">
   <div class="stage" id="stage"></div>
   <div class="panel">
@@ -77,7 +97,7 @@ select:hover { border-color:var(--accent); }
     <div class="colorRow"><label>ink</label><input type="color" id="p_ink"></div>
   </details>
   <div class="seed"><input id="seedField" type="number" value="1"><button id="newSeed">new seed</button></div>
-  <div class="btns"><button id="pin">★ pin</button><button id="reset">reset</button><button id="copyP">copy</button><button id="pasteP">paste</button><button id="pause">pause</button><button id="save">save png</button><button id="save2x">save 2x</button><button id="savePBR">pbr pack</button><button id="rec">rec</button><select id="recDur"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select><button id="btnAudio">audio</button></div>
+  <div class="btns"><button id="pin">★ pin</button><button id="reset">reset</button><button id="copyP">copy</button><button id="pasteP">paste</button><button id="pause">pause</button><button id="save">save png</button><button id="save2x">save 2x</button><button id="savePBR">pbr pack</button><button id="rec">rec</button><button id="thumb">→ thumb</button><select id="recDur"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select><button id="btnAudio">audio</button></div>
   <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#111;border-radius:6px;font-size:12px;">
     <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:var(--dim);transition:border-color .2s;">
       drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span>
@@ -94,6 +114,7 @@ select:hover { border-color:var(--accent); }
   <div id="favs" class="favs"></div>
   <div class="btns" id="favBtns" style="display:none;"><button id="exportFavs">export ★</button><button id="clearFavs">clear ★</button></div>
   <div class="read">seed: <span id="seedRead">1</span> &nbsp; <span style="opacity:.5">[h] hide</span></div>
+  <div class="moduleNav"><div class="label">modules</div><div class="thumbRow" id="moduleThumbStrip"></div></div>
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
@@ -282,6 +303,7 @@ function setup(){
   W=width; H=height; allocBuffers(); t0=millis();
   buildSystem();
   try{ buildUI(); }catch(e){ console.warn('buildUI failed during setup',e); }
+  buildNav();
   loadFavs();
   applyTheme(localStorage.getItem(THEMEKEY)||'graphite');
   // If this is the SDF piece, ensure it has minimal motion defaults so it animates on load
@@ -340,6 +362,26 @@ function togglePause(){
   else{t0=millis()-pauseT*1000;running=true;if(b)b.textContent="pause";}
 }
 function triggerSavePNG(){ saveCanvas("noixzy_"+PIECE+"_"+seed,"png"); }
+let _thumbDir=null;
+async function saveThumb(){
+  try{
+    if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
+    const c=document.createElement("canvas"); c.width=400; c.height=300;
+    const ctx=c.getContext("2d"); ctx.drawImage(document.querySelector("canvas"),0,0,400,300);
+    const blob=await new Promise(res=>c.toBlob(res,"image/png"));
+    const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
+    const w=await fh.createWritable(); await w.write(blob); await w.close();
+    const btn=document.getElementById("thumb");
+    if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+  }catch(e){
+    if(e.name!=="AbortError"){
+      // fallback: plain download if File System Access not supported
+      const c=document.createElement("canvas"); c.width=400; c.height=300;
+      const ctx=c.getContext("2d"); ctx.drawImage(document.querySelector("canvas"),0,0,400,300);
+      c.toBlob(b=>{const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=PIECE+".png";a.click();},"image/png");
+    }
+  }
+}
 function keyPressed(){ const tag=document.activeElement&&document.activeElement.tagName;
   if(tag==="INPUT"||tag==="SELECT")return;
   if(key==="?"||(key==="/"&&keyIsDown(SHIFT))){ toggleKbHelp(); return false; }
@@ -348,6 +390,62 @@ function keyPressed(){ const tag=document.activeElement&&document.activeElement.
   if(key===" "||keyCode===32){ togglePause(); return false; }
   if(key==="s"||key==="S"){ triggerSavePNG(); return false; }
   if(key==="[") cycleTheme(-1); if(key==="]") cycleTheme(1); }
+
+const ALL_MODULES=[
+  {id:"grid_extrude",title:"grid extrude"},{id:"sdf_raymarch",title:"sdf raymarch"},
+  {id:"gyroid",title:"gyroid"},{id:"displacement",title:"displacement"},
+  {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
+  {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
+  {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
+  {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
+  {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
+  {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
+  {id:"stipple",title:"stipple"},
+];
+function buildNav(){
+  const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
+  if(idx<0) return;
+  const prev=ALL_MODULES[(idx-1+ALL_MODULES.length)%ALL_MODULES.length];
+  const next=ALL_MODULES[(idx+1)%ALL_MODULES.length];
+  const np=document.getElementById("navPrev"); if(np){ np.href="../"+prev.id+"/noixzy_"+prev.id+".html"; np.title=prev.title; }
+  const nn=document.getElementById("navNext"); if(nn){ nn.href="../"+next.id+"/noixzy_"+next.id+".html"; nn.title=next.title; }
+  const strip=document.getElementById("moduleThumbStrip"); if(!strip) return;
+  ALL_MODULES.forEach(m=>{
+    const a=document.createElement("a"); a.href="../"+m.id+"/noixzy_"+m.id+".html"; a.title=m.title;
+    a.className="navThumb"+(m.id===PIECE?" active":"");
+    const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
+    a.appendChild(img); strip.appendChild(a);
+  });
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el) el.scrollIntoView({inline:"center",block:"nearest"}); },50);
+}
+let _dragOnCanvas=false;
+function mousePressed(){
+  _dragOnCanvas = (mouseX>=0&&mouseX<=W&&mouseY>=0&&mouseY<=H);
+}
+function _clampP(k){ const par=PARAMS.find(p=>p.k===k); if(!par)return; P[k]=Math.min(par.max,Math.max(par.min,P[k])); }
+function _syncSlider(k){ const inp=document.getElementById("p_"+k); const sp=document.getElementById("v_"+k); if(!inp||!sp)return; inp.value=P[k]; const par=PARAMS.find(p=>p.k===k); sp.textContent=(par&&par.step>=1)?P[k]:(+P[k]).toFixed(2); }
+function mouseDragged(e){
+  if(!_dragOnCanvas) return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  if(el&&el.closest('.panel')) return;
+  if(e.altKey){
+    P.rot=+(P.rot + movedX/W * 1.4).toFixed(3);
+    _clampP("rot"); _syncSlider("rot");
+  } else {
+    P.cx=+(P.cx + movedX/W * 2).toFixed(3);
+    P.cy=+(P.cy - movedY/H * 2).toFixed(3);
+    _clampP("cx"); _clampP("cy");
+    _syncSlider("cx"); _syncSlider("cy");
+  }
+  dirty=true; return false;
+}
+function mouseWheel(event){
+  const el=document.elementFromPoint(event.clientX,event.clientY);
+  if(el&&el.closest('.panel')) return;
+  P.zoom=+(P.zoom - event.delta*0.0008).toFixed(3);
+  _clampP("zoom"); _syncSlider("zoom");
+  dirty=true; return false;
+}
 
 function buildSystem(){ randomSeed(seed); noiseSeed(seed); build(); dirty=true; }
 function renderScene(){
@@ -499,6 +597,9 @@ function buildUI(){
       inp.addEventListener("input",()=>{ P[p.k]=parseFloat(inp.value); fmt();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
         if(p.sys) buildSystem(); else dirty=true; });
+      inp.addEventListener("dblclick",()=>{ P[p.k]=p.v; inp.value=p.v; fmt();
+        if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
+        if(p.sys) buildSystem(); else dirty=true; });
       fmt(); row.append(lab,inp); det.appendChild(row); });
     host.appendChild(det); });
   document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;buildSystem();});
@@ -508,6 +609,7 @@ function buildUI(){
   document.getElementById("save2x").addEventListener("click",save2xPNG);
   document.getElementById("savePBR").addEventListener("click",makePBRMaps);
   document.getElementById("rec").addEventListener("click",()=>recordClip(getRecDuration()));
+  document.getElementById("thumb").addEventListener("click",saveThumb);
   document.getElementById("copyP").addEventListener("click",copyParams);
   document.getElementById("pasteP").addEventListener("click",pasteParams);
   if(typeof renderSVG === 'function'){
