@@ -137,6 +137,62 @@
     min-width:0;
   }
 
+  /* NOIXZY_FINAL_FONT_CONSISTENCY_PASS */
+  :root {
+    --noixzy-ui-font: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  }
+
+  body,
+  button,
+  input,
+  select,
+  textarea,
+  .panel,
+  .top,
+  .stageTools,
+  .stageFavs,
+  .stageThumbs {
+    font-family: var(--noixzy-ui-font) !important;
+  }
+
+  .panel h1 {
+    font-family: var(--noixzy-ui-font) !important;
+    letter-spacing:.16em;
+    text-transform:lowercase;
+  }
+
+  .panel .consoleLabel,
+  .panel .groupTitle,
+  .panel .sectionTitle,
+  .panel .themeLabel,
+  .panel label.consoleLabel,
+  .panel [data-noixzy-theme-label="1"] {
+    font-family: var(--noixzy-ui-font) !important;
+    display:block;
+    margin:10px 0 6px;
+    color:var(--dim);
+    text-transform:uppercase !important;
+    letter-spacing:.12em !important;
+    font-size:10px !important;
+    font-weight:400 !important;
+    line-height:1.1;
+  }
+
+  .panel .row label,
+  .panel .label,
+  .panel .sliderLabel {
+    font-family: var(--noixzy-ui-font) !important;
+    letter-spacing:.04em;
+  }
+
+  .panel button,
+  .stageTools button,
+  .stageTools select,
+  .panel select,
+  .panel input {
+    font-family: var(--noixzy-ui-font) !important;
+  }
+
 </style>
 </head>
 <body>
