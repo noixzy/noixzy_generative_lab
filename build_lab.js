@@ -499,6 +499,7 @@ const ALL_MODULES=[
   {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
   {id:"metafluid",title:"metafluid"},
   {id:"moire_field",title:"moire field"},{id:"particle_orbitals",title:"particle orbitals"},
+  {id:"radial_noise",title:"radial noise"},
   {id:"topographic_rings",title:"topographic rings"},{id:"ribbon_flow",title:"ribbon flow"},
   {id:"glyph_field",title:"glyph field"},
   {id:"crystal_growth",title:"crystal growth"},{id:"vector_scope",title:"vector scope"},
@@ -1288,6 +1289,79 @@ function heightField(G){
   _edgeMask(out,G); return out;
 }` },
 
+
+
+{ id:"radial_noise", title:"radial noise",
+  system:[
+    {k:"rings",label:"rings",min:0,max:1,step:.01,v:.58,sys:true},
+    {k:"spokes",label:"spokes",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"noise",label:"noise",min:0,max:1,step:.01,v:.54,rr:true},
+    {k:"twist",label:"twist",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"contrast",label:"contrast",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.30},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _radialVal(x,y,t){
+  const dx=x-.5,dy=y-.5;
+  let r=Math.sqrt(dx*dx+dy*dy);
+  let a=Math.atan2(dy,dx);
+  const n=noise(x*5.4+seed*.01,y*5.4+17,t*.16);
+  a += (n-.5)*map(P.twist,0,1,.2,2.8);
+  r += (noise(x*9+23,y*9+31,t*.12)-.5)*P.noise*.18;
+  const rings=Math.sin(r*map(P.rings,0,1,18,74)-t*1.2)*.5+.5;
+  const spokes=Math.sin(a*map(P.spokes,0,1,4,48)+t*.8)*.5+.5;
+  const v=Math.max(rings,spokes*.82)*(.65+n*.35);
+  return Math.max(0,Math.min(1,v*(1-r*.95)));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  const steps=Math.floor(map(P.rings,0,1,70,170));
+  g.background(
+    Math.min(255,pal[0][0]*1.18+12),
+    Math.min(255,pal[0][1]*1.18+12),
+    Math.min(255,pal[0][2]*1.18+12)
+  );
+  g.noFill();
+  g.blendMode(ADD);
+
+  for(let j=0;j<steps;j++){
+    const rr=j/steps*.55;
+    const v=_radialVal(.5+rr,.5,t);
+    const col=j%2?pal[1]:pal[2];
+    const z=(v-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.16*dep:1;
+    g.stroke(Math.min(255,col[0]*1.22+20),Math.min(255,col[1]*1.22+20),Math.min(255,col[2]*1.22+20),map(v,0,1,28,185));
+    g.strokeWeight(map(P.contrast,0,1,.35,2.5));
+    g.circle(cx,cy+z*cy*.08*dep,rr*Math.min(W,H)*2*scl);
+  }
+
+  const spokes=Math.floor(map(P.spokes,0,1,12,96));
+  for(let i=0;i<spokes;i++){
+    const a=i/spokes*TWO_PI+Math.sin(t*.3+i)*P.twist*.12;
+    const col=i%2?pal[2]:pal[1];
+    const v=.45+.55*noise(Math.cos(a)*2+10,Math.sin(a)*2+20,t*.18);
+    g.stroke(Math.min(255,col[0]*1.2+18),Math.min(255,col[1]*1.2+18),Math.min(255,col[2]*1.2+18),map(v,0,1,22,140));
+    g.strokeWeight(map(P.contrast,0,1,.3,1.9));
+    g.line(cx,cy,cx+Math.cos(a)*Math.min(W,H)*.56,cy+Math.sin(a)*Math.min(W,H)*.56);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_radialVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.contrast,0,1,2.2,.75));
+  }
+  _edgeMask(out,G); return out;
+}` },
 
 { id:"topographic_rings", title:"topographic rings",
   system:[
