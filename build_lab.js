@@ -508,6 +508,7 @@ const ALL_MODULES=[
   {id:"fractal_tiles",title:"fractal tiles"},{id:"plasma_membrane",title:"plasma membrane"},
   {id:"interference_grid",title:"interference grid"},{id:"cellular_bloom",title:"cellular bloom"},
   {id:"vortex_sheet",title:"vortex sheet"},
+  {id:"prism_moire",title:"prism moire"},{id:"terrain_slice",title:"terrain slice"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -2285,6 +2286,138 @@ function heightField(G){
   _edgeMask(out,G); return out;
 }` },
 
+
+{ id:"prism_moire", title:"prism moire",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.54,sys:true},
+    {k:"angle",label:"angle",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"split",label:"split",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"contrast",label:"contrast",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.30},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _pmVal(x,y,t){
+  const a=map(P.angle,0,1,-PI,PI);
+  const ca=Math.cos(a),sa=Math.sin(a);
+  const u=(x-.5)*ca-(y-.5)*sa;
+  const v=(x-.5)*sa+(y-.5)*ca;
+  const w=P.warp*.35;
+  const n=noise(x*4+seed*.01,y*4+12,t*.14);
+  const f=map(P.density,0,1,18,90);
+  const s=map(P.split,0,1,.004,.055);
+  const l1=Math.sin((u+n*w)*f+t*.8);
+  const l2=Math.sin((u+v*.18+n*w+s)*f*1.035-t*.55);
+  const l3=Math.sin((u-v*.22-n*w-s)*f*.965+t*.35);
+  return Math.max(0,Math.min(1,(l1+l2+l3)/3*.5+.5));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const rows=Math.floor(map(P.density,0,1,80,190));
+  g.background(Math.min(255,pal[0][0]*1.14+12),Math.min(255,pal[0][1]*1.14+12),Math.min(255,pal[0][2]*1.14+12));
+  g.blendMode(ADD);
+  g.noFill();
+  const ang=map(P.angle,0,1,-PI,PI);
+  for(let pass=0;pass<3;pass++){
+    const col=pass===0?pal[1]:(pass===1?pal[2]:[255,255,255]);
+    g.stroke(Math.min(255,col[0]*1.16+18),Math.min(255,col[1]*1.16+18),Math.min(255,col[2]*1.16+18),pass===2?42:120);
+    g.strokeWeight(pass===2?.8:map(P.contrast,0,1,.45,1.9));
+    for(let j=0;j<rows;j++){
+      const y=j/(rows-1);
+      g.beginShape();
+      for(let i=0;i<=80;i++){
+        const x=i/80;
+        const v=_pmVal(x,y,t+pass*.08);
+        const z=(v-.5)*2;
+        const scl=Math.abs(dep)>0.01?1-z*.16*dep:1;
+        const px=cx+(x*W-cx)*scl + Math.cos(ang+PI/2)*(v-.5)*map(P.contrast,0,1,2,22);
+        const py=cy+(y*H-cy)*scl + Math.sin(ang+PI/2)*(v-.5)*map(P.contrast,0,1,2,22)+z*cy*.10*dep;
+        g.curveVertex(px,py);
+      }
+      g.endShape();
+    }
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_pmVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.contrast,0,1,1.9,.62));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"terrain_slice", title:"terrain slice",
+  system:[
+    {k:"slices",label:"slices",min:0,max:1,step:.01,v:.52,sys:true},
+    {k:"scale",label:"scale",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"heightamp",label:"height amp",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"strata",label:"strata",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"erosion",label:"erosion",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.22},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _terrain(x,y,t){
+  const sc=map(P.scale,0,1,1.4,6.8);
+  let v=0,amp=.55,f=1;
+  for(let o=0;o<5;o++){
+    v+=noise(x*sc*f+seed*.01,y*sc*f+17,t*.08)*amp;
+    f*=2.05; amp*=.48;
+  }
+  const strata=Math.sin((v+y*map(P.strata,0,1,3,18))*TWO_PI)*.5+.5;
+  return Math.max(0,Math.min(1,v*.62+strata*.18));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.0);
+  const slices=Math.floor(map(P.slices,0,1,9,42));
+  const amp=map(P.heightamp,0,1,20,170);
+  g.background(Math.min(255,pal[0][0]*1.12+10),Math.min(255,pal[0][1]*1.12+10),Math.min(255,pal[0][2]*1.12+10));
+  g.noFill();
+  for(let s=0;s<slices;s++){
+    const y=(s+.5)/slices;
+    const z=(s/(slices-1||1))*2-1;
+    const scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+    const col=s%2?pal[1]:pal[2];
+    g.stroke(Math.min(255,col[0]*1.16+16),Math.min(255,col[1]*1.16+16),Math.min(255,col[2]*1.16+16),map(s,0,slices,70,205));
+    g.strokeWeight(map(P.erosion,0,1,.8,3.2));
+    g.beginShape();
+    for(let i=0;i<=160;i++){
+      const x=i/160;
+      const v=_terrain(x,y,t);
+      const px=cx+(x*W-cx)*scl;
+      const py=cy+(y*H-cy)*scl-v*amp+z*cy*.12*dep;
+      g.curveVertex(px,py);
+    }
+    g.endShape();
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.0);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_terrain(x,y,t);
+    const band=Math.sin((v+y*map(P.strata,0,1,3,18))*TWO_PI)*.5+.5;
+    out[i+j*G]=Math.min(1,v*.75+band*.25);
+  }
+  _edgeMask(out,G); return out;
+}` },
+
 { id:"flow_field", title:"flow field",
   system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.65},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
@@ -2706,31 +2839,109 @@ function renderSVG(){
 }` },
 
 { id:"l_system", title:"l-system",
-  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.6},{k:"angle",label:"angle",min:0,max:1,step:.01,v:.35},{k:"decay",label:"decay",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
+  system:[{k:"depth",label:"depth",min:0,max:1,step:.01,v:.50},{k:"angle",label:"angle",min:0,max:1,step:.01,v:.38},{k:"decay",label:"decay",min:0,max:1,step:.01,v:.48},{k:"thick",label:"thickness",min:0,max:1,step:.01,v:.46},{k:"tail",label:"tail",min:0,max:1,step:.01,v:.32},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.5,rr:true}],
   code:`
 let LS;
 function build(){ const rules=["FF+[+F-F-F]-[-F+F+F]","F[+F]F[-F]F","FF-[-F+F+F]+[+F-F-F]","F-[[F]+F]+F[+FF]-F"];
   const rule=rules[floor(random(rules.length))]; const depth=floor(map(P.depth,0,1,3,6)); let s="F";
   for(let d=0;d<depth;d++){let ns="";for(const ch of s)ns+=ch==="F"?rule:ch;s=ns;} LS={s,depth}; }
-function render(g,pal){ const s=LS.s, depth=LS.depth; const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84), dep=P.zdepth||0;
-  let len=map(depth,3,6,196,24)*(g.height/820);
-  g.push(); g.translate(g.width/2,g.height*0.95); g.noFill(); const stack=[]; let lw=2.4;
-  for(const ch of s){ if(ch==="F"){ const t=Math.max(0,Math.min(1,lw/2.4));
-      const z=t*2-1;
-      // contour_field-style z staging, adapted to branch depth
-      const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*(g.height/2)*0.34*dep:0;
-      const a255=Math.abs(dep)>0.01?Math.floor(lerp(80,255,t*(1+dep*0.35))):255;
-      g.stroke(lerp(pal[2][0],pal[1][0],t),lerp(pal[2][1],pal[1][1],t),lerp(pal[2][2],pal[1][2],t),a255); g.strokeWeight(Math.max(0.4,lw*(1+z*0.5*dep)));
-      if(Math.abs(dep)>0.01){ g.line(0,yOff,0,-len*scl+yOff); } else { g.line(0,0,0,-len); }
-      g.translate(0,-len); }
-    else if(ch==="+")g.rotate(ang); else if(ch==="-")g.rotate(-ang);
-    else if(ch==="["){stack.push([len,lw]);g.push();len*=decay;lw*=0.78;}
-    else if(ch==="]"){g.pop();const st=stack.pop();len=st[0];lw=st[1];} }
-  g.pop(); }
+function render(g,pal){
+  const s=LS.s, depth=LS.depth;
+  const ang=map(P.angle,0,1,0.10,0.95), decay=map(P.decay,0,1,0.62,0.84), dep=P.zdepth||0;
+  const baseLen=map(depth,3,6,148,20)*(g.height/820);
+  const baseY=g.height*0.90;
+  const baseLW=map(P.thick||0,0,1,1.15,5.6);
+  const tailAmt=P.tail||0;
+  g.noFill();
+
+  function drawTreeLayer(zp, alphaMul, weightMul){
+    const planeS=Math.abs(dep)>0.01?1-zp*0.36*dep:1;
+    const planeY=Math.abs(dep)>0.01?zp*(g.height/2)*0.34*dep:0;
+    const planeX=Math.abs(dep)>0.01?zp*(g.width/2)*0.12*dep:0;
+
+    let len=baseLen;
+    let lw=baseLW;
+    const stack=[];
+
+    g.push();
+    g.translate(g.width/2+planeX, baseY+planeY);
+    g.scale(planeS);
+
+    for(const ch of s){
+      if(ch==="F"){
+        const t=Math.max(0,Math.min(1,lw/2.4));
+        const a255=Math.floor(lerp(55,245,t)*alphaMul);
+        g.stroke(
+          lerp(pal[2][0],pal[1][0],t),
+          lerp(pal[2][1],pal[1][1],t),
+          lerp(pal[2][2],pal[1][2],t),
+          Math.max(18,Math.min(255,a255))
+        );
+        const mainW=Math.max(0.35,lw*weightMul);
+        const tailSteps=Math.floor(map(tailAmt,0,1,0,5));
+        for(let q=tailSteps;q>=1;q--){
+          const u=q/(tailSteps+1);
+          const tx=u*len*0.045*tailAmt*(dep>=0?1:-1);
+          const ty=u*len*0.16*tailAmt;
+          g.stroke(
+            lerp(pal[0][0],pal[2][0],t),
+            lerp(pal[0][1],pal[2][1],t),
+            lerp(pal[0][2],pal[2][2],t),
+            Math.max(8,Math.min(120,a255*(1-u)*0.42))
+          );
+          g.strokeWeight(Math.max(0.25,mainW*(1-u*.32)));
+          g.line(tx,ty,tx,-len+ty);
+        }
+        g.strokeWeight(mainW);
+        g.stroke(
+          lerp(pal[2][0],pal[1][0],t),
+          lerp(pal[2][1],pal[1][1],t),
+          lerp(pal[2][2],pal[1][2],t),
+          Math.max(18,Math.min(255,a255))
+        );
+        g.line(0,0,0,-len);
+        g.translate(0,-len);
+      } else if(ch==="+"){
+        g.rotate(ang);
+      } else if(ch==="-"){
+        g.rotate(-ang);
+      } else if(ch==="["){
+        stack.push([len,lw]);
+        g.push();
+        len*=decay;
+        lw*=0.78;
+      } else if(ch==="]"){
+        g.pop();
+        const st=stack.pop();
+        len=st[0];
+        lw=st[1];
+      }
+    }
+    g.pop();
+  }
+
+  if(Math.abs(dep)<=0.01){
+    drawTreeLayer(0,1,1);
+  } else {
+    const layers=Math.floor(map(Math.min(1.5,Math.abs(dep)),0,1.5,3,7));
+    const order=[];
+    for(let i=0;i<layers;i++) order.push(i);
+    if(dep<0) order.reverse();
+
+    for(const i of order){
+      const u=layers===1?.5:i/(layers-1);
+      const zp=u*2-1;
+      const front=(dep>=0)?u:(1-u);
+      const alphaMul=lerp(.34,1.0,front);
+      const weightMul=lerp(.72,1.12,front);
+      drawTreeLayer(zp,alphaMul,weightMul);
+    }
+  }
+}
 function renderSVG(){
   if(!LS) build();
-  const pal=getPal(), s=LS.s, depth=LS.depth, ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
-  let len=map(depth,3,6,196,24)*(H/820), lw=2.4, x=W/2, y=H*0.95, a=0;
+  const pal=getPal(), s=LS.s, depth=LS.depth, ang=map(P.angle,0,1,0.10,0.95), decay=map(P.decay,0,1,0.62,0.84);
+  let len=map(depth,3,6,148,20)*(H/820), lw=map(P.thick||0,0,1,1.15,5.6), x=W/2, y=H*0.90, a=0;
   const stack=[];
   let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
   for(const ch of s){
@@ -2747,8 +2958,8 @@ function renderSVG(){
 function heightField(G){
   if(!LS) build();
   const s=LS.s, depth=LS.depth;
-  const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
-  let len=map(depth,3,6,0.24,0.029), lw=0.013;
+  const ang=map(P.angle,0,1,0.10,0.95), decay=map(P.decay,0,1,0.62,0.84);
+  let len=map(depth,3,6,0.24,0.029), lw=map(P.thick||0,0,1,0.008,0.026);
   const out=new Float32Array(G*G);
   const stack=[];
   let x=0.5, y=0.95, a=0;

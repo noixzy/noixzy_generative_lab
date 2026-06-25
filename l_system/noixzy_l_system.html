@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"depth","label":"depth","min":0,"max":1,"step":0.01,"v":0.6},{"k":"angle","label":"angle","min":0,"max":1,"step":0.01,"v":0.35},{"k":"decay","label":"decay","min":0,"max":1,"step":0.01,"v":0.5},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
+const SYSTEM=[{"k":"depth","label":"depth","min":0,"max":1,"step":0.01,"v":0.5},{"k":"angle","label":"angle","min":0,"max":1,"step":0.01,"v":0.38},{"k":"decay","label":"decay","min":0,"max":1,"step":0.01,"v":0.48},{"k":"thick","label":"thickness","min":0,"max":1,"step":0.01,"v":0.46},{"k":"tail","label":"tail","min":0,"max":1,"step":0.01,"v":0.32},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -396,25 +396,103 @@ let LS;
 function build(){ const rules=["FF+[+F-F-F]-[-F+F+F]","F[+F]F[-F]F","FF-[-F+F+F]+[+F-F-F]","F-[[F]+F]+F[+FF]-F"];
   const rule=rules[floor(random(rules.length))]; const depth=floor(map(P.depth,0,1,3,6)); let s="F";
   for(let d=0;d<depth;d++){let ns="";for(const ch of s)ns+=ch==="F"?rule:ch;s=ns;} LS={s,depth}; }
-function render(g,pal){ const s=LS.s, depth=LS.depth; const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84), dep=P.zdepth||0;
-  let len=map(depth,3,6,196,24)*(g.height/820);
-  g.push(); g.translate(g.width/2,g.height*0.95); g.noFill(); const stack=[]; let lw=2.4;
-  for(const ch of s){ if(ch==="F"){ const t=Math.max(0,Math.min(1,lw/2.4));
-      const z=t*2-1;
-      // contour_field-style z staging, adapted to branch depth
-      const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*(g.height/2)*0.34*dep:0;
-      const a255=Math.abs(dep)>0.01?Math.floor(lerp(80,255,t*(1+dep*0.35))):255;
-      g.stroke(lerp(pal[2][0],pal[1][0],t),lerp(pal[2][1],pal[1][1],t),lerp(pal[2][2],pal[1][2],t),a255); g.strokeWeight(Math.max(0.4,lw*(1+z*0.5*dep)));
-      if(Math.abs(dep)>0.01){ g.line(0,yOff,0,-len*scl+yOff); } else { g.line(0,0,0,-len); }
-      g.translate(0,-len); }
-    else if(ch==="+")g.rotate(ang); else if(ch==="-")g.rotate(-ang);
-    else if(ch==="["){stack.push([len,lw]);g.push();len*=decay;lw*=0.78;}
-    else if(ch==="]"){g.pop();const st=stack.pop();len=st[0];lw=st[1];} }
-  g.pop(); }
+function render(g,pal){
+  const s=LS.s, depth=LS.depth;
+  const ang=map(P.angle,0,1,0.10,0.95), decay=map(P.decay,0,1,0.62,0.84), dep=P.zdepth||0;
+  const baseLen=map(depth,3,6,148,20)*(g.height/820);
+  const baseY=g.height*0.90;
+  const baseLW=map(P.thick||0,0,1,1.15,5.6);
+  const tailAmt=P.tail||0;
+  g.noFill();
+
+  function drawTreeLayer(zp, alphaMul, weightMul){
+    const planeS=Math.abs(dep)>0.01?1-zp*0.36*dep:1;
+    const planeY=Math.abs(dep)>0.01?zp*(g.height/2)*0.34*dep:0;
+    const planeX=Math.abs(dep)>0.01?zp*(g.width/2)*0.12*dep:0;
+
+    let len=baseLen;
+    let lw=baseLW;
+    const stack=[];
+
+    g.push();
+    g.translate(g.width/2+planeX, baseY+planeY);
+    g.scale(planeS);
+
+    for(const ch of s){
+      if(ch==="F"){
+        const t=Math.max(0,Math.min(1,lw/2.4));
+        const a255=Math.floor(lerp(55,245,t)*alphaMul);
+        g.stroke(
+          lerp(pal[2][0],pal[1][0],t),
+          lerp(pal[2][1],pal[1][1],t),
+          lerp(pal[2][2],pal[1][2],t),
+          Math.max(18,Math.min(255,a255))
+        );
+        const mainW=Math.max(0.35,lw*weightMul);
+        const tailSteps=Math.floor(map(tailAmt,0,1,0,5));
+        for(let q=tailSteps;q>=1;q--){
+          const u=q/(tailSteps+1);
+          const tx=u*len*0.045*tailAmt*(dep>=0?1:-1);
+          const ty=u*len*0.16*tailAmt;
+          g.stroke(
+            lerp(pal[0][0],pal[2][0],t),
+            lerp(pal[0][1],pal[2][1],t),
+            lerp(pal[0][2],pal[2][2],t),
+            Math.max(8,Math.min(120,a255*(1-u)*0.42))
+          );
+          g.strokeWeight(Math.max(0.25,mainW*(1-u*.32)));
+          g.line(tx,ty,tx,-len+ty);
+        }
+        g.strokeWeight(mainW);
+        g.stroke(
+          lerp(pal[2][0],pal[1][0],t),
+          lerp(pal[2][1],pal[1][1],t),
+          lerp(pal[2][2],pal[1][2],t),
+          Math.max(18,Math.min(255,a255))
+        );
+        g.line(0,0,0,-len);
+        g.translate(0,-len);
+      } else if(ch==="+"){
+        g.rotate(ang);
+      } else if(ch==="-"){
+        g.rotate(-ang);
+      } else if(ch==="["){
+        stack.push([len,lw]);
+        g.push();
+        len*=decay;
+        lw*=0.78;
+      } else if(ch==="]"){
+        g.pop();
+        const st=stack.pop();
+        len=st[0];
+        lw=st[1];
+      }
+    }
+    g.pop();
+  }
+
+  if(Math.abs(dep)<=0.01){
+    drawTreeLayer(0,1,1);
+  } else {
+    const layers=Math.floor(map(Math.min(1.5,Math.abs(dep)),0,1.5,3,7));
+    const order=[];
+    for(let i=0;i<layers;i++) order.push(i);
+    if(dep<0) order.reverse();
+
+    for(const i of order){
+      const u=layers===1?.5:i/(layers-1);
+      const zp=u*2-1;
+      const front=(dep>=0)?u:(1-u);
+      const alphaMul=lerp(.34,1.0,front);
+      const weightMul=lerp(.72,1.12,front);
+      drawTreeLayer(zp,alphaMul,weightMul);
+    }
+  }
+}
 function renderSVG(){
   if(!LS) build();
-  const pal=getPal(), s=LS.s, depth=LS.depth, ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
-  let len=map(depth,3,6,196,24)*(H/820), lw=2.4, x=W/2, y=H*0.95, a=0;
+  const pal=getPal(), s=LS.s, depth=LS.depth, ang=map(P.angle,0,1,0.10,0.95), decay=map(P.decay,0,1,0.62,0.84);
+  let len=map(depth,3,6,148,20)*(H/820), lw=map(P.thick||0,0,1,1.15,5.6), x=W/2, y=H*0.90, a=0;
   const stack=[];
   let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
   for(const ch of s){
@@ -431,8 +509,8 @@ function renderSVG(){
 function heightField(G){
   if(!LS) build();
   const s=LS.s, depth=LS.depth;
-  const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
-  let len=map(depth,3,6,0.24,0.029), lw=0.013;
+  const ang=map(P.angle,0,1,0.10,0.95), decay=map(P.decay,0,1,0.62,0.84);
+  let len=map(depth,3,6,0.24,0.029), lw=map(P.thick||0,0,1,0.008,0.026);
   const out=new Float32Array(G*G);
   const stack=[];
   let x=0.5, y=0.95, a=0;
@@ -571,6 +649,7 @@ const ALL_MODULES=[
   {id:"fractal_tiles",title:"fractal tiles"},{id:"plasma_membrane",title:"plasma membrane"},
   {id:"interference_grid",title:"interference grid"},{id:"cellular_bloom",title:"cellular bloom"},
   {id:"vortex_sheet",title:"vortex sheet"},
+  {id:"prism_moire",title:"prism moire"},{id:"terrain_slice",title:"terrain slice"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
