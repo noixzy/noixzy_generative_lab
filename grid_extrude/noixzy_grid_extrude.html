@@ -243,6 +243,7 @@ function setup(){
   buildUI();        // p5 ready -> bind here (lesson: never DOMContentLoaded)
   loadFavs();       // restore pinned favorites from previous sessions
   applyTheme(localStorage.getItem(THEMEKEY)||'graphite');
+  buildNav();
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggleKbHelp(false); });
 }
 function windowResized(){
@@ -697,6 +698,7 @@ function recordClip(dur=4){
 const ALL_MODULES=[
   {id:"grid_extrude",title:"grid extrude"},{id:"sdf_raymarch",title:"sdf raymarch"},
   {id:"gyroid",title:"gyroid"},{id:"displacement",title:"displacement"},
+  {id:"displacement_primitives",title:"displacement primitives"},
   {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},

@@ -375,6 +375,7 @@ function keyPressed(){ const tag=document.activeElement&&document.activeElement.
 const ALL_MODULES=[
   {id:"grid_extrude",title:"grid extrude"},{id:"sdf_raymarch",title:"sdf raymarch"},
   {id:"gyroid",title:"gyroid"},{id:"displacement",title:"displacement"},
+  {id:"displacement_primitives",title:"displacement primitives"},
   {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},

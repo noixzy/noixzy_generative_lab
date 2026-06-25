@@ -9,10 +9,10 @@
 <style>
   :root { --bg:#0e0e10; --panel:#101316; --ink:#e8e8ea; --accent:#48dfff; --lime:#b7ff3c; --dim:#8b969c; }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
-  .app { display:flex; flex-direction:row; align-items:stretch; height:100vh; }
+  .app { display:flex; flex-direction:row; align-items:stretch; height:calc(100vh - 28px); }
   .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
   .stage canvas { display:block; width:100%; height:100%; }
-  .panel { position:relative; width:316px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 28px); overflow-y:auto;
+  .panel { position:relative; width:316px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
            border:1px solid rgba(72,223,255,0.20); padding:14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
   .panel.hidden { opacity:0; pointer-events:none; }
@@ -33,9 +33,26 @@
   select:hover { border-color:var(--accent); }
   .hint { margin-top:8px; opacity:.4; font-size:11px; }
   @media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
+  .navBar { flex:0 0 28px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:#0a0a0c; border-bottom:1px solid #1c1c1f; z-index:10; }
+  .navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
+  .navBar a:hover { color:var(--accent); }
+  .navCurrent { color:var(--ink) !important; pointer-events:none; }
+  .moduleNav { margin-top:12px; padding-top:10px; border-top:1px solid #1e1e21; }
+  .moduleNav .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
+  .thumbRow { display:flex; gap:5px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+  .thumbRow::-webkit-scrollbar { display:none; }
+  .navThumb { flex:0 0 auto; opacity:.55; transition:opacity .15s; }
+  .navThumb:hover,.navThumb.active { opacity:1; }
+  .navThumb img { width:46px; height:34px; object-fit:cover; border-radius:3px; border:1px solid #2a2a2d; display:block; }
+  .navThumb.active img { border-color:var(--accent); }
 </style>
 </head>
 <body>
+<div class="navBar">
+  <a id="navPrev" href="#">← prev</a>
+  <a href="../gallery/index.html" class="navCurrent">displacement primitives</a>
+  <a id="navNext" href="#">next →</a>
+</div>
 <div class="app">
   <div id="stage" class="stage"></div>
   <div class="panel" id="panel">
@@ -109,6 +126,10 @@
       </div>
     </div>
 
+    <div class="moduleNav">
+      <div class="label">modules</div>
+      <div class="thumbRow" id="moduleThumbStrip"></div>
+    </div>
     <div class="hint">h hide · space pause · [ ] theme · s save</div>
   </div>
 </div>
@@ -320,7 +341,7 @@ void main() {
 </script>
 
 <script>
-const PIECE = "displacement";
+const PIECE = "displacement_primitives";
 const THEMEKEY = "noixzy_lab_theme";
 const PALETTES = [
   ["ember",    "#0e0e10", "#5a2400", "#ed8a3a"],
@@ -506,10 +527,40 @@ function setup() {
   syncParamUI();
   syncColorUI();
   document.getElementById("vPal").textContent = `${document.getElementById("sPal").value} ${PALETTES[parseInt(document.getElementById("sPal").value)][0]}`;
+  buildNav();
 
   window.addEventListener("resize", ()=>{
     resizeCanvas(stage.clientWidth, stage.clientHeight);
   });
+}
+
+const ALL_MODULES=[
+  {id:"grid_extrude",title:"grid extrude"},{id:"sdf_raymarch",title:"sdf raymarch"},
+  {id:"gyroid",title:"gyroid"},{id:"displacement",title:"displacement"},
+  {id:"displacement_primitives",title:"displacement primitives"},
+  {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
+  {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
+  {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
+  {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
+  {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
+  {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
+  {id:"stipple",title:"stipple"},
+];
+function buildNav(){
+  const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
+  if(idx<0) return;
+  const prev=ALL_MODULES[(idx-1+ALL_MODULES.length)%ALL_MODULES.length];
+  const next=ALL_MODULES[(idx+1)%ALL_MODULES.length];
+  const np=document.getElementById("navPrev"); if(np){ np.href="../"+prev.id+"/noixzy_"+prev.id+".html"; np.title=prev.title; }
+  const nn=document.getElementById("navNext"); if(nn){ nn.href="../"+next.id+"/noixzy_"+next.id+".html"; nn.title=next.title; }
+  const strip=document.getElementById("moduleThumbStrip"); if(!strip) return;
+  ALL_MODULES.forEach(m=>{
+    const a=document.createElement("a"); a.href="../"+m.id+"/noixzy_"+m.id+".html"; a.title=m.title;
+    a.className="navThumb"+(m.id===PIECE?" active":"");
+    const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
+    a.appendChild(img); strip.appendChild(a);
+  });
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el) el.scrollIntoView({inline:"center",block:"nearest"}); },50);
 }
 
 function draw() {
