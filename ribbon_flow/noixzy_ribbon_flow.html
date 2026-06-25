@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // l-system</title>
+<title>noixzy // ribbon flow</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // l-system</h1>
+  <h1>noixzy // ribbon flow</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="l_system", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="ribbon_flow", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"depth","label":"depth","min":0,"max":1,"step":0.01,"v":0.6},{"k":"angle","label":"angle","min":0,"max":1,"step":0.01,"v":0.35},{"k":"decay","label":"decay","min":0,"max":1,"step":0.01,"v":0.5},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
+const SYSTEM=[{"k":"count","label":"count","min":0,"max":1,"step":0.01,"v":0.46,"sys":true},{"k":"length","label":"length","min":0,"max":1,"step":0.01,"v":0.62,"rr":true},{"k":"curl","label":"curl","min":0,"max":1,"step":0.01,"v":0.56,"rr":true},{"k":"width","label":"width","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"layering","label":"layering","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.34},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.62,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,72 +392,74 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-let LS;
-function build(){ const rules=["FF+[+F-F-F]-[-F+F+F]","F[+F]F[-F]F","FF-[-F+F+F]+[+F-F-F]","F-[[F]+F]+F[+FF]-F"];
-  const rule=rules[floor(random(rules.length))]; const depth=floor(map(P.depth,0,1,3,6)); let s="F";
-  for(let d=0;d<depth;d++){let ns="";for(const ch of s)ns+=ch==="F"?rule:ch;s=ns;} LS={s,depth}; }
-function render(g,pal){ const s=LS.s, depth=LS.depth; const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84), dep=P.zdepth||0;
-  let len=map(depth,3,6,196,24)*(g.height/820);
-  g.push(); g.translate(g.width/2,g.height*0.95); g.noFill(); const stack=[]; let lw=2.4;
-  for(const ch of s){ if(ch==="F"){ const t=Math.max(0,Math.min(1,lw/2.4));
-      const z=t*2-1;
-      // contour_field-style z staging, adapted to branch depth
-      const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*(g.height/2)*0.34*dep:0;
-      const a255=Math.abs(dep)>0.01?Math.floor(lerp(80,255,t*(1+dep*0.35))):255;
-      g.stroke(lerp(pal[2][0],pal[1][0],t),lerp(pal[2][1],pal[1][1],t),lerp(pal[2][2],pal[1][2],t),a255); g.strokeWeight(Math.max(0.4,lw*(1+z*0.5*dep)));
-      if(Math.abs(dep)>0.01){ g.line(0,yOff,0,-len*scl+yOff); } else { g.line(0,0,0,-len); }
-      g.translate(0,-len); }
-    else if(ch==="+")g.rotate(ang); else if(ch==="-")g.rotate(-ang);
-    else if(ch==="["){stack.push([len,lw]);g.push();len*=decay;lw*=0.78;}
-    else if(ch==="]"){g.pop();const st=stack.pop();len=st[0];lw=st[1];} }
-  g.pop(); }
-function renderSVG(){
-  if(!LS) build();
-  const pal=getPal(), s=LS.s, depth=LS.depth, ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
-  let len=map(depth,3,6,196,24)*(H/820), lw=2.4, x=W/2, y=H*0.95, a=0;
-  const stack=[];
-  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
-  for(const ch of s){
-    if(ch==="F"){ const t=Math.max(0,Math.min(1,lw/2.4)), c=[lerp(pal[2][0],pal[1][0],t),lerp(pal[2][1],pal[1][1],t),lerp(pal[2][2],pal[1][2],t)];
-      const nx=x+Math.sin(a)*len, ny=y-Math.cos(a)*len;
-      svg+='<line x1="'+svgNum(x)+'" y1="'+svgNum(y)+'" x2="'+svgNum(nx)+'" y2="'+svgNum(ny)+'" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(Math.max(0.4,lw))+'" stroke-linecap="round"/>';
-      x=nx; y=ny;
-    }else if(ch==="+")a+=ang; else if(ch==="-")a-=ang;
-    else if(ch==="["){stack.push([x,y,a,len,lw]);len*=decay;lw*=0.78;}
-    else if(ch==="]"){const st=stack.pop();x=st[0];y=st[1];a=st[2];len=st[3];lw=st[4];}
+let RIBS=[];
+function build(){
+  const n=Math.floor(map(P.count,0,1,12,90));
+  RIBS=[];
+  for(let i=0;i<n;i++){
+    RIBS.push({x:random(-.12,1.12),y:random(.08,.92),ph:random(TWO_PI),lane:random(),dir:random()<.5?-1:1});
   }
-  downloadSVG(svg+'</svg>');
 }
-function heightField(G){
-  if(!LS) build();
-  const s=LS.s, depth=LS.depth;
-  const ang=map(P.angle,0,1,0.12,0.55), decay=map(P.decay,0,1,0.62,0.84);
-  let len=map(depth,3,6,0.24,0.029), lw=0.013;
-  const out=new Float32Array(G*G);
-  const stack=[];
-  let x=0.5, y=0.95, a=0;
-  function paint(x0,y0,x1,y1,w){
-    const steps=Math.ceil(Math.hypot((x1-x0)*G,(y1-y0)*G)*2)+1;
-    const r=Math.max(1,Math.round(w*G*0.5));
-    for(let t=0;t<=steps;t++){
-      const px=x0+(x1-x0)*t/steps, py=y0+(y1-y0)*t/steps;
-      const ix=Math.floor(px*G), iy=Math.floor(py*G);
-      for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
-        const nx=ix+dx, ny=iy+dy;
-        if(nx<0||ny<0||nx>=G||ny>=G)continue;
-        const d=Math.hypot(dx,dy)/(r+0.5);
-        out[nx+ny*G]=Math.max(out[nx+ny*G], w*Math.max(0,1-d));
+function _ribPt(r,u,t){
+  const curl=map(P.curl,0,1,.4,5.6);
+  const len=map(P.length,0,1,.12,.72);
+  const x=r.x+(u-.5)*len;
+  const wave=Math.sin(u*TWO_PI*curl+r.ph+t*1.25)*.12*P.curl;
+  const y=r.y+wave+noise(x*2.4+r.ph,r.y*2.4,t*.2)*.10*P.curl;
+  return [x,y];
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const width=map(P.width,0,1,1.2,18);
+  const layers=Math.floor(map(P.layering,0,1,1,6));
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.noFill();
+  g.blendMode(ADD);
+  for(const r of RIBS){
+    for(let L=0;L<layers;L++){
+      const off=(L-(layers-1)/2)*width*.42;
+      const z=(r.lane*2-1);
+      const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
+      const col=(L+r.dir>0)?pal[1]:pal[2];
+      g.stroke(col[0],col[1],col[2],map(r.lane,0,1,48,190));
+      g.strokeWeight(width*(1-L*.10));
+      g.beginShape();
+      const steps=80;
+      for(let i=0;i<=steps;i++){
+        const u=i/steps;
+        const p=_ribPt(r,u,t);
+        const p2=_ribPt(r,Math.min(1,u+.01),t);
+        const nx=-(p2[1]-p[1]), ny=(p2[0]-p[0]);
+        const m=Math.sqrt(nx*nx+ny*ny)||1;
+        const x=cx+(p[0]*W-cx)*scl+nx/m*off;
+        const y=cy+(p[1]*H-cy)*scl+ny/m*off+z*cy*.14*dep;
+        g.curveVertex(x,y);
       }
+      g.endShape();
     }
   }
-  for(const ch of s){
-    if(ch==="F"){const nx=x+Math.sin(a)*len,ny=y-Math.cos(a)*len;paint(x,y,nx,ny,lw);x=nx;y=ny;}
-    else if(ch==="+")a+=ang; else if(ch==="-")a-=ang;
-    else if(ch==="["){stack.push([x,y,a,len,lw]);len*=decay;lw*=0.78;}
-    else if(ch==="]"){const st=stack.pop();x=st[0];y=st[1];a=st[2];len=st[3];lw=st[4];}
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const width=map(P.width,0,1,.006,.035);
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(const r of RIBS){
+    const steps=80;
+    for(let i=0;i<=steps;i++){
+      const u=i/steps,p=_ribPt(r,u,t);
+      stamp(p[0],p[1],width,.35+r.lane*.65);
+    }
   }
-  let mx=0; for(const v of out)mx=Math.max(mx,v);
-  if(mx>0)for(let i=0;i<out.length;i++)out[i]/=mx;
   _edgeMask(out,G); return out;
 }
 /* ============================================== */

@@ -499,6 +499,8 @@ const ALL_MODULES=[
   {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
   {id:"metafluid",title:"metafluid"},
   {id:"moire_field",title:"moire field"},{id:"particle_orbitals",title:"particle orbitals"},
+  {id:"topographic_rings",title:"topographic rings"},{id:"ribbon_flow",title:"ribbon flow"},
+  {id:"glyph_field",title:"glyph field"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -1279,6 +1281,244 @@ function heightField(G){
       const ty=.5+Math.sin(aaa*(1+lane*.08))*rr*(.62+lane*.38)*(1-kk*.025);
       stamp(tx,ty,thick*.45*(1-kk*.55),(.25+p.r*.45)*(1-kk));
     }
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+
+{ id:"topographic_rings", title:"topographic rings",
+  system:[
+    {k:"rings",label:"rings",min:0,max:1,step:.01,v:.58,sys:true},
+    {k:"levels",label:"levels",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"scale",label:"scale",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"ridge",label:"ridge",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.30},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.58,rr:true}
+  ],
+  code:`
+function build(){}
+function _topoVal(x,y,t){
+  const sc=map(P.scale,0,1,1.2,5.8);
+  const warp=map(P.warp,0,1,0,.38);
+  const dx=x-.5,dy=y-.5;
+  let r=Math.sqrt(dx*dx+dy*dy);
+  let a=Math.atan2(dy,dx);
+  const n=noise(x*sc+10,y*sc+20,t*.16);
+  r+=(n-.5)*warp*.22;
+  const swirl=Math.sin(a*map(P.rings,0,1,3,18)+r*map(P.levels,0,1,16,56)-t*1.6)*.15;
+  const field=noise(x*sc*1.35+swirl,y*sc*1.35-swirl,t*.11);
+  return Math.max(0,Math.min(1,field*.55+(1-r*1.25)*.35+swirl*.25));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const levels=Math.floor(map(P.levels,0,1,7,32));
+  const ridge=map(P.ridge,0,1,1.2,4.5);
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  g.background(
+    Math.min(255,pal[0][0]*1.14+10),
+    Math.min(255,pal[0][1]*1.14+10),
+    Math.min(255,pal[0][2]*1.14+10)
+  );
+  const dc=g.drawingContext;
+  const grad=dc.createRadialGradient(cx,cy,Math.min(W,H)*.08,cx,cy,Math.min(W,H)*.58);
+  grad.addColorStop(0,"rgba(255,255,255,0.14)");
+  grad.addColorStop(.45,"rgba(255,255,255,0.07)");
+  grad.addColorStop(1,"rgba(255,255,255,0)");
+  dc.fillStyle=grad; dc.fillRect(0,0,W,H);
+
+  g.noFill();
+  for(let lev=1;lev<levels;lev++){
+    const th=lev/levels;
+    const col=lev%2?pal[1]:pal[2];
+    g.stroke(col[0],col[1],col[2],map(lev,1,levels,58,210));
+    g.strokeWeight(map(P.ridge,0,1,.45,2.8));
+    const loops=Math.floor(map(P.rings,0,1,5,18));
+    for(let l=0;l<loops;l++){
+      g.beginShape();
+      const pts=220;
+      for(let i=0;i<=pts+3;i++){
+        const a=i/pts*TWO_PI;
+        const base=(l+1)/loops*.46;
+        const wob=(_topoVal(.5+Math.cos(a)*base,.5+Math.sin(a)*base,t)-th);
+        const rr=(base+wob*.13*ridge)*Math.min(W,H);
+        const z=(l/loops)*2-1;
+        const scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+        const x=cx+Math.cos(a)*rr*scl;
+        const y=cy+Math.sin(a)*rr*scl+z*cy*.13*dep;
+        g.curveVertex(x,y);
+      }
+      g.endShape(CLOSE);
+    }
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  const levels=Math.floor(map(P.levels,0,1,7,32));
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1);
+    const v=_topoVal(x,y,t);
+    const q=Math.abs(v*levels-Math.round(v*levels));
+    const ridge=Math.pow(Math.max(0,1-q*map(P.ridge,0,1,3,11)),2);
+    out[i+j*G]=Math.min(1,ridge*(.45+v*.7));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"ribbon_flow", title:"ribbon flow",
+  system:[
+    {k:"count",label:"count",min:0,max:1,step:.01,v:.46,sys:true},
+    {k:"length",label:"length",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"curl",label:"curl",min:0,max:1,step:.01,v:.56,rr:true},
+    {k:"width",label:"width",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"layering",label:"layering",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.34},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+let RIBS=[];
+function build(){
+  const n=Math.floor(map(P.count,0,1,12,90));
+  RIBS=[];
+  for(let i=0;i<n;i++){
+    RIBS.push({x:random(-.12,1.12),y:random(.08,.92),ph:random(TWO_PI),lane:random(),dir:random()<.5?-1:1});
+  }
+}
+function _ribPt(r,u,t){
+  const curl=map(P.curl,0,1,.4,5.6);
+  const len=map(P.length,0,1,.12,.72);
+  const x=r.x+(u-.5)*len;
+  const wave=Math.sin(u*TWO_PI*curl+r.ph+t*1.25)*.12*P.curl;
+  const y=r.y+wave+noise(x*2.4+r.ph,r.y*2.4,t*.2)*.10*P.curl;
+  return [x,y];
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const width=map(P.width,0,1,1.2,18);
+  const layers=Math.floor(map(P.layering,0,1,1,6));
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.noFill();
+  g.blendMode(ADD);
+  for(const r of RIBS){
+    for(let L=0;L<layers;L++){
+      const off=(L-(layers-1)/2)*width*.42;
+      const z=(r.lane*2-1);
+      const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
+      const col=(L+r.dir>0)?pal[1]:pal[2];
+      g.stroke(col[0],col[1],col[2],map(r.lane,0,1,48,190));
+      g.strokeWeight(width*(1-L*.10));
+      g.beginShape();
+      const steps=80;
+      for(let i=0;i<=steps;i++){
+        const u=i/steps;
+        const p=_ribPt(r,u,t);
+        const p2=_ribPt(r,Math.min(1,u+.01),t);
+        const nx=-(p2[1]-p[1]), ny=(p2[0]-p[0]);
+        const m=Math.sqrt(nx*nx+ny*ny)||1;
+        const x=cx+(p[0]*W-cx)*scl+nx/m*off;
+        const y=cy+(p[1]*H-cy)*scl+ny/m*off+z*cy*.14*dep;
+        g.curveVertex(x,y);
+      }
+      g.endShape();
+    }
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const width=map(P.width,0,1,.006,.035);
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(const r of RIBS){
+    const steps=80;
+    for(let i=0;i<=steps;i++){
+      const u=i/steps,p=_ribPt(r,u,t);
+      stamp(p[0],p[1],width,.35+r.lane*.65);
+    }
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"glyph_field", title:"glyph field",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.52,sys:true},
+    {k:"size",label:"size",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"rotation",label:"rotation",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"noise",label:"noise",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.26},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.58,rr:true}
+  ],
+  code:`
+let GLYPHS=[];
+function build(){
+  const n=Math.floor(map(P.density,0,1,9,34));
+  GLYPHS=[];
+  for(let j=0;j<n;j++)for(let i=0;i<n;i++){
+    const x=(i+.5)/n,y=(j+.5)/n;
+    const v=noise(x*5.1+seed*.01,y*5.1+17);
+    if(v>P.threshold*.85) GLYPHS.push({x,y,v,kind:Math.floor(random(5)),rot:random(TWO_PI)});
+  }
+}
+function _drawGlyph(g,x,y,sz,k,rot,col,alpha){
+  g.push(); g.translate(x,y); g.rotate(rot); g.stroke(col[0],col[1],col[2],alpha); g.noFill(); g.strokeWeight(Math.max(1,sz*.09));
+  if(k===0){ g.line(-sz*.4,0,sz*.4,0); g.line(0,-sz*.4,0,sz*.4); }
+  else if(k===1){ g.rectMode(CENTER); g.rect(0,0,sz*.7,sz*.7); }
+  else if(k===2){ g.circle(0,0,sz*.72); g.line(-sz*.35,0,sz*.35,0); }
+  else if(k===3){ g.triangle(0,-sz*.44,sz*.42,sz*.32,-sz*.42,sz*.32); }
+  else { g.line(-sz*.4,-sz*.4,sz*.4,sz*.4); g.line(sz*.4,-sz*.4,-sz*.4,sz*.4); }
+  g.pop();
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const sz=map(P.size,0,1,10,52);
+  const rotAmt=map(P.rotation,0,1,-Math.PI,Math.PI);
+  const t=animT*map(P.speed,0,1,.08,1.0);
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  for(const m of GLYPHS){
+    const n=noise(m.x*7,m.y*7,t*.2);
+    const z=(m.y*2-1);
+    const scl=Math.abs(dep)>0.01?1-z*.20*dep:1;
+    const x=cx+(m.x*W-cx)*scl+(n-.5)*P.noise*18;
+    const y=cy+(m.y*H-cy)*scl+z*cy*.13*dep+(noise(m.y*7,m.x*7,t*.2)-.5)*P.noise*18;
+    const col=m.kind%2?pal[1]:pal[2];
+    _drawGlyph(g,x,y,sz*(.65+m.v*.7),m.kind,m.rot+rotAmt*n+t*.15,col,map(m.v,0,1,55,225));
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const sz=map(P.size,0,1,.012,.045);
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(const m of GLYPHS){
+    stamp(m.x,m.y,sz*(.7+m.v*.9),.3+m.v*.7);
   }
   _edgeMask(out,G); return out;
 }` },
