@@ -20,6 +20,7 @@
   }
   .stageFavs:empty { display:none; }
   .stageFavs .chip { margin:0; }
+  .chip .sw { width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:-1px; }
   .chip .x { opacity:.55; margin-left:5px; font-size:10px; }
   .chip .x:hover { opacity:1; }
   .stageTools {
@@ -636,22 +637,48 @@ function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSa
 function _loadFavs(){ try{_favs=JSON.parse(localStorage.getItem(_FAV_KEY)||"[]");}catch(e){_favs=[];} _renderFavs(); }
 function _saveFavs(){ try{localStorage.setItem(_FAV_KEY,JSON.stringify(_favs));}catch(e){} }
 function _pinFav(){
-  _favs.push({P:{...P},cs:{...cs}});
+  _favs.push({P:{...P},cs:{...cs},seed:mfSeed,theme:activeTheme});
   _saveFavs();
   _renderFavs();
   const b=document.getElementById("btnPin");
   if(b){ const old=b.textContent; b.textContent="★ pinned"; setTimeout(()=>{b.textContent=old;},1100); }
 }
+function _applyFav(f){
+  if(!f) return;
+  if(f.P) Object.assign(P,f.P);
+  if(f.cs) Object.assign(cs,f.cs);
+  if(Number.isFinite(f.seed)){ mfSeed=f.seed; _syncSeedUI(); }
+  if(f.theme && THEME_NAMES.includes(f.theme)){
+    activeTheme=f.theme;
+    const sel=document.getElementById("themeSelect"); if(sel) sel.value=f.theme;
+  }
+  syncParamUI();
+  syncColorUI();
+  _flashConsole("favorite loaded");
+}
+
 function _renderFavs(){
   const fp=document.getElementById("stageFavs")||document.getElementById("favPanel"); if(!fp) return; fp.innerHTML="";
+  ["pointerdown","click","dblclick","mousedown","mouseup","touchstart"].forEach(type=>{
+    fp.addEventListener(type,e=>e.stopPropagation(),{passive:false});
+  });
   _favs.forEach((f,i)=>{
     const b=document.createElement("button");
     b.className="chip";
-    b.innerHTML=`★ ${i+1} <span class="x">×</span>`;
+    b.type="button";
+    b.innerHTML=`<span class="sw" style="background:${(f.cs&&f.cs.form)||cs.form}"></span>★ ${i+1} <span class="x">×</span>`;
     b.style.cssText="font-size:11px;padding:4px;";
-    b.addEventListener("click",e=>{
+    b.addEventListener("pointerdown",e=>{
+      e.preventDefault();
+      e.stopPropagation();
       if(e.target.classList.contains("x")){ _favs.splice(i,1); _saveFavs(); _renderFavs(); return; }
-      Object.assign(P,f.P); if(f.cs) Object.assign(cs,f.cs); syncParamUI(); syncColorUI();
+      _applyFav(f);
+    });
+    b.addEventListener("click",e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.target.classList.contains("x")) return;
+      _applyFav(f);
     });
     fp.appendChild(b);
   });

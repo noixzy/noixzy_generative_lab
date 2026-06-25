@@ -323,6 +323,11 @@ let activeTheme=null;
 function applyTheme(name){
   const th=THEMES.find(t=>t.name===name); if(!th) return;
   activeTheme=name;
+  const themeIdx=THEMES.findIndex(t=>t.name===name);
+  if(themeIdx>=0 && themeIdx<PALETTES.length){
+    P.pal=themeIdx;
+    if(typeof syncParamControls==="function") syncParamControls();
+  }
   const r=document.documentElement.style;
   r.setProperty('--accent',th.accent);
   r.setProperty('--bg',th.bg);
@@ -330,6 +335,7 @@ function applyTheme(name){
   r.setProperty('--dim',th.dim);
   const sel=document.getElementById('themeSelect'); if(sel)sel.value=name;
   syncAccentFromPalette();
+  if(typeof buildLeaves==="function") buildLeaves();
   try{localStorage.setItem(THEMEKEY,name);}catch(e){}
 }
 function cycleTheme(dir){
