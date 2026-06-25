@@ -19,7 +19,7 @@ body { display:flex; flex-direction:column; }
 .app { display:flex; flex-direction:row; align-items:stretch; flex:1; min-height:0; }
 .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
 .stage canvas { display:block; width:100%; height:100%; }
-.panel { position:relative; width:248px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 28px); overflow-y:auto;
+.panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
          border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
 .panel.hidden { opacity:0; pointer-events:none; }

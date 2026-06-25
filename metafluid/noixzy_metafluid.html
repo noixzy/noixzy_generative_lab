@@ -12,6 +12,16 @@
   .app { display:flex; flex-direction:row; align-items:stretch; height:calc(100vh - 28px); }
   .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
   .stage canvas { display:block; width:100%; height:100%; }
+  .stageFavs {
+    position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
+    z-index:22; display:flex; justify-content:center; align-items:center;
+    flex-wrap:wrap; gap:8px; max-width:min(760px,68vw);
+    pointer-events:auto;
+  }
+  .stageFavs:empty { display:none; }
+  .stageFavs .chip { margin:0; }
+  .chip .x { opacity:.55; margin-left:5px; font-size:10px; }
+  .chip .x:hover { opacity:1; }
   .stageTools {
     position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
     z-index:21; display:flex; align-items:center; gap:14px;
@@ -39,7 +49,7 @@
   .stageThumbs .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:2px; }
   .thumbScrollBtn { border:1px solid color-mix(in srgb, var(--accent) 45%, #333); background:rgba(0,0,0,.46); color:var(--accent); border-radius:5px; height:22px; cursor:pointer; }
   .thumbScrollBtn:hover { border-color:var(--accent); box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
-  .panel { position:relative; width:316px; box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
+  .panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
            border:1px solid rgba(72,223,255,0.20); padding:14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
   .panel.hidden { opacity:0; pointer-events:none; }
@@ -82,8 +92,8 @@
   .navThumb img { width:50px; height:38px; object-fit:cover; border-radius:4px; border:1px solid #2a2a2d; display:block; }
   .navThumb.active img { border-color:#fff; box-shadow:0 0 0 1px rgba(255,255,255,0.55); }
   .navThumb.selected img { border-color:var(--accent); box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
-  .seedStack { display:inline-flex; flex-direction:column; align-items:center; gap:2px; vertical-align:middle; }
-  .seedRead { color:var(--dim); font-size:10px; line-height:1; letter-spacing:.08em; text-transform:uppercase; }
+    .seedLabel { display:block; line-height:1.12; }
+.seedRead { display:block; margin-top:4px; color:var(--dim); font-size:10px; line-height:1; letter-spacing:.08em; }
 </style>
 </head>
 <body>
@@ -94,9 +104,11 @@
 </div>
 <div class="app">
   <div id="stage" class="stage">
-    <div id="stageTools" class="stageTools">
+    <div id="stageFavs" class="stageFavs"></div>
+      <div id="stageTools" class="stageTools">
       <div class="stageToolGroup">
         <button id="btnPin" type="button">★ pin</button>
+        <button id="exportFavs" type="button">export ★</button>
         <button id="btnCopy" type="button">copy</button>
         <button id="btnPaste" type="button">paste</button>
       </div>
@@ -104,7 +116,6 @@
         <button id="btnAudio" type="button">audio</button>
       </div>
       <div class="stageToolGroup">
-        <button id="exportFavs" type="button">export ★</button>
         <button id="clearFavs" type="button">clear ★</button>
       </div>
       <div class="stageToolGroup">
@@ -145,7 +156,7 @@
         <button id="randomUnlocked" type="button">randomize unlocked</button>
         <button id="randomForm" type="button">randomize form</button>
         <button id="randomColor" type="button">randomize color</button>
-        <span class="seedStack"><button id="btnNewSeed" type="button">new seed</button><span id="vSeed" class="seedRead">—</span></span>
+        <button id="btnNewSeed" type="button"><span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span></button>
         <button id="btnReset" type="button">reset</button>
         <button id="btnPause" type="button">pause</button>
       </div>
@@ -624,12 +635,24 @@ function _audioApply(){
 function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSaved[k]; _audioSaved={}; }
 function _loadFavs(){ try{_favs=JSON.parse(localStorage.getItem(_FAV_KEY)||"[]");}catch(e){_favs=[];} _renderFavs(); }
 function _saveFavs(){ try{localStorage.setItem(_FAV_KEY,JSON.stringify(_favs));}catch(e){} }
-function _pinFav(){ _favs.push({P:{...P},cs:{...cs}}); _saveFavs(); _renderFavs(); }
+function _pinFav(){
+  _favs.push({P:{...P},cs:{...cs}});
+  _saveFavs();
+  _renderFavs();
+  const b=document.getElementById("btnPin");
+  if(b){ const old=b.textContent; b.textContent="★ pinned"; setTimeout(()=>{b.textContent=old;},1100); }
+}
 function _renderFavs(){
-  const fp=document.getElementById("favPanel"); if(!fp) return; fp.innerHTML="";
+  const fp=document.getElementById("stageFavs")||document.getElementById("favPanel"); if(!fp) return; fp.innerHTML="";
   _favs.forEach((f,i)=>{
-    const b=document.createElement("button"); b.textContent="★ "+(i+1); b.style.cssText="font-size:11px;padding:4px;";
-    b.addEventListener("click",()=>{ Object.assign(P,f.P); if(f.cs) Object.assign(cs,f.cs); syncParamUI(); syncColorUI(); });
+    const b=document.createElement("button");
+    b.className="chip";
+    b.innerHTML=`★ ${i+1} <span class="x">×</span>`;
+    b.style.cssText="font-size:11px;padding:4px;";
+    b.addEventListener("click",e=>{
+      if(e.target.classList.contains("x")){ _favs.splice(i,1); _saveFavs(); _renderFavs(); return; }
+      Object.assign(P,f.P); if(f.cs) Object.assign(cs,f.cs); syncParamUI(); syncColorUI();
+    });
     fp.appendChild(b);
   });
 }
@@ -873,6 +896,13 @@ function setup() {
   const stage = document.getElementById("stage");
   const c = createCanvas(stage.clientWidth, stage.clientHeight, WEBGL);
   c.parent(stage);
+  stage.insertBefore(c.elt, stage.firstChild);
+  const stageTools=document.getElementById("stageTools");
+  if(stageTools){
+    ["pointerdown","pointermove","pointerup","click","dblclick","wheel","mousedown","mouseup","touchstart"].forEach(type=>{
+      stageTools.addEventListener(type,e=>e.stopPropagation(),{passive:false});
+    });
+  }
   _pCanvas = c.elt;
 
   theShader = createShader(
