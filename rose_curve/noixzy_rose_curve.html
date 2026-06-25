@@ -26,6 +26,14 @@
   input[type=color] { width:48px; height:34px; padding:0; border:1px solid #333; border-radius:4px; background:#000; cursor:pointer; }
   input[type=color]:hover { border-color:var(--accent); }
   .tools { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
+
+  .favs { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .chip { display:flex; align-items:center; gap:5px; background:#000; border:1px solid rgba(255,255,255,0.18); border-radius:4px; padding:4px 6px; cursor:pointer; font-size:11px; }
+  .chip:hover { border-color:var(--accent); color:var(--accent); }
+  .chip .sw { width:9px; height:9px; border-radius:2px; display:inline-block; border:1px solid rgba(255,255,255,0.12); }
+  .chip .x { opacity:.45; padding:0 2px; }
+  .chip .x:hover { opacity:1; color:var(--accent); }
+
   .presetBox { margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,106,166,0.18); }
   .presetLine { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:8px; }
   select { width:100%; margin-top:2px; min-height:34px; background:#000; color:var(--ink); border:1px solid #333; padding:5px 8px; font:inherit; border-radius:4px; }
@@ -92,9 +100,20 @@
       <input id="sHiVal" type="range" min="0" max="2" step="0.01" value="1"></div>
 
     <div class="tools">
+      <button id="btnPin" type="button">★ pin</button>
+      <button id="btnReset" type="button">reset</button>
+      <button id="btnCopy" type="button">copy</button>
+      <button id="btnPaste" type="button">paste</button>
       <button id="btnSave" type="button">save png</button>
+      <button id="btnSave2x" type="button">save 2x</button>
       <button id="btnPause" type="button">pause</button>
       <button id="btnThumb" type="button">→ thumb</button>
+    </div>
+
+    <div id="favs" class="favs"></div>
+    <div class="btns" id="favBtns" style="display:none;">
+      <button id="btnExportFavs" type="button">export ★</button>
+      <button id="btnClearFavs" type="button">clear ★</button>
     </div>
 
     <div class="presetBox">
@@ -197,6 +216,133 @@ function _captureThumb(){
   c.getContext("2d").drawImage(src,0,0,400,300);
   return c;
 }
+
+const FAVKEY="noixzy_"+PIECE+"_favs";
+let DEFAULT_STATE=null;
+
+function _clone(o){return JSON.parse(JSON.stringify(o));}
+function _el(id){return document.getElementById(id);}
+function _rgbHex(c){
+  if(!Array.isArray(c)) return "#ffffff";
+  return "#"+c.slice(0,3).map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+}
+function captureState(){
+  const st={P:_clone(P)};
+  const starter=_el("starterSel");
+  if(starter) st.starter=parseInt(starter.value,10)||0;
+  if(typeof activeTheme!=="undefined") st.theme=activeTheme;
+  if(typeof cs!=="undefined") st.cs=_clone(cs);
+  if(typeof bgCol!=="undefined") st.bgCol=_clone(bgCol);
+  if(typeof fmCol!=="undefined") st.fmCol=_clone(fmCol);
+  if(typeof hiCol!=="undefined") st.hiCol=_clone(hiCol);
+  if(typeof bgVal!=="undefined") st.bgVal=bgVal;
+  if(typeof fmVal!=="undefined") st.fmVal=fmVal;
+  if(typeof hiVal!=="undefined") st.hiVal=hiVal;
+  return st;
+}
+function applyState(st){
+  if(!st||typeof st!=="object")return;
+  if(st.theme&&typeof applyTheme==="function") applyTheme(st.theme);
+  if(st.P) Object.assign(P,st.P);
+  if(st.cs&&typeof cs!=="undefined") Object.assign(cs,st.cs);
+  if(st.bgCol&&typeof bgCol!=="undefined") bgCol=st.bgCol.slice();
+  if(st.fmCol&&typeof fmCol!=="undefined") fmCol=st.fmCol.slice();
+  if(st.hiCol&&typeof hiCol!=="undefined") hiCol=st.hiCol.slice();
+  if(st.bgVal!==undefined&&typeof bgVal!=="undefined") bgVal=st.bgVal;
+  if(st.fmVal!==undefined&&typeof fmVal!=="undefined") fmVal=st.fmVal;
+  if(st.hiVal!==undefined&&typeof hiVal!=="undefined") hiVal=st.hiVal;
+  const starter=_el("starterSel");
+  if(starter&&st.starter!==undefined) starter.value=st.starter;
+  if(typeof syncUI==="function") syncUI();
+  if(typeof syncColorUI==="function") syncColorUI();
+}
+function _flash(id,msg,ms=900){
+  const b=_el(id); if(!b)return;
+  const old=b.textContent; b.textContent=msg;
+  setTimeout(()=>b.textContent=old,ms);
+}
+function saveFavs(list){try{localStorage.setItem(FAVKEY,JSON.stringify(list));}catch(e){}}
+function getFavs(){try{return JSON.parse(localStorage.getItem(FAVKEY)||"[]");}catch(e){return[];}}
+function pinFav(){
+  const list=getFavs();
+  list.unshift(captureState());
+  saveFavs(list.slice(0,24));
+  renderFavs();
+  _flash("btnPin","pinned ✓");
+}
+function renderFavs(){
+  const host=_el("favs"), btns=_el("favBtns");
+  if(!host)return;
+  const list=getFavs();
+  host.innerHTML="";
+  if(btns)btns.style.display=list.length?"flex":"none";
+  list.forEach((st,i)=>{
+    const chip=document.createElement("div"); chip.className="chip"; chip.title="restore favorite";
+    const sw=document.createElement("span"); sw.className="sw";
+    sw.style.background=(st.cs&&st.cs.hi)||_rgbHex(st.hiCol);
+    const label=document.createElement("b"); label.textContent=String(i+1);
+    const x=document.createElement("span"); x.className="x"; x.textContent="×"; x.title="remove";
+    x.addEventListener("click",ev=>{
+      ev.stopPropagation();
+      const next=getFavs(); next.splice(i,1); saveFavs(next); renderFavs();
+    });
+    chip.addEventListener("click",()=>applyState(st));
+    chip.appendChild(sw); chip.appendChild(label); chip.appendChild(x);
+    host.appendChild(chip);
+  });
+}
+function clearFavs(){saveFavs([]);renderFavs();_flash("btnClearFavs","cleared");}
+function exportFavs(){
+  const txt=JSON.stringify({piece:PIECE,favorites:getFavs()},null,2);
+  const blob=new Blob([txt],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="noixzy_"+PIECE+"_favorites.json"; a.click();
+}
+function resetState(){
+  if(DEFAULT_STATE) applyState(_clone(DEFAULT_STATE));
+  _flash("btnReset","reset ✓");
+}
+function copyState(){
+  const txt=JSON.stringify(captureState());
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>_flash("btnCopy","copied ✓"),()=>prompt("state JSON:",txt));
+  }else prompt("state JSON:",txt);
+}
+function pasteState(){
+  const fail=()=>_flash("btnPaste","invalid");
+  if(!(navigator.clipboard&&navigator.clipboard.readText)){fail();return;}
+  navigator.clipboard.readText().then(txt=>{
+    try{applyState(JSON.parse(txt));_flash("btnPaste","pasted ✓");}
+    catch(e){fail();}
+  },fail);
+}
+function save2xPNG(){
+  const src=document.querySelector("canvas");
+  if(!src)return;
+  const c=document.createElement("canvas");
+  c.width=src.width*2; c.height=src.height*2;
+  const ctx=c.getContext("2d");
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(src,0,0,c.width,c.height);
+  c.toBlob(b=>{
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(b);
+    a.download="noixzy_"+PIECE+"_"+Math.floor(Date.now()/1000)+"_2x.png";
+    a.click();
+  },"image/png");
+  _flash("btnSave2x","saved ✓");
+}
+function attachWorkflowControls(){
+  const bind=(id,fn)=>{const b=_el(id); if(b&&!b.dataset.bound){b.dataset.bound="1"; b.addEventListener("click",fn);}};
+  bind("btnPin",pinFav);
+  bind("btnReset",resetState);
+  bind("btnCopy",copyState);
+  bind("btnPaste",pasteState);
+  bind("btnSave2x",save2xPNG);
+  bind("btnExportFavs",exportFavs);
+  bind("btnClearFavs",clearFavs);
+}
+
 async function saveThumb(){
   const btn=document.getElementById("btnThumb");
   try{
@@ -260,6 +406,9 @@ function setup(){
   const saved=localStorage.getItem(THEMEKEY);
   if(saved&&THEME_NAMES.includes(saved))applyTheme(saved);else applyTheme("magenta");
   document.getElementById("btnThumb").addEventListener("click",saveThumb);
+  attachWorkflowControls();
+  DEFAULT_STATE=_clone(captureState());
+  renderFavs();
   syncUI();buildNav();
   window.addEventListener("resize",()=>{resizeCanvas(stage.clientWidth,stage.clientHeight);pg=createGraphics(width,height);pg.colorMode(RGB,255);pg.background(bgCol[0],bgCol[1],bgCol[2]);});
 }
