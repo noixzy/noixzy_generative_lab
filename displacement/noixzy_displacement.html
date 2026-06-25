@@ -287,22 +287,27 @@ void main() {
 
 <script>
 const PIECE = "displacement";
-let _thumbDir=null;
+let _thumbDir=null,_pCanvas=null;
+function _captureThumb(){
+  const src=_pCanvas||document.querySelector("canvas");
+  const c=document.createElement("canvas"); c.width=400; c.height=300;
+  c.getContext("2d").drawImage(src,0,0,400,300);
+  return c;
+}
 async function saveThumb(){
+  const btn=document.getElementById("btnThumb");
   try{
     if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
-    const c=document.createElement("canvas"); c.width=400; c.height=300;
-    c.getContext("2d").drawImage(document.querySelector("canvas"),0,0,400,300);
-    const blob=await new Promise(res=>c.toBlob(res,"image/png"));
+    const blob=await new Promise(res=>_captureThumb().toBlob(res,"image/png"));
     const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
     const w=await fh.createWritable(); await w.write(blob); await w.close();
-    const btn=document.getElementById("btnThumb");
     if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
   }catch(e){
     if(e.name!=="AbortError"){
-      const c=document.createElement("canvas"); c.width=400; c.height=300;
-      c.getContext("2d").drawImage(document.querySelector("canvas"),0,0,400,300);
-      c.toBlob(b=>{const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=PIECE+".png";a.click();},"image/png");
+      _captureThumb().toBlob(b=>{
+        const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=PIECE+".png";a.click();
+        if(btn){btn.textContent="✓ dl";setTimeout(()=>btn.textContent="→ thumb",1400);}
+      },"image/png");
     }
   }
 }
@@ -501,6 +506,7 @@ function setup() {
   const stage = document.getElementById("stage");
   const c = createCanvas(stage.clientWidth, stage.clientHeight, WEBGL);
   c.parent(stage);
+  _pCanvas = c.elt;
 
   theShader = createShader(
     document.getElementById("vert").textContent,
