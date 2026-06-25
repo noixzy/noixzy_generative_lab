@@ -501,6 +501,8 @@ const ALL_MODULES=[
   {id:"moire_field",title:"moire field"},{id:"particle_orbitals",title:"particle orbitals"},
   {id:"topographic_rings",title:"topographic rings"},{id:"ribbon_flow",title:"ribbon flow"},
   {id:"glyph_field",title:"glyph field"},
+  {id:"crystal_growth",title:"crystal growth"},{id:"vector_scope",title:"vector scope"},
+  {id:"wave_lattice",title:"wave lattice"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -1519,6 +1521,250 @@ function heightField(G){
   };
   for(const m of GLYPHS){
     stamp(m.x,m.y,sz*(.7+m.v*.9),.3+m.v*.7);
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+
+{ id:"crystal_growth", title:"crystal growth",
+  system:[
+    {k:"branches",label:"branches",min:0,max:1,step:.01,v:.52,sys:true},
+    {k:"spread",label:"spread",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"segments",label:"segments",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"jitter",label:"jitter",min:0,max:1,step:.01,v:.34,rr:true},
+    {k:"thickness",label:"thickness",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.24},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+let CRYS=[];
+function build(){
+  const arms=Math.floor(map(P.branches,0,1,5,18));
+  CRYS=[];
+  for(let a=0;a<arms;a++){
+    const ang=a/arms*TWO_PI+random(-.12,.12);
+    const len=random(.22,.48);
+    const seg=Math.floor(map(P.segments,0,1,4,14));
+    CRYS.push({ang,len,seg,ph:random(TWO_PI),fork:random(.25,.75)});
+  }
+}
+function _crysPoint(c,u,t){
+  const bend=Math.sin(u*PI+c.ph+t*.65)*P.jitter*.18;
+  const a=c.ang+bend;
+  const r=c.len*u*(.75+.25*Math.sin(t*.35+c.ph));
+  return [.5+Math.cos(a)*r,.5+Math.sin(a)*r];
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  const sw=map(P.thickness,0,1,.8,6.5);
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.blendMode(ADD);
+  for(const c of CRYS){
+    const col=random()<.5?pal[1]:pal[2];
+    g.stroke(col[0],col[1],col[2],180);
+    g.strokeWeight(sw);
+    g.noFill();
+    g.beginShape();
+    for(let i=0;i<=c.seg;i++){
+      const u=i/c.seg,p=_crysPoint(c,u,t),z=(u*2-1);
+      const scl=Math.abs(dep)>0.01?1-z*.20*dep:1;
+      g.vertex(cx+(p[0]*W-cx)*scl,cy+(p[1]*H-cy)*scl+z*cy*.12*dep);
+    }
+    g.endShape();
+
+    for(let f=.25;f<.9;f+=.22){
+      const p=_crysPoint(c,f,t);
+      const base=c.ang+(random()<.5?-1:1)*map(P.spread,0,1,.25,1.25);
+      for(const side of [-1,1]){
+        const a=base*side+c.ang*(1-side);
+        const L=c.len*.22*(1-f);
+        const z=(f*2-1);
+        const scl=Math.abs(dep)>0.01?1-z*.20*dep:1;
+        const x1=cx+(p[0]*W-cx)*scl,y1=cy+(p[1]*H-cy)*scl+z*cy*.12*dep;
+        const x2=x1+Math.cos(a)*L*W,y2=y1+Math.sin(a)*L*H;
+        g.strokeWeight(sw*.62); g.line(x1,y1,x2,y2);
+      }
+    }
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  const rad=map(P.thickness,0,1,.008,.035);
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(const c of CRYS){
+    for(let i=0;i<=c.seg*5;i++){
+      const u=i/(c.seg*5),p=_crysPoint(c,u,t);
+      stamp(p[0],p[1],rad,.35+u*.65);
+    }
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"vector_scope", title:"vector scope",
+  system:[
+    {k:"traces",label:"traces",min:0,max:1,step:.01,v:.48,sys:true},
+    {k:"gain",label:"gain",min:0,max:1,step:.01,v:.55,rr:true},
+    {k:"phase",label:"phase",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"fold",label:"fold",min:0,max:1,step:.01,v:.36,rr:true},
+    {k:"glow",label:"glow",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.38},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.54,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _scopePoint(u,t,layer){
+  const gain=map(P.gain,0,1,.22,.48);
+  const ph=map(P.phase,0,1,0,TWO_PI);
+  const fold=Math.floor(map(P.fold,0,1,1,7));
+  const a=u*TWO_PI;
+  const x=Math.sin(a*(2+fold)+ph+t*.9+layer*.7)*gain + Math.sin(a*3+t*.4)*gain*.28;
+  const y=Math.sin(a*(3+fold*.5)-ph+t*1.1+layer*1.3)*gain + Math.cos(a*2-t*.5)*gain*.24;
+  return [.5+x,.5+y];
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.45);
+  const layers=Math.floor(map(P.traces,0,1,2,14));
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.noFill();
+  g.blendMode(ADD);
+  for(let L=0;L<layers;L++){
+    const col=L%2?pal[1]:pal[2];
+    const z=(L/(layers-1||1))*2-1;
+    const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
+    g.stroke(col[0],col[1],col[2],map(P.glow,0,1,45,190));
+    g.strokeWeight(map(P.glow,0,1,.8,3.8));
+    g.beginShape();
+    for(let i=0;i<=360;i++){
+      const p=_scopePoint(i/360,t,L);
+      g.curveVertex(cx+(p[0]*W-cx)*scl,cy+(p[1]*H-cy)*scl+z*cy*.14*dep);
+    }
+    g.endShape(CLOSE);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.45);
+  const layers=Math.floor(map(P.traces,0,1,2,14));
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(let L=0;L<layers;L++)for(let i=0;i<260;i++){
+    const p=_scopePoint(i/260,t,L);
+    stamp(p[0],p[1],.018,.22+L/layers*.55);
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"wave_lattice", title:"wave lattice",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.54,sys:true},
+    {k:"amp",label:"amplitude",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"freq",label:"frequency",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"phase",label:"phase",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.38,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.32},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _waveVal(x,y,t){
+  const f=map(P.freq,0,1,3,22);
+  const w=P.warp*.35;
+  const n=noise(x*3.2+8,y*3.2+13,t*.14);
+  x+=(n-.5)*w; y+=(noise(y*3.2,x*3.2,t*.16)-.5)*w;
+  const a=Math.sin((x+y)*f+t*1.2);
+  const b=Math.sin((x-y)*f*1.13-t*.9+P.phase*TWO_PI);
+  const c=Math.sin(Math.sqrt((x-.5)*(x-.5)+(y-.5)*(y-.5))*f*2.2-t*.7);
+  return (a+b+c)/3*.5+.5;
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.4);
+  const n=Math.floor(map(P.density,0,1,14,58));
+  const amp=map(P.amp,0,1,4,42);
+  g.background(
+    Math.min(255,pal[0][0]*1.22+14),
+    Math.min(255,pal[0][1]*1.22+14),
+    Math.min(255,pal[0][2]*1.22+14)
+  );
+  g.push();
+  g.noStroke();
+  g.fill(255,255,255,22);
+  g.rect(0,0,W,H);
+  g.pop();
+  g.noFill();
+  for(let pass=0;pass<2;pass++){
+    const col=pass?pal[1]:pal[2];
+    g.stroke(
+      Math.min(255,col[0]*1.22+20),
+      Math.min(255,col[1]*1.22+20),
+      Math.min(255,col[2]*1.22+20),
+      pass?205:150
+    );
+    g.strokeWeight(pass?2.2:1.25);
+    for(let j=0;j<n;j++){
+      g.beginShape();
+      for(let i=0;i<n;i++){
+        const x=i/(n-1),y=j/(n-1);
+        const v=_waveVal(x,y,t);
+        const z=(v-.5)*2;
+        const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+        const px=cx+(x*W-cx)*scl;
+        const py=cy+(y*H-cy)*scl+Math.sin(v*TWO_PI)*amp+z*cy*.10*dep;
+        if(pass) g.vertex(px,py); else g.curveVertex(px,py);
+      }
+      g.endShape();
+    }
+    for(let i=0;i<n;i++){
+      g.beginShape();
+      for(let j=0;j<n;j++){
+        const x=i/(n-1),y=j/(n-1);
+        const v=_waveVal(x,y,t);
+        const z=(v-.5)*2;
+        const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+        const px=cx+(x*W-cx)*scl+Math.cos(v*TWO_PI)*amp*.22;
+        const py=cy+(y*H-cy)*scl+z*cy*.10*dep;
+        if(pass) g.vertex(px,py); else g.curveVertex(px,py);
+      }
+      g.endShape();
+    }
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.4);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_waveVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.amp,0,1,1.8,.65));
   }
   _edgeMask(out,G); return out;
 }` },

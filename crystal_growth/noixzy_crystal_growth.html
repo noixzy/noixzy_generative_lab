@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // flow field</title>
+<title>noixzy // crystal growth</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // flow field</h1>
+  <h1>noixzy // crystal growth</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="flow_field", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="crystal_growth", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.65},{"k":"scale","label":"scale","min":0,"max":1,"step":0.01,"v":0.4},{"k":"turbulence","label":"turbulence","min":0,"max":1,"step":0.01,"v":0.5},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4}];
+const SYSTEM=[{"k":"branches","label":"branches","min":0,"max":1,"step":0.01,"v":0.52,"sys":true},{"k":"spread","label":"spread","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"segments","label":"segments","min":0,"max":1,"step":0.01,"v":0.62,"rr":true},{"k":"jitter","label":"jitter","min":0,"max":1,"step":0.01,"v":0.34,"rr":true},{"k":"thickness","label":"thickness","min":0,"max":1,"step":0.01,"v":0.44,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.24},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.58,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,36 +392,77 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-function build(){}
+let CRYS=[];
+function build(){
+  const arms=Math.floor(map(P.branches,0,1,5,18));
+  CRYS=[];
+  for(let a=0;a<arms;a++){
+    const ang=a/arms*TWO_PI+random(-.12,.12);
+    const len=random(.22,.48);
+    const seg=Math.floor(map(P.segments,0,1,4,14));
+    CRYS.push({ang,len,seg,ph:random(TWO_PI),fork:random(.25,.75)});
+  }
+}
+function _crysPoint(c,u,t){
+  const bend=Math.sin(u*PI+c.ph+t*.65)*P.jitter*.18;
+  const a=c.ang+bend;
+  const r=c.len*u*(.75+.25*Math.sin(t*.35+c.ph));
+  return [.5+Math.cos(a)*r,.5+Math.sin(a)*r];
+}
 function render(g,pal){
-  const n=floor(map(P.density,0,1,80,6000)), s=map(P.scale,0,1,0.0008,0.006), turb=map(P.turbulence,0,1,1,7);
-  const dep=P.zdepth||0,cx=g.width/2,cy=g.height/2;
-  g.noFill();
-  for(let i=0;i<n;i++){
-    let x=random(g.width), y=random(g.height);
-    const y0=y;
-    const c=random()<0.5?pal[1]:pal[2];
-    const pts=[];
-    for(let j=0;j<55;j++){
-      pts.push(x,y);
-      const a=noise(x*s,y*s,animT*P.speed*0.55)*TWO_PI*turb; x+=cos(a)*1.6; y+=sin(a)*1.6;
-      if(x<0||x>g.width||y<0||y>g.height) break;
-    }
-    if(pts.length<6) continue;
-    const tf=Math.max(0,Math.min(1,y0/g.height)), z=tf*2-1;
-    // contour_field-style z staging
-    const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*cy*0.34*dep:0;
-    const alpha=Math.abs(dep)>0.01?Math.floor(lerp(80,220,tf*(1+dep*0.35))):45;
-    const sw=Math.abs(dep)>0.01?1.1*(1+z*0.5*dep):1.1;
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  const sw=map(P.thickness,0,1,.8,6.5);
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.blendMode(ADD);
+  for(const c of CRYS){
+    const col=random()<.5?pal[1]:pal[2];
+    g.stroke(col[0],col[1],col[2],180);
     g.strokeWeight(sw);
-    g.stroke(min(255,c[0]*(1.25+0.5*tf*dep)),min(255,c[1]*(1.25+0.5*tf*dep)),min(255,c[2]*(1.25+0.5*tf*dep)),alpha);
+    g.noFill();
     g.beginShape();
-    for(let j=0;j<pts.length;j+=2){
-      const px=cx+(pts[j]-cx)*scl, py=cy+(pts[j+1]-cy)*scl+yOff;
-      g.curveVertex(px,py);
+    for(let i=0;i<=c.seg;i++){
+      const u=i/c.seg,p=_crysPoint(c,u,t),z=(u*2-1);
+      const scl=Math.abs(dep)>0.01?1-z*.20*dep:1;
+      g.vertex(cx+(p[0]*W-cx)*scl,cy+(p[1]*H-cy)*scl+z*cy*.12*dep);
     }
     g.endShape();
+
+    for(let f=.25;f<.9;f+=.22){
+      const p=_crysPoint(c,f,t);
+      const base=c.ang+(random()<.5?-1:1)*map(P.spread,0,1,.25,1.25);
+      for(const side of [-1,1]){
+        const a=base*side+c.ang*(1-side);
+        const L=c.len*.22*(1-f);
+        const z=(f*2-1);
+        const scl=Math.abs(dep)>0.01?1-z*.20*dep:1;
+        const x1=cx+(p[0]*W-cx)*scl,y1=cy+(p[1]*H-cy)*scl+z*cy*.12*dep;
+        const x2=x1+Math.cos(a)*L*W,y2=y1+Math.sin(a)*L*H;
+        g.strokeWeight(sw*.62); g.line(x1,y1,x2,y2);
+      }
+    }
   }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  const rad=map(P.thickness,0,1,.008,.035);
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(const c of CRYS){
+    for(let i=0;i<=c.seg*5;i++){
+      const u=i/(c.seg*5),p=_crysPoint(c,u,t);
+      stamp(p[0],p[1],rad,.35+u*.65);
+    }
+  }
+  _edgeMask(out,G); return out;
 }
 /* ============================================== */
 
