@@ -383,6 +383,8 @@ const ALL_MODULES=[
   {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
   {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
   {id:"stipple",title:"stipple"},
+  {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
+  {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
 ];
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);

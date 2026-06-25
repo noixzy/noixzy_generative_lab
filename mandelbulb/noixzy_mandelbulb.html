@@ -37,7 +37,7 @@
   .navBar { flex:0 0 28px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:#0a0a0c; border-bottom:1px solid #1c1c1f; z-index:10; }
   .navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
   .navBar a:hover { color:var(--accent); }
-  .navCurrent { color:var(--ink) !important; pointer-events:none; }
+  .navCurrent { color:var(--accent) !important; }
   .moduleNav { margin-top:12px; padding-top:10px; border-top:1px solid #1e1e21; }
   .moduleNav .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
   .thumbRow { display:flex; gap:5px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
@@ -51,7 +51,7 @@
 <body>
 <div class="navBar">
   <a id="navPrev" href="#">← prev</a>
-  <a href="../gallery/index.html" class="navCurrent">mandelbulb</a>
+  <a href="../gallery/index.html" class="navCurrent">⊞ gallery</a>
   <a id="navNext" href="#">next →</a>
 </div>
 <div class="app">
@@ -159,6 +159,7 @@ uniform float u_morph;
 uniform float u_detail;
 uniform float u_glow;
 uniform float u_spin;
+uniform float u_azimuth;
 uniform float u_dist;
 uniform float u_elev;
 uniform float u_ao;
@@ -222,7 +223,7 @@ void main() {
   vec2 uv = vUv;
   uv.x *= u_res.x / u_res.y;
 
-  float a  = u_time * u_spin * 0.28;
+  float a  = u_azimuth + u_time * u_spin * 0.28;
   float el = 0.55 + 0.3*sin(u_time * 0.09);
   float camDist = mix(2.15, 5.25, u_dist);
   float camElev = mix(-1.35, 1.85, u_elev);
@@ -343,6 +344,13 @@ const STARTERS = [
 let cs = { bg:"#0c0c0c", form:"#3a3a3a", hi:"#f2f2f2", bgVal:1, fSat:1, fVal:1, rim:1 };
 let P  = { power:0.75, morph:0.22, detail:0.55, glow:0.45, spin:0.18, dist:0.52, elev:0.50, ao:0.7 };
 let t0, paused=false, pauseT=0, theShader;
+let _camAzimuth=0,_drag={active:false,x:0,y:0};
+function _initOrbit(stg){
+  stg.addEventListener("pointerdown",e=>{_drag={active:true,x:e.clientX,y:e.clientY};stg.setPointerCapture(e.pointerId);},{passive:true});
+  stg.addEventListener("pointermove",e=>{if(!_drag.active)return;_camAzimuth+=(e.clientX-_drag.x)*0.012;P.elev=clampV(P.elev-(e.clientY-_drag.y)*0.003,0,1);_drag.x=e.clientX;_drag.y=e.clientY;const se=document.getElementById("sElev");if(se){se.value=P.elev;document.getElementById("vElev").textContent=P.elev.toFixed(2);}},{passive:true});
+  stg.addEventListener("pointerup",()=>{_drag.active=false;});
+  stg.addEventListener("wheel",e=>{e.preventDefault();P.dist=clampV(P.dist+e.deltaY*0.0003,0,1);const sd=document.getElementById("sDist");if(sd){sd.value=P.dist;document.getElementById("vDist").textContent=P.dist.toFixed(2);}},{passive:false});
+}
 let audioCtx,analyser,audioData,audioActive=false;
 const ABANDS={bass:0,mid:0,high:0,presence:0};
 const AMAP={bass:null,mid:null,high:null,presence:null};
@@ -540,6 +548,7 @@ function setup() {
   document.getElementById("vPal").textContent=`${document.getElementById("sPal").value} ${PALETTES[parseInt(document.getElementById("sPal").value)][0]}`;
   _buildAudioUI();
   _loadFavs();
+  _initOrbit(stage);
   buildNav();
 
   window.addEventListener("resize", ()=>{ resizeCanvas(stage.clientWidth, stage.clientHeight); });
@@ -552,6 +561,7 @@ function draw() {
   shader(theShader);
   theShader.setUniform("u_res",       [width, height]);
   theShader.setUniform("u_time",      t);
+  theShader.setUniform("u_azimuth",   _camAzimuth);
   theShader.setUniform("u_power",     P.power);
   theShader.setUniform("u_morph",     P.morph);
   theShader.setUniform("u_detail",    P.detail);
@@ -582,6 +592,8 @@ const ALL_MODULES=[
   {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
   {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
   {id:"stipple",title:"stipple"},
+  {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
+  {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
 ];
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
@@ -597,7 +609,7 @@ function buildNav(){
     const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
     a.appendChild(img); strip.appendChild(a);
   });
-  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el) el.scrollIntoView({inline:"center",block:"nearest"}); },50);
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){const off=el.offsetLeft-strip.offsetWidth/2+el.offsetWidth/2;strip.scrollLeft=Math.max(0,off);} },50);
 }
 </script>
 </body>

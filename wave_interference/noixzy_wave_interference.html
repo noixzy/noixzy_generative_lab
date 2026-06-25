@@ -62,7 +62,7 @@ select:hover { border-color:var(--accent); }
 .navBar { flex:0 0 28px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:#0a0a0c; border-bottom:1px solid #1c1c1f; z-index:10; }
 .navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
 .navBar a:hover { color:var(--accent); }
-.navCurrent { color:var(--ink) !important; pointer-events:none; }
+.navCurrent { color:var(--accent) !important; }
 /* Thumb strip */
 .moduleNav { margin-top:12px; padding-top:10px; border-top:1px solid #1e1e21; }
 .moduleNav .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
@@ -77,7 +77,7 @@ select:hover { border-color:var(--accent); }
 <body>
 <div class="navBar">
   <a id="navPrev" href="#">← prev</a>
-  <a href="../gallery/index.html" class="navCurrent">wave interference</a>
+  <a href="../gallery/index.html" class="navCurrent">⊞ gallery</a>
   <a id="navNext" href="#">next →</a>
 </div>
 <div class="app">
@@ -422,6 +422,8 @@ const ALL_MODULES=[
   {id:"l_system",title:"l-system"},{id:"cellular_erosion",title:"cellular erosion"},
   {id:"recursive_grid",title:"recursive grid"},{id:"wave_interference",title:"wave interference"},
   {id:"stipple",title:"stipple"},
+  {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
+  {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
 ];
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
@@ -437,7 +439,7 @@ function buildNav(){
     const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
     a.appendChild(img); strip.appendChild(a);
   });
-  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el) el.scrollIntoView({inline:"center",block:"nearest"}); },50);
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){const off=el.offsetLeft-strip.offsetWidth/2+el.offsetWidth/2;strip.scrollLeft=Math.max(0,off);} },50);
 }
 let _dragOnCanvas=false;
 function mousePressed(){
