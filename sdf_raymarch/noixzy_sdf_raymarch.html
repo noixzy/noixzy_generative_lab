@@ -72,6 +72,71 @@
   .consoleBtns { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
   .consoleBtns button { flex:1 1 calc(50% - 6px); min-width:76px; }
   .presetStatus { min-height:15px; color:var(--dim); font-size:11px; letter-spacing:.04em; margin-bottom:4px; }
+  /* NOIXZY_SDF_UI_SHELL_ONLY_CSS */
+  .stageFavs {
+    position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
+    z-index:22; display:flex; justify-content:center; align-items:center;
+    flex-wrap:wrap; gap:8px; max-width:min(760px,68vw);
+    pointer-events:auto;
+  }
+  .stageFavs:empty { display:none; }
+  .stageFavs .chip { margin:0; }
+  .chip { display:flex; align-items:center; gap:5px; background:#000; border:1px solid #333; border-radius:4px; padding:4px 6px; cursor:pointer; font-size:11px; }
+  .chip:hover { border-color:var(--accent); }
+  .chip b { color:var(--accent); }
+  .chip .sw { width:9px; height:9px; border-radius:2px; display:inline-block; }
+  .chip .x { opacity:.45; padding:0 2px; }
+  .chip .x:hover { opacity:1; color:var(--accent); }
+  #favPanel { display:none !important; }
+
+  /* NOIXZY_SDF_OVERLAY_STACK_FIX */
+  #stage canvas {
+    position:absolute !important;
+    inset:0 !important;
+    z-index:0 !important;
+  }
+  #stageTools {
+    z-index:1000 !important;
+    pointer-events:auto !important;
+  }
+  #stageTools,
+  #stageTools * {
+    pointer-events:auto !important;
+  }
+  #stageFavs {
+    z-index:1001 !important;
+    pointer-events:auto !important;
+  }
+  #stageThumbs {
+    z-index:1000 !important;
+    pointer-events:auto !important;
+  }
+
+  /* NOIXZY_SDF_RANDOM_ROW_GRID_LOOK */
+  .panel .tools {
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:8px;
+    margin:14px 0 8px;
+  }
+  .panel .tools > button,
+  .panel .tools .toolGrid > button {
+    width:100%;
+    min-width:0;
+  }
+  .panel .tools .toolGrid {
+    display:contents;
+  }
+  .panel .consoleBtns {
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:8px;
+    margin:8px 0 12px;
+  }
+  .panel .consoleBtns button {
+    min-width:0;
+  }
+
 </style>
 </head>
 <body>
@@ -82,15 +147,16 @@
 </div>
 <div class="app">
   <div id="stage" class="stage">
+    <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
         <button id="btnPin" type="button">★ pin</button>
+        <button id="exportFavs" type="button">export ★</button>
         <button id="btnCopy" type="button">copy</button>
         <button id="btnPaste" type="button">paste</button>
       </div>
       <div class="stageToolGroup">
         <button id="btnAudio" type="button">audio</button>
-        <button id="exportFavs" type="button">export ★</button>
         <button id="clearFavs" type="button">clear ★</button>
       </div>
       <div class="stageToolGroup">
@@ -123,6 +189,39 @@
     <div class="consoleBtns">
       <button id="btnReset" type="button">reset</button>
       <button id="btnPause" type="button">pause</button>
+    </div>
+
+    <div class="tools">
+      <button id="randomUnlocked" type="button">randomize unlocked</button>
+      <div class="toolGrid">
+        <button id="randomForm" type="button">randomize form</button>
+        <button id="randomColor" type="button">randomize color</button>
+      </div>
+    </div>
+
+    <div class="presetBox">
+      <div class="cycleLine" style="margin-top:8px">
+        <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+        <select id="starterPreset"></select>
+        <button id="starterNext" class="cycleBtn" type="button">›</button>
+      </div>
+      <div class="presetLine">
+        <input id="presetName" type="text" placeholder="preset name">
+        <button id="savePreset" type="button">save preset</button>
+      </div>
+      <div class="presetLine triple">
+        <select id="localPreset"></select>
+        <button id="loadPreset" type="button">load</button>
+        <button id="deletePreset" type="button">delete</button>
+      </div>
+      <div id="presetStatus" class="read status"></div>
+    </div>
+
+    <div class="row"><label><span>seed <span id="seedRead">1</span></span></label>
+      <div class="seed">
+        <input id="seedField" type="number" value="1">
+        <button id="newSeed" type="button">new seed</button>
+      </div>
     </div>
 
     <div class="row"><label>density <span id="v0">—</span></label>
@@ -179,38 +278,6 @@
         <option value="3">twist</option>
       </select></div>
 
-    <div class="tools">
-      <button id="randomUnlocked" type="button">randomize unlocked</button>
-      <div class="toolGrid">
-        <button id="randomForm" type="button">randomize form</button>
-        <button id="randomColor" type="button">randomize color</button>
-      </div>
-    </div>
-
-    <div class="presetBox">
-      <div class="cycleLine" style="margin-top:8px">
-        <button id="starterPrev" class="cycleBtn" type="button">‹</button>
-        <select id="starterPreset"></select>
-        <button id="starterNext" class="cycleBtn" type="button">›</button>
-      </div>
-      <div class="presetLine">
-        <input id="presetName" type="text" placeholder="preset name">
-        <button id="savePreset" type="button">save preset</button>
-      </div>
-      <div class="presetLine triple">
-        <select id="localPreset"></select>
-        <button id="loadPreset" type="button">load</button>
-        <button id="deletePreset" type="button">delete</button>
-      </div>
-      <div id="presetStatus" class="read status"></div>
-    </div>
-
-    <div class="row"><label><span>seed <span id="seedRead">1</span></span></label>
-      <div class="seed">
-        <input id="seedField" type="number" value="1">
-        <button id="newSeed" type="button">new seed</button>
-      </div>
-    </div>
     <div style="display:none">
       <button id="pause" type="button">pause</button>
       <button id="reset" type="button">reset</button>
@@ -921,11 +988,38 @@ function blobScaleFromSlider(t){
 const THEME_NAMES=["ember","mineral","violet","amber","graphite","cyan","acid","magenta","gold","neutral"];
 const THEMEKEY="noixzy_lab_theme";
 let activeTheme=null;
+
+function _syncSdfThemeChrome(idx){
+  const pal = PALETTES[idx];
+  if(!pal) return;
+
+  // SDF palette format: [name, bg, blob, highlight]
+  const bg = pal[1];
+  const blob = pal[2];
+  const hi = pal[3];
+
+  const root = document.documentElement.style;
+  root.setProperty("--bg", bg);
+  root.setProperty("--panel", bg);
+  root.setProperty("--accent", hi);
+  root.setProperty("--ink", hi);
+  root.setProperty("--dim", blob);
+
+  // Keep visible color controls/readouts synced to the active palette.
+  if(typeof updateColorUI === "function") updateColorUI();
+}
+
 function applyTheme(name){
   const idx=THEME_NAMES.indexOf(name); if(idx<0) return;
   activeTheme=name;
+
+  // This updates SDF form palette/colorState through the existing native path.
   setPControl('p3', idx, { applyPalette:true, rebuild:false });
-  const sel=document.getElementById('themeSelect'); if(sel)sel.value=name;
+
+  // This updates UI chrome so arrows/dropdown/form feel like one theme.
+  _syncSdfThemeChrome(idx);
+
+  const sel=document.getElementById('themeSelect'); if(sel) sel.value=name;
   try{localStorage.setItem(THEMEKEY,name);}catch(e){}
 }
 function cycleTheme(dir){
@@ -1087,19 +1181,36 @@ function _saveSdf2x(){
 }
 let _sdfRecorder=null,_sdfRecChunks=[];
 function _recSdf(){
-  const btn=document.getElementById("rec");
+  const visibleBtn=document.getElementById("btnRec");
+  const hiddenBtn=document.getElementById("rec");
+  const btn=visibleBtn || hiddenBtn;
   const src=document.querySelector("canvas");
   if(!src) return;
+
   if(_sdfRecorder && _sdfRecorder.state==="recording"){
     _sdfRecorder.stop();
     return;
   }
-  const durEl=document.getElementById("recDur");
-  const seconds=durEl?parseInt(durEl.value,10)||4:4;
-  const stream=src.captureStream(30);
+
+  const durEl=document.getElementById("btnRecDur") || document.getElementById("recDur");
+  const seconds=durEl ? parseInt(durEl.value,10) || 4 : 4;
+
+  let stream;
+  try {
+    stream=src.captureStream(30);
+  } catch(e) {
+    if(btn) btn.textContent="unsupported";
+    setTimeout(()=>{ if(btn) btn.textContent="video"; },1200);
+    return;
+  }
+
   _sdfRecChunks=[];
   _sdfRecorder=new MediaRecorder(stream,{mimeType:"video/webm"});
-  _sdfRecorder.ondataavailable=e=>{ if(e.data&&e.data.size) _sdfRecChunks.push(e.data); };
+
+  _sdfRecorder.ondataavailable=e=>{
+    if(e.data && e.data.size) _sdfRecChunks.push(e.data);
+  };
+
   _sdfRecorder.onstop=()=>{
     const blob=new Blob(_sdfRecChunks,{type:"video/webm"});
     const url=URL.createObjectURL(blob);
@@ -1108,11 +1219,31 @@ function _recSdf(){
     a.href=url;
     a.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
-    if(btn) btn.textContent="rec";
+    stream.getTracks().forEach(tr=>tr.stop());
+    if(btn) btn.textContent="video";
   };
+
   _sdfRecorder.start();
-  if(btn) btn.textContent="stop";
-  setTimeout(()=>{ if(_sdfRecorder&&_sdfRecorder.state==="recording") _sdfRecorder.stop(); },seconds*1000);
+
+  let remaining=seconds;
+  if(btn) btn.textContent="● " + remaining + "s";
+
+  const iv=setInterval(()=>{
+    if(!_sdfRecorder || _sdfRecorder.state!=="recording"){
+      clearInterval(iv);
+      return;
+    }
+
+    remaining--;
+
+    if(remaining > 0){
+      if(btn) btn.textContent="● " + remaining + "s";
+    } else {
+      clearInterval(iv);
+      if(btn) btn.textContent="saving…";
+      _sdfRecorder.stop();
+    }
+  },1000);
 }
 function _bindUtilityControls(){
   document.getElementById("reset")?.addEventListener("click",_resetSdf);
@@ -1162,14 +1293,31 @@ const SDF_FAVKEY="noixzy_sdf_raymarch_favs";
 let _favs=[];
 function _loadFavs(){try{_favs=JSON.parse(localStorage.getItem(SDF_FAVKEY)||"[]");}catch(e){_favs=[];}_renderFavs();}
 function _saveFavs(){try{localStorage.setItem(SDF_FAVKEY,JSON.stringify(_favs));}catch(e){}}
-function _pinFav(){_favs.push(captureState());_saveFavs();_renderFavs();}
+function _pinFav(){
+  _favs.push(captureState());
+  _saveFavs();
+  _renderFavs();
+  const bp=document.getElementById("btnPin");
+  if(bp){ const old=bp.textContent; bp.textContent="★ pinned"; setTimeout(()=>{bp.textContent=old;},1100); }
+}
+function _favSwatch(f){
+  const fp=(f&&Array.isArray(f.P))?f.P:P;
+  const idx=Math.max(0,Math.min(PALETTES.length-1,Math.round(parseFloat(fp[3])||0)));
+  if(f&&f.colorState&&f.colorState.hi) return f.colorState.hi;
+  return PALETTES[idx][3] || PALETTES[idx][2] || "#48dfff";
+}
 function _renderFavs(){
-  const fp=document.getElementById("favPanel");if(!fp)return;fp.innerHTML="";
-  const fb=document.getElementById("favBtns");if(fb)fb.style.display=_favs.length?"grid":"none";
+  const host=document.getElementById("stageFavs")||document.getElementById("favPanel");
+  if(!host)return;
+  host.innerHTML="";
+  const fb=document.getElementById("favBtns");if(fb)fb.style.display="none";
   _favs.forEach((f,i)=>{
-    const b=document.createElement("button");b.textContent="★ "+(i+1);b.style.cssText="font-size:11px;padding:4px;";
-    b.addEventListener("click",()=>{loadState(f);});
-    fp.appendChild(b);
+    const chip=document.createElement("div");
+    chip.className="chip";
+    chip.innerHTML='<span class="sw" style="background:'+_favSwatch(f)+'"></span><b>★'+(i+1)+'</b><span class="x">×</span>';
+    chip.addEventListener("click",e=>{ if(e.target.classList.contains("x"))return; loadState(f); });
+    chip.querySelector(".x").addEventListener("click",e=>{ e.stopPropagation(); _favs.splice(i,1); _saveFavs(); _renderFavs(); });
+    host.appendChild(chip);
   });
 }
 
@@ -1209,10 +1357,222 @@ function _buildAudioUI(){
     row.append(lbl,sel,dep);audioBands.appendChild(row);
   });
   _bindUtilityControls();
-  document.getElementById("btnPin").addEventListener("click",_pinFav);
-  document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
-  document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
 }
+
+
+/* NOIXZY_SDF_BOTTOM_TOOLBAR_FINAL_START */
+
+/* NOIXZY_SDF_VIDEO_COUNTDOWN_UI_START */
+function _sdfVideoCountdownUI(seconds){
+  const btn=document.getElementById("btnRec");
+  if(!btn) return;
+  if(btn.dataset.counting==="1") return;
+
+  btn.dataset.counting="1";
+  let remaining=seconds;
+  btn.textContent="● " + remaining + "s";
+
+  const iv=setInterval(()=>{
+    remaining--;
+    if(remaining>0){
+      btn.textContent="● " + remaining + "s";
+    } else {
+      clearInterval(iv);
+      btn.textContent="saving…";
+      setTimeout(()=>{
+        btn.textContent="video";
+        btn.dataset.counting="";
+      },900);
+    }
+  },1000);
+}
+/* NOIXZY_SDF_VIDEO_COUNTDOWN_UI_END */
+
+function _bindSdfBottomToolbarFinal(){
+  const by=id=>document.getElementById(id);
+  const tools=by("stageTools");
+
+  if(tools && !tools.dataset.finalStop){
+    tools.dataset.finalStop="1";
+    ["pointerdown","pointerup","mousedown","mouseup","touchstart","touchend","click","dblclick","wheel"].forEach(type=>{
+      tools.addEventListener(type,e=>{
+        e.stopPropagation();
+      }, type==="wheel" ? {passive:false} : false);
+    });
+  }
+
+  const pin=by("btnPin");
+  if(pin) pin.onclick=e=>{ e.preventDefault(); e.stopPropagation(); _pinFav(); };
+
+  const exp=by("exportFavs");
+  if(exp) exp.onclick=e=>{
+    e.preventDefault(); e.stopPropagation();
+    const txt=JSON.stringify(_favs||[]);
+    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>_flashConsole("favorites copied"),()=>prompt("favorites:",txt));
+    else prompt("favorites:",txt);
+  };
+
+  const clr=by("clearFavs");
+  if(clr) clr.onclick=e=>{
+    e.preventDefault(); e.stopPropagation();
+    if(!confirm("clear all favorites?")) return;
+    _favs=[];
+    _saveFavs();
+    _renderFavs();
+    _flashConsole("favorites cleared");
+  };
+
+  const copy=by("btnCopy");
+  if(copy) copy.onclick=e=>{ e.preventDefault(); e.stopPropagation(); _copySdfState(); };
+
+  const paste=by("btnPaste");
+  if(paste) paste.onclick=e=>{ e.preventDefault(); e.stopPropagation(); _pasteSdfState(); };
+
+  const audio=by("btnAudio");
+  if(audio) audio.onclick=e=>{
+    e.preventDefault(); e.stopPropagation();
+    const panel=by("audioPanel");
+    if(!panel) return;
+    const open=panel.style.display==="none" || !panel.style.display;
+    panel.style.display=open ? "block" : "none";
+    audio.style.color=open ? "var(--accent)" : "";
+  };
+
+  const thumb=by("btnThumb");
+  if(thumb) thumb.onclick=e=>{ e.preventDefault(); e.stopPropagation(); saveThumb(); };
+
+  const rec=by("btnRec");
+  if(rec) rec.onclick=e=>{
+    e.preventDefault(); e.stopPropagation();
+    const src=by("btnRecDur"), dst=by("recDur");
+    if(src && dst) dst.value=src.value;
+    _recSdf();
+  };
+
+  const save=by("btnSave");
+  if(save) save.onclick=e=>{
+    e.preventDefault(); e.stopPropagation();
+    saveCanvas(`noixzy_${PIECE}_${seed}`, "png");
+  };
+
+  const save2=by("btnSave2x");
+  if(save2) save2.onclick=e=>{ e.preventDefault(); e.stopPropagation(); _saveSdf2x(); };
+}
+/* NOIXZY_SDF_BOTTOM_TOOLBAR_FINAL_END */
+
+
+/* NOIXZY_SDF_PANEL_ORDER_DOM_ONLY_START */
+function _orderSdfPanelLikeGrid(){
+  const panel=document.querySelector(".panel");
+  const consoleBtns=document.querySelector(".panel .consoleBtns");
+  const tools=document.querySelector(".panel .tools");
+  const presetBox=document.querySelector(".panel .presetBox");
+  const seedRow=[...document.querySelectorAll(".panel .row")].find(row=>row.textContent.includes("seed"));
+  const densityRow=[...document.querySelectorAll(".panel .row")].find(row=>row.textContent.includes("density"));
+
+  if(!panel || !consoleBtns || !densityRow) return;
+
+  let anchor=consoleBtns.nextSibling;
+
+  if(tools){
+    panel.insertBefore(tools, anchor);
+    anchor=tools.nextSibling;
+  }
+  if(presetBox){
+    panel.insertBefore(presetBox, anchor);
+    anchor=presetBox.nextSibling;
+  }
+  if(seedRow){
+    panel.insertBefore(seedRow, anchor);
+  }
+}
+/* NOIXZY_SDF_PANEL_ORDER_DOM_ONLY_END */
+
+
+/* NOIXZY_SDF_RANDOM_RESET_ORDER_ONLY_START */
+function _orderSdfRandomResetLikeGrid(){
+  const panel=document.querySelector(".panel");
+  const themeCycle=document.querySelector(".panel .cycleLine");
+  const tools=document.querySelector(".panel .tools");
+  const consoleBtns=document.querySelector(".panel .consoleBtns");
+  const presetBox=document.querySelector(".panel .presetBox");
+
+  if(!panel || !themeCycle || !tools || !consoleBtns) return;
+
+  panel.insertBefore(tools, themeCycle.nextSibling);
+  panel.insertBefore(consoleBtns, tools.nextSibling);
+  if(presetBox) panel.insertBefore(presetBox, consoleBtns.nextSibling);
+}
+/* NOIXZY_SDF_RANDOM_RESET_ORDER_ONLY_END */
+
+
+/* NOIXZY_SDF_VIDEO_BUTTON_OWNS_RECORDING_START */
+function _bindSdfVideoButtonOwnsRecording(){
+  const btn=document.getElementById("btnRec");
+  if(!btn || btn.dataset.videoOwnsRecording==="1") return;
+  btn.dataset.videoOwnsRecording="1";
+
+  btn.addEventListener("click", e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    const canvas=document.querySelector("#stage canvas") || document.querySelector("canvas");
+    if(!canvas || !canvas.captureStream){
+      btn.textContent="unsupported";
+      setTimeout(()=>btn.textContent="video",1200);
+      return;
+    }
+
+    const durEl=document.getElementById("btnRecDur");
+    const seconds=durEl ? parseInt(durEl.value,10) || 4 : 4;
+
+    let stream, recorder, chunks=[];
+    try{
+      stream=canvas.captureStream(30);
+      const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
+        .find(t=>MediaRecorder.isTypeSupported(t)) || '';
+      recorder=new MediaRecorder(stream, mimeType ? {mimeType} : {});
+    }catch(err){
+      btn.textContent="rec error";
+      setTimeout(()=>btn.textContent="video",1200);
+      return;
+    }
+
+    recorder.ondataavailable=ev=>{
+      if(ev.data && ev.data.size>0) chunks.push(ev.data);
+    };
+
+    recorder.onstop=()=>{
+      const blob=new Blob(chunks,{type:"video/webm"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;
+      a.download=`noixzy_sdf_raymarch_${seed}_${seconds}s.webm`;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      stream.getTracks().forEach(tr=>tr.stop());
+      btn.textContent="video";
+    };
+
+    recorder.start();
+
+    let remaining=seconds;
+    btn.textContent="● " + remaining + "s";
+
+    const iv=setInterval(()=>{
+      remaining--;
+      if(remaining>0){
+        btn.textContent="● " + remaining + "s";
+      }else{
+        clearInterval(iv);
+        btn.textContent="saving…";
+        if(recorder.state==="recording") recorder.stop();
+      }
+    },1000);
+  }, true);
+}
+/* NOIXZY_SDF_VIDEO_BUTTON_OWNS_RECORDING_END */
 
 function bindUI(){
   populateStarterPresets();
@@ -1304,6 +1664,7 @@ function bindUI(){
   _loadFavs();
   _initOrbit(document.getElementById("stage"));
   buildNav();
+  _orderSdfRandomResetLikeGrid();
   // cycle theme
   document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
   document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
@@ -1331,12 +1692,22 @@ function bindUI(){
   document.getElementById("btnPaste")?.addEventListener("click",()=>{ const b=document.getElementById("paste"); if(b) b.click(); });
   document.getElementById("btnSave2x")?.addEventListener("click",()=>{ const b=document.getElementById("save2x"); if(b) b.click(); });
   document.getElementById("btnRec")?.addEventListener("click",()=>{ const b=document.getElementById("rec"); if(b) b.click(); });
+  _bindSdfBottomToolbarFinal();
+  _bindSdfVideoButtonOwnsRecording();
+  _orderSdfPanelLikeGrid();
 }
 
 // Ensure initial render on some browsers that may not start p5 loop immediately
 window.addEventListener('load', function(){
   setTimeout(function(){
+    try{ if(typeof _bindSdfVideoButtonOwnsRecording==="function") _bindSdfVideoButtonOwnsRecording(); }catch(e){}
+  }, 120);
+
+  setTimeout(function(){
     try{ if(typeof buildPrims==='function') buildPrims(); if(typeof buildSystem==='function') buildSystem(); /* ensure shader rebuild */ dirty=true; }catch(e){}
+    try{ if(typeof _bindSdfBottomToolbarFinal==="function") _bindSdfBottomToolbarFinal(); }catch(e){}
+    try{ if(typeof _orderSdfPanelLikeGrid==="function") _orderSdfPanelLikeGrid(); }catch(e){}
+    try{ if(typeof _orderSdfRandomResetLikeGrid==="function") _orderSdfRandomResetLikeGrid(); }catch(e){}
   }, 30);
 });
 const ALL_MODULES=[
@@ -1367,6 +1738,15 @@ function buildNav(){
     ["pointerdown","mousedown","mouseup","touchstart"].forEach(type=>{
       rail.addEventListener(type,e=>e.stopPropagation(),true);
     });
+    if(!rail.dataset.wheelBound){
+      rail.dataset.wheelBound="1";
+      rail.addEventListener("wheel",e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const strip=document.getElementById("moduleThumbStrip");
+        if(strip) strip.scrollTop += e.deltaY;
+      },{capture:true,passive:false});
+    }
   }
 
   const strip=document.getElementById("moduleThumbStrip"); if(!strip) return;
