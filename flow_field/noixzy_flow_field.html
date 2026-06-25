@@ -126,7 +126,7 @@ select:hover { border-color:var(--accent); }
       </div>
       <div class="stageToolGroup">
         <button id="thumb">→ thumb</button>
-        <button id="rec">rec</button>
+        <button id="rec">video</button>
         <select id="recDur" title="video duration"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select>
         <button id="save">save png</button>
         <button id="save2x">save 2x</button>
@@ -524,6 +524,7 @@ const ALL_MODULES=[
   {id:"displacement_primitives",title:"displacement primitives"},
   {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
   {id:"metafluid",title:"metafluid"},
+  {id:"moire_field",title:"moire field"},{id:"particle_orbitals",title:"particle orbitals"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -748,6 +749,7 @@ function _audioApply(){
 function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSaved[k]; _audioSaved={}; }
 function buildUI(){
   const host=document.getElementById("groups");
+
   let rg=0;
   GROUPS.forEach(g=>{
     const gp=PARAMS.filter(p=>p.g===g); if(!gp.length) return;
@@ -1035,7 +1037,7 @@ function recordClip(dur=4){
   const btn=document.getElementById('rec');
   if(btn._recording) return;
   const canvas=document.querySelector('#stage canvas');
-  if(!canvas||!canvas.captureStream){btn.textContent='unsupported';setTimeout(()=>btn.textContent='rec',2000);return;}
+  if(!canvas||!canvas.captureStream){btn.textContent='unsupported';setTimeout(()=>btn.textContent='video',2000);return;}
   const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
   const stream=canvas.captureStream(30);
   const rec=new MediaRecorder(stream,mimeType?{mimeType}:{});
@@ -1047,7 +1049,7 @@ function recordClip(dur=4){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a'); a.href=url; a.download='noixzy_'+PIECE+'_'+seed+'.webm'; a.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
-    btn.textContent='rec';
+    btn.textContent='video';
   };
   btn._recording=true;
   rec.start();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // cellular erosion</title>
+<title>noixzy // moire field</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // cellular erosion</h1>
+  <h1>noixzy // moire field</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="cellular_erosion", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="moire_field", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"fill","label":"fill","min":0,"max":1,"step":0.01,"v":0.48},{"k":"iterations","label":"iterations","min":0,"max":1,"step":0.01,"v":0.5},{"k":"pix","label":"pixel size","min":0,"max":1,"step":0.01,"v":0.5},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
+const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.62,"sys":true},{"k":"spacing","label":"spacing","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"rotation","label":"rotation","min":0,"max":1,"step":0.01,"v":0.38,"rr":true},{"k":"warp","label":"warp","min":0,"max":1,"step":0.01,"v":0.34,"rr":true},{"k":"contrast","label":"contrast","min":0,"max":1,"step":0.01,"v":0.72,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.35},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.55,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,41 +392,93 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-let CEG,CED,CEGR,CE_MX;
-function build(){ const G=CEG=200; let grid=new Uint8Array(G*G);
-  const fillP=map(P.fill,0,1,0.35,0.62);
-  for(let y=0;y<G;y++)for(let x=0;x<G;x++){const nn=noise(x*0.05,y*0.05)*0.85+random()*0.15; grid[x+y*G]=nn<fillP?1:0;}
-  const iters=floor(map(P.iterations,0,1,1,8));
-  for(let k=0;k<iters;k++){ const o=new Uint8Array(G*G); for(let y=0;y<G;y++)for(let x=0;x<G;x++){let su=0,c=0;
-    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=G||ny>=G)continue;su+=grid[nx+ny*G];c++;} o[x+y*G]=su>c/2?1:0;} grid=o;}
-  let d=new Float32Array(G*G); for(let i=0;i<d.length;i++)d[i]=grid[i]?9999:0;
-  for(let p=0;p<60;p++){let ch=false; for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const i=x+y*G;if(!grid[i])continue;const m=Math.min(d[i-1],d[i+1],d[i-G],d[i+G])+1;if(m<d[i]){d[i]=m;ch=true;}} if(!ch)break;}
-  let mx=1; for(const v of d)mx=Math.max(mx,v); CEGR=grid; CED=d; CE_MX=mx; }
-function render(g,pal){ const G=CEG;
-  const cells=floor(map(P.pix,0,1,260,6));
-  const img=makeField(G,(x,y)=>{
-    const qx=Math.min(G-1,floor(floor(x/G*cells)/cells*G));
-    const qy=Math.min(G-1,floor(floor(y/G*cells)/cells*G));
-    const i=qx+qy*G; if(!CEGR[i]) return [0,0,0,0]; const t=CED[i]/CE_MX;
-    return [lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)]; });
+function build(){}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2;
   const dep=P.zdepth||0;
-  if(Math.abs(dep)>0.01){
-    const cx=g.width/2, cy=g.height/2;
-    for(let l=0;l<7;l++){
-      const tf=l/6, z=tf*2-1;
-      const scl=1-z*0.38*dep, yOff=z*cy*0.34*dep;
-      g.push(); g.tint(255,Math.floor(lerp(42,185,tf)));
-      g.translate(cx,cy+yOff); g.scale(scl); g.image(img,-g.width/2,-g.height/2,g.width,g.height);
-      g.pop();
+  const dens=Math.floor(map(P.density,0,1,46,210));
+  const spacing=map(P.spacing,0,1,7,28);
+  const rotA=map(P.rotation,0,1,-Math.PI*.33,Math.PI*.33);
+  const rotB=-rotA*0.72+Math.sin(animT*.17)*0.13;
+  const warp=map(P.warp,0,1,0,58);
+  const contrast=map(P.contrast,0,1,35,230);
+  const t=animT*map(P.speed,0,1,0.08,1.3);
+  g.background(
+    Math.min(255,pal[0][0]*1.18+10),
+    Math.min(255,pal[0][1]*1.18+10),
+    Math.min(255,pal[0][2]*1.18+10)
+  );
+
+  // soft stage highlight window
+  const hg=g.drawingContext;
+  const grad=hg.createRadialGradient(cx,cy,Math.min(W,H)*.08,cx,cy,Math.min(W,H)*.58);
+  grad.addColorStop(0,"rgba(255,255,255,0.16)");
+  grad.addColorStop(.42,"rgba(255,255,255,0.08)");
+  grad.addColorStop(1,"rgba(255,255,255,0)");
+  hg.fillStyle=grad;
+  hg.fillRect(0,0,W,H);
+
+  g.noFill();
+  g.blendMode(BLEND);
+  function bandLayer(angle,col,phase,alphaMul,weightMul){
+    const ca=Math.cos(angle),sa=Math.sin(angle);
+    const diag=Math.sqrt(W*W+H*H);
+    const count=dens;
+    g.strokeWeight(map(P.density,0,1,2.8,.55)*weightMul);
+    for(let i=-count;i<=count;i++){
+      const off=i*spacing+Math.sin(i*.19+t+phase)*spacing*.45;
+      const pts=[];
+      const steps=120;
+      for(let s=-steps;s<=steps;s++){
+        const u=s/steps*diag;
+        const v=off;
+        const z=(v/(diag*.72));
+        const scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+        let x=cx+(u*ca-v*sa)*scl;
+        let y=cy+(u*sa+v*ca)*scl+z*cy*.18*dep;
+        const n=noise(x*.0035+phase,y*.0035,t*.22);
+        const wob=(n-.5)*warp;
+        x+=Math.cos(angle+Math.PI/2)*wob;
+        y+=Math.sin(angle+Math.PI/2)*wob;
+        pts.push([x,y]);
+      }
+      const pulse=.55+.45*Math.sin(i*.11+t*1.8+phase);
+      g.stroke(col[0],col[1],col[2],contrast*alphaMul*(.45+.55*pulse));
+      g.beginShape();
+      for(const p of pts) g.curveVertex(p[0],p[1]);
+      g.endShape();
     }
-    g.noTint();
-  } else g.image(img,0,0,g.width,g.height); }
-function heightField(G){ const G0=CEG, out=new Float32Array(G*G);
-  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
-    const si=Math.floor(i*G0/G), sj=Math.floor(j*G0/G), idx=si+sj*G0;
-    if(!CEGR[idx]){ out[i+j*G]=0; continue; }
-    out[i+j*G]=Math.sqrt(CED[idx]/CE_MX); }
-  _edgeMask(out,G); _pxQ(out,G); return out; }
+  }
+  bandLayer(rotA,pal[1],0,0.78,1.22);
+  bandLayer(rotB,pal[2],2.1,0.66,1.05);
+  g.blendMode(ADD);
+  bandLayer(rotA+rotB*.2,pal[2],4.2,0.30,.72);
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const dens=Math.floor(map(P.density,0,1,46,210));
+  const spacing=map(P.spacing,0,1,.018,.065);
+  const rotA=map(P.rotation,0,1,-Math.PI*.33,Math.PI*.33);
+  const rotB=-rotA*.72;
+  const warp=map(P.warp,0,1,0,.08);
+  const sharp=map(P.contrast,0,1,1.2,5.5);
+  const t=animT*map(P.speed,0,1,.08,1.3);
+  function layer(x,y,a,phase){
+    const ca=Math.cos(a),sa=Math.sin(a);
+    const v=(x-.5)*-sa+(y-.5)*ca;
+    const n=noise(x*3.2+phase,y*3.2,t*.22);
+    const vv=v+(n-.5)*warp;
+    const d=Math.abs(Math.sin((vv/spacing+t*.04+phase)*Math.PI));
+    return Math.pow(1-d,sharp);
+  }
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1), y=j/(G-1);
+    const h=Math.max(layer(x,y,rotA,0),layer(x,y,rotB,2.1)*.88,layer(x,y,rotA+rotB*.2,4.2)*.55);
+    out[i+j*G]=Math.min(1,h);
+  }
+  _edgeMask(out,G); return out;
+}
 /* ============================================== */
 
 function setup(){

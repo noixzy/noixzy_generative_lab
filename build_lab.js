@@ -131,7 +131,7 @@ select:hover { border-color:var(--accent); }
       </div>
       <div class="stageToolGroup">
         <button id="thumb">→ thumb</button>
-        <button id="rec">rec</button>
+        <button id="rec">video</button>
         <select id="recDur" title="video duration"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select>
         <button id="save">save png</button>
         <button id="save2x">save 2x</button>
@@ -498,6 +498,7 @@ const ALL_MODULES=[
   {id:"displacement_primitives",title:"displacement primitives"},
   {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
   {id:"metafluid",title:"metafluid"},
+  {id:"moire_field",title:"moire field"},{id:"particle_orbitals",title:"particle orbitals"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -722,6 +723,7 @@ function _audioApply(){
 function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSaved[k]; _audioSaved={}; }
 function buildUI(){
   const host=document.getElementById("groups");
+
   let rg=0;
   GROUPS.forEach(g=>{
     const gp=PARAMS.filter(p=>p.g===g); if(!gp.length) return;
@@ -1009,7 +1011,7 @@ function recordClip(dur=4){
   const btn=document.getElementById('rec');
   if(btn._recording) return;
   const canvas=document.querySelector('#stage canvas');
-  if(!canvas||!canvas.captureStream){btn.textContent='unsupported';setTimeout(()=>btn.textContent='rec',2000);return;}
+  if(!canvas||!canvas.captureStream){btn.textContent='unsupported';setTimeout(()=>btn.textContent='video',2000);return;}
   const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
   const stream=canvas.captureStream(30);
   const rec=new MediaRecorder(stream,mimeType?{mimeType}:{});
@@ -1021,7 +1023,7 @@ function recordClip(dur=4){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a'); a.href=url; a.download='noixzy_'+PIECE+'_'+seed+'.webm'; a.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
-    btn.textContent='rec';
+    btn.textContent='video';
   };
   btn._recording=true;
   rec.start();
@@ -1040,6 +1042,247 @@ function recordClip(dur=4){
 
 // ---------------- per-piece definitions ----------------
 const PIECES=[
+
+{ id:"moire_field", title:"moire field",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.62,sys:true},
+    {k:"spacing",label:"spacing",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"rotation",label:"rotation",min:0,max:1,step:.01,v:.38,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.34,rr:true},
+    {k:"contrast",label:"contrast",min:0,max:1,step:.01,v:.72,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.35},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.55,rr:true}
+  ],
+  code:`
+function build(){}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2;
+  const dep=P.zdepth||0;
+  const dens=Math.floor(map(P.density,0,1,46,210));
+  const spacing=map(P.spacing,0,1,7,28);
+  const rotA=map(P.rotation,0,1,-Math.PI*.33,Math.PI*.33);
+  const rotB=-rotA*0.72+Math.sin(animT*.17)*0.13;
+  const warp=map(P.warp,0,1,0,58);
+  const contrast=map(P.contrast,0,1,35,230);
+  const t=animT*map(P.speed,0,1,0.08,1.3);
+  g.background(
+    Math.min(255,pal[0][0]*1.18+10),
+    Math.min(255,pal[0][1]*1.18+10),
+    Math.min(255,pal[0][2]*1.18+10)
+  );
+
+  // soft stage highlight window
+  const hg=g.drawingContext;
+  const grad=hg.createRadialGradient(cx,cy,Math.min(W,H)*.08,cx,cy,Math.min(W,H)*.58);
+  grad.addColorStop(0,"rgba(255,255,255,0.16)");
+  grad.addColorStop(.42,"rgba(255,255,255,0.08)");
+  grad.addColorStop(1,"rgba(255,255,255,0)");
+  hg.fillStyle=grad;
+  hg.fillRect(0,0,W,H);
+
+  g.noFill();
+  g.blendMode(BLEND);
+  function bandLayer(angle,col,phase,alphaMul,weightMul){
+    const ca=Math.cos(angle),sa=Math.sin(angle);
+    const diag=Math.sqrt(W*W+H*H);
+    const count=dens;
+    g.strokeWeight(map(P.density,0,1,2.8,.55)*weightMul);
+    for(let i=-count;i<=count;i++){
+      const off=i*spacing+Math.sin(i*.19+t+phase)*spacing*.45;
+      const pts=[];
+      const steps=120;
+      for(let s=-steps;s<=steps;s++){
+        const u=s/steps*diag;
+        const v=off;
+        const z=(v/(diag*.72));
+        const scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+        let x=cx+(u*ca-v*sa)*scl;
+        let y=cy+(u*sa+v*ca)*scl+z*cy*.18*dep;
+        const n=noise(x*.0035+phase,y*.0035,t*.22);
+        const wob=(n-.5)*warp;
+        x+=Math.cos(angle+Math.PI/2)*wob;
+        y+=Math.sin(angle+Math.PI/2)*wob;
+        pts.push([x,y]);
+      }
+      const pulse=.55+.45*Math.sin(i*.11+t*1.8+phase);
+      g.stroke(col[0],col[1],col[2],contrast*alphaMul*(.45+.55*pulse));
+      g.beginShape();
+      for(const p of pts) g.curveVertex(p[0],p[1]);
+      g.endShape();
+    }
+  }
+  bandLayer(rotA,pal[1],0,0.78,1.22);
+  bandLayer(rotB,pal[2],2.1,0.66,1.05);
+  g.blendMode(ADD);
+  bandLayer(rotA+rotB*.2,pal[2],4.2,0.30,.72);
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const dens=Math.floor(map(P.density,0,1,46,210));
+  const spacing=map(P.spacing,0,1,.018,.065);
+  const rotA=map(P.rotation,0,1,-Math.PI*.33,Math.PI*.33);
+  const rotB=-rotA*.72;
+  const warp=map(P.warp,0,1,0,.08);
+  const sharp=map(P.contrast,0,1,1.2,5.5);
+  const t=animT*map(P.speed,0,1,.08,1.3);
+  function layer(x,y,a,phase){
+    const ca=Math.cos(a),sa=Math.sin(a);
+    const v=(x-.5)*-sa+(y-.5)*ca;
+    const n=noise(x*3.2+phase,y*3.2,t*.22);
+    const vv=v+(n-.5)*warp;
+    const d=Math.abs(Math.sin((vv/spacing+t*.04+phase)*Math.PI));
+    return Math.pow(1-d,sharp);
+  }
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1), y=j/(G-1);
+    const h=Math.max(layer(x,y,rotA,0),layer(x,y,rotB,2.1)*.88,layer(x,y,rotA+rotB*.2,4.2)*.55);
+    out[i+j*G]=Math.min(1,h);
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"particle_orbitals", title:"particle orbitals",
+  system:[
+    {k:"count",label:"count",min:0,max:1,step:.01,v:.54,sys:true},
+    {k:"radius",label:"radius",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"orbit",label:"orbit speed",min:0,max:1,step:.01,v:.42},
+    {k:"trails",label:"trails",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"attraction",label:"attraction",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"jitter",label:"jitter",min:0,max:1,step:.01,v:.26,rr:true},
+    {k:"thickness",label:"thickness",min:0,max:1,step:.01,v:.36,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.6,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.6,rr:true}
+  ],
+  code:`
+let ORB_PARTS=[];
+function build(){
+  const n=Math.floor(map(P.count,0,1,80,1300));
+  ORB_PARTS=[];
+  for(let i=0;i<n;i++){
+    ORB_PARTS.push({
+      a:random(TWO_PI),
+      r:Math.pow(random(),.62),
+      ph:random(TWO_PI),
+      sp:random(.35,1.8)*(random()<.5?-1:1),
+      lane:Math.floor(random(5)),
+      wob:random(.2,1.4)
+    });
+  }
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2;
+  const dep=P.zdepth||0;
+  const baseR=map(P.radius,0,1,70,Math.min(W,H)*.46);
+  const orb=map(P.orbit,0,1,.08,2.4);
+  const trails=Math.floor(map(P.trails,0,1,4,34));
+  const att=map(P.attraction,0,1,0,1);
+  const jit=map(P.jitter,0,1,0,38);
+  const thick=map(P.thickness,0,1,.45,4.8);
+  const t=animT*orb;
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.noFill();
+  g.blendMode(ADD);
+  const attractors=[
+    [cx+Math.cos(t*.37)*baseR*.26,cy+Math.sin(t*.31)*baseR*.20],
+    [cx+Math.cos(t*.29+2.2)*baseR*.34,cy+Math.sin(t*.41+1.2)*baseR*.28],
+    [cx+Math.cos(t*.23+4.4)*baseR*.18,cy+Math.sin(t*.35+3.8)*baseR*.36]
+  ];
+  for(const p of ORB_PARTS){
+    const lane=(p.lane+1)/5;
+    const rr=baseR*(.18+p.r*.86)*(1+Math.sin(t*.4+p.ph)*.06);
+    const aa=p.a+t*p.sp*(.35+lane)+Math.sin(t*.3+p.ph)*att*.55;
+    const z=(lane-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
+    let x=cx+Math.cos(aa)*rr*scl;
+    let y=cy+Math.sin(aa*(1+lane*.08))*rr*(.62+lane*.38)*scl+z*cy*.13*dep;
+    const at=attractors[p.lane%attractors.length];
+    x=lerp(x,at[0],att*.18*Math.sin(t+p.ph)*.5+att*.11);
+    y=lerp(y,at[1],att*.18*Math.cos(t+p.ph)*.5+att*.11);
+    const n=noise(p.r*8+10,p.ph*2,t*.18);
+    x+=(n-.5)*jit*p.wob;
+    y+=(noise(p.ph*2,p.r*8+20,t*.18)-.5)*jit*p.wob;
+    const col=p.lane%2?pal[1]:pal[2];
+    g.stroke(col[0],col[1],col[2],map(p.r,0,1,70,210));
+    g.strokeWeight(thick*(.35+p.r*.9));
+    g.point(x,y);
+    if(trails>5){
+      g.stroke(col[0],col[1],col[2],map(P.trails,0,1,18,95));
+      g.strokeWeight(thick*.35);
+      g.beginShape();
+      for(let k=0;k<trails;k++){
+        const kk=k/trails;
+        const aaa=aa-kk*(.35+p.r*.9)*p.sp;
+        const rrr=rr*(1-kk*.025);
+        const tx=cx+Math.cos(aaa)*rrr;
+        const ty=cy+Math.sin(aaa*(1+lane*.08))*rrr*(.62+lane*.38);
+        g.curveVertex(tx,ty);
+      }
+      g.endShape();
+    }
+  }
+  g.blendMode(BLEND);
+  g.noFill();
+  for(const at of attractors){
+    const c=pal[1];
+    g.stroke(c[0],c[1],c[2],90);
+    g.strokeWeight(1);
+    g.circle(at[0],at[1],10+att*22);
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const baseR=map(P.radius,0,1,.10,.46);
+  const orb=map(P.orbit,0,1,.08,2.4);
+  const trails=Math.floor(map(P.trails,0,1,4,34));
+  const att=map(P.attraction,0,1,0,1);
+  const jit=map(P.jitter,0,1,0,.045);
+  const thick=map(P.thickness,0,1,.004,.022);
+  const t=animT*orb;
+  const attractors=[
+    [.5+Math.cos(t*.37)*baseR*.26,.5+Math.sin(t*.31)*baseR*.20],
+    [.5+Math.cos(t*.29+2.2)*baseR*.34,.5+Math.sin(t*.41+1.2)*baseR*.28],
+    [.5+Math.cos(t*.23+4.4)*baseR*.18,.5+Math.sin(t*.35+3.8)*baseR*.36]
+  ];
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))), i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))), j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x, dy=jj/(G-1)-y, d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){ const q=1-d/r; out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val); }
+    }
+  };
+  for(const p of ORB_PARTS){
+    const lane=(p.lane+1)/5;
+    const rr=baseR*(.18+p.r*.86)*(1+Math.sin(t*.4+p.ph)*.06);
+    const aa=p.a+t*p.sp*(.35+lane)+Math.sin(t*.3+p.ph)*att*.55;
+    let x=.5+Math.cos(aa)*rr;
+    let y=.5+Math.sin(aa*(1+lane*.08))*rr*(.62+lane*.38);
+    const at=attractors[p.lane%attractors.length];
+    x=lerp(x,at[0],att*.18*Math.sin(t+p.ph)*.5+att*.11);
+    y=lerp(y,at[1],att*.18*Math.cos(t+p.ph)*.5+att*.11);
+    const n=noise(p.r*8+10,p.ph*2,t*.18);
+    x+=(n-.5)*jit*p.wob;
+    y+=(noise(p.ph*2,p.r*8+20,t*.18)-.5)*jit*p.wob;
+    stamp(x,y,thick*(.45+p.r*.9),.45+p.r*.55);
+    for(let k=0;k<trails;k+=2){
+      const kk=k/Math.max(1,trails);
+      const aaa=aa-kk*(.35+p.r*.9)*p.sp;
+      const tx=.5+Math.cos(aaa)*rr*(1-kk*.025);
+      const ty=.5+Math.sin(aaa*(1+lane*.08))*rr*(.62+lane*.38)*(1-kk*.025);
+      stamp(tx,ty,thick*.45*(1-kk*.55),(.25+p.r*.45)*(1-kk));
+    }
+  }
+  _edgeMask(out,G); return out;
+}` },
+
 { id:"flow_field", title:"flow field",
   system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.65},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
