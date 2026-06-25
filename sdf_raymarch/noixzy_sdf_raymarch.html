@@ -166,6 +166,30 @@
       <button id="pause" type="button">pause</button>
       <button id="save" type="button">save png</button>
       <button id="thumb" type="button">→ thumb</button>
+      <button id="btnPin">★ pin</button>
+      <button id="btnAudio">audio</button>
+    </div>
+    <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#0a0a0a;border-radius:6px;font-size:12px;">
+      <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:#666;transition:border-color .2s;">
+        drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span>
+        <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
+      </div>
+      <div id="audioStatus" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
+        <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+        <span id="audioFilename" style="color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
+        <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+      </div>
+      <div style="color:var(--accent);margin-bottom:6px;letter-spacing:.08em;">audio → params</div>
+      <div id="audioBands"></div>
+    </div>
+    <div id="favPanel" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+    <div class="tools" id="favBtns" style="display:none;">
+      <button id="exportFavs">export ★</button>
+      <button id="clearFavs">clear ★</button>
+    </div>
+    <div class="moduleNav">
+      <div class="label">all modules</div>
+      <div class="thumbRow" id="moduleThumbStrip"></div>
     </div>
     <div class="hint">density = object count · spread = primitive spacing<br>
       blob size = primitive scale · blend = smooth-min gooeyness</div>
@@ -900,6 +924,7 @@ function buildPrims(){
 }
 
 function draw(){
+  _audioApply();
   const t = running ? (millis()-t0)/1000 : pauseT;
   shader(theShader);
   theShader.setUniform("u_res", [width, height]);
@@ -933,9 +958,102 @@ function draw(){
   noStroke();
   // explicit normalized-device fullscreen quad (aspect-independent)
   quad(-1,-1, 1,-1, 1,1, -1,1);
+  _audioRestore();
 }
 
 let pauseT = 0;
+
+let audioCtx,analyser,audioData,audioActive=false;
+const ABANDS={bass:0,mid:0,high:0,presence:0};
+const AMAP={bass:'p5',mid:'p2',high:'p6',presence:'p4'};
+const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
+let _audioSaved={};
+const _pAudioParams=[
+  {k:'p0',sid:'p0',label:'density'},{k:'p1',sid:'p1',label:'blend'},
+  {k:'p2',sid:'p2',label:'turbulence'},{k:'p4',sid:'p4',label:'spin'},
+  {k:'p5',sid:'p5',label:'extrude'},{k:'p6',sid:'p6',label:'displace'},
+  {k:'p7',sid:'p7',label:'spread'},{k:'p8',sid:'p8',label:'blob size'},
+  {k:'p9',sid:'p9',label:'ao'},{k:'pDist',sid:'pDist',label:'distance'},
+  {k:'pElev',sid:'pElev',label:'elevation'},
+];
+
+function _audioApply(){
+  _audioSaved={};
+  if(!audioActive||!analyser) return;
+  analyser.getByteFrequencyData(audioData);
+  const N=audioData.length;
+  const avg=(s,e)=>{let v=0;for(let i=s;i<e;i++)v+=audioData[i];return v/((e-s)*255);};
+  ABANDS.bass=avg(0,4);ABANDS.mid=avg(4,20);ABANDS.high=avg(20,60);ABANDS.presence=avg(0,N);
+  for(const band of['bass','mid','high','presence']){
+    const k=AMAP[band];if(!k)continue;
+    const cfg=P_CONTROLS[k];if(!cfg)continue;
+    const idx=cfg.index;
+    _audioSaved[k]=P[idx];
+    const el=document.getElementById(k);
+    const mn=el?parseFloat(el.min):0,mx=el?parseFloat(el.max):1;
+    P[idx]=Math.min(mx,Math.max(mn,P[idx]+ABANDS[band]*ADEPTH[band]*(mx-mn)));
+  }
+}
+function _audioRestore(){
+  for(const k of Object.keys(_audioSaved)){const cfg=P_CONTROLS[k];if(cfg)P[cfg.index]=_audioSaved[k];}
+  _audioSaved={};
+}
+
+const SDF_FAVKEY="noixzy_sdf_raymarch_favs";
+let _favs=[];
+function _loadFavs(){try{_favs=JSON.parse(localStorage.getItem(SDF_FAVKEY)||"[]");}catch(e){_favs=[];}_renderFavs();}
+function _saveFavs(){try{localStorage.setItem(SDF_FAVKEY,JSON.stringify(_favs));}catch(e){}}
+function _pinFav(){_favs.push(captureState());_saveFavs();_renderFavs();}
+function _renderFavs(){
+  const fp=document.getElementById("favPanel");if(!fp)return;fp.innerHTML="";
+  const fb=document.getElementById("favBtns");if(fb)fb.style.display=_favs.length?"grid":"none";
+  _favs.forEach((f,i)=>{
+    const b=document.createElement("button");b.textContent="★ "+(i+1);b.style.cssText="font-size:11px;padding:4px;";
+    b.addEventListener("click",()=>{loadState(f);});
+    fp.appendChild(b);
+  });
+}
+
+function _buildAudioUI(){
+  const btnAudio=document.getElementById("btnAudio");
+  const audioPanel=document.getElementById("audioPanel");
+  const audioDropZone=document.getElementById("audioDropZone");
+  const audioFileInput=document.getElementById("audioFileInput");
+  const audioStatus=document.getElementById("audioStatus");
+  const audioPlayPause=document.getElementById("audioPlayPause");
+  const audioFilename=document.getElementById("audioFilename");
+  const btnMic=document.getElementById("btnMic");
+  const audioBands=document.getElementById("audioBands");
+  let audioSource=null,audioBuffer=null,audioPlaying=false,micStream=null;
+  function _ensureCtx(){if(!audioCtx){audioCtx=new AudioContext();analyser=audioCtx.createAnalyser();analyser.fftSize=512;audioData=new Uint8Array(analyser.frequencyBinCount);}if(audioCtx.state==="suspended")audioCtx.resume();}
+  async function _loadFile(file){_ensureCtx();if(audioSource){try{audioSource.stop();}catch(e){}audioSource=null;}const ab=await file.arrayBuffer();audioBuffer=await audioCtx.decodeAudioData(ab);audioFilename.textContent=file.name;audioStatus.style.display="flex";_playBuffer();}
+  function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
+  audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
+  const _lfd=async f=>{if(f&&f.type.startsWith("audio/"))await _loadFile(f);};
+  audioDropZone.addEventListener("click",()=>audioFileInput.click());
+  audioFileInput.addEventListener("change",e=>{if(e.target.files[0])_lfd(e.target.files[0]);});
+  audioDropZone.addEventListener("dragover",e=>{e.preventDefault();audioDropZone.style.borderColor="var(--accent)";});
+  audioDropZone.addEventListener("dragleave",()=>{audioDropZone.style.borderColor="#444";});
+  audioDropZone.addEventListener("drop",e=>{e.preventDefault();audioDropZone.style.borderColor="#444";_lfd(e.dataTransfer.files[0]);});
+  btnMic.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
+  btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+  ['bass','mid','high','presence'].forEach(band=>{
+    const row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:6px;margin-bottom:5px;";
+    const lbl=document.createElement("span");lbl.textContent=band;lbl.style.cssText="width:68px;color:#666;";
+    const sel=document.createElement("select");sel.style.cssText="flex:1;background:#1a1a1d;color:#e8e8ea;border:1px solid #333;border-radius:4px;padding:2px 4px;font-size:11px;";
+    const none=document.createElement("option");none.value="";none.textContent="— off —";sel.appendChild(none);
+    _pAudioParams.forEach(p=>{const o=document.createElement("option");o.value=p.k;o.textContent=p.label;sel.appendChild(o);});
+    if(AMAP[band])sel.value=AMAP[band];
+    sel.addEventListener("change",()=>{AMAP[band]=sel.value||null;});
+    const dep=document.createElement("input");dep.type="range";dep.min=0;dep.max=1;dep.step=.01;dep.value=0.5;dep.style.cssText="width:55px;";
+    dep.addEventListener("input",()=>{ADEPTH[band]=parseFloat(dep.value);});
+    row.append(lbl,sel,dep);audioBands.appendChild(row);
+  });
+  document.getElementById("btnPin").addEventListener("click",_pinFav);
+  document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
+  document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
+}
+
 function bindUI(){
   populateStarterPresets();
   syncPControls();
@@ -1028,6 +1146,9 @@ function bindUI(){
     saveCanvas(`noixzy_${PIECE}_${seed}`, "png");
   });
   document.getElementById("thumb").addEventListener("click", saveThumb);
+  _buildAudioUI();
+  _loadFavs();
+  buildNav();
 }
 
 // Ensure initial render on some browsers that may not start p5 loop immediately
