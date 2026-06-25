@@ -13,6 +13,7 @@ body { display:flex; flex-direction:column; }
 /* App layout: stage (flexible) + panel (fixed-width side panel). */
 .app { display:flex; flex-direction:row; align-items:stretch; flex:1; min-height:0; }
 .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+.stage.transparentPreview { background:#fff; }
 .stage canvas { display:block; width:100%; height:100%; }
 .panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
@@ -122,6 +123,7 @@ select:hover { border-color:var(--accent); }
       </div>
       <div class="stageToolGroup">
         <button id="btnAudio">audio</button>
+        <button id="btnTransparentBg" type="button">bg alpha</button>
         <button id="clearFavs">clear ★</button>
       </div>
       <div class="stageToolGroup">
@@ -208,6 +210,7 @@ select:hover { border-color:var(--accent); }
 <script>
 let W=820,H=820; const PIECE="radial_noise", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
+let transparentBg=false;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
 let audioCtx,analyser,audioData,audioActive=false;
@@ -677,6 +680,21 @@ function mouseWheel(event){
 }
 
 function buildSystem(){ randomSeed(seed); noiseSeed(seed); build(); dirty=true; }
+function _runWithoutGraphicBackground(fn){
+  const targets=[raw,scene,glowBuf];
+  const saved=[];
+  try{
+    for(const g of targets){
+      if(g && typeof g.background==="function"){
+        saved.push([g,g.background]);
+        g.background=function(){};
+      }
+    }
+    return fn();
+  } finally {
+    for(const pair of saved) pair[0].background=pair[1];
+  }
+}
 function renderScene(){
   randomSeed(seed); noiseSeed(seed);
   raw.clear();
@@ -685,9 +703,9 @@ function renderScene(){
     const palLocal = getPal();
     if(typeof heightField === 'function' && (Math.abs(P.extrude||0)>0.01||(P.height||0)>0.01)){ const G=220; const heights = heightField(G);
       if(heights && heights.length===G*G){ renderHeightfield(raw,heights,G,palLocal,{}); }
-      else { render(raw,palLocal); }
-    }else{ render(raw,palLocal); }
-  }catch(e){ console.warn('heightfield render failed, falling back to flat render',e); render(raw, getPal()); }
+      else { if(transparentBg) _runWithoutGraphicBackground(()=>render(raw,palLocal)); else render(raw,palLocal); }
+    }else{ if(transparentBg) _runWithoutGraphicBackground(()=>render(raw,palLocal)); else render(raw,palLocal); }
+  }catch(e){ console.warn('heightfield render failed, falling back to flat render',e); if(transparentBg) _runWithoutGraphicBackground(()=>render(raw, getPal())); else render(raw, getPal()); }
   // MATERIAL sheen — applied to forms only via source-atop (no bleed onto background)
   const sheenV=Math.min(1,P.metallic*(1-P.rough)+P.sheen);
   if(sheenV>0.01){ const dc=raw.drawingContext; dc.save(); dc.globalCompositeOperation='source-atop'; dc.globalAlpha=Math.min(1,0.6*sheenV); dc.drawImage(specTex.elt,0,0,raw.width,raw.height); dc.restore(); }
@@ -721,7 +739,7 @@ function draw(){
   if(dirty || animate){ renderScene(); dirty=false; }
   _audioRestore();
   const pal=getPal();
-  background(pal[0][0],pal[0][1],pal[0][2]);
+  if(transparentBg) clear(); else background(pal[0][0],pal[0][1],pal[0][2]);
   // FRAME + MOTION transform applied to the baked scene
   const frameDrift=(PIECE=="reaction_diffusion")?0:P.drift;
   const dz=1+(frameDrift>0?Math.sin(time*0.6)*0.045*frameDrift:0);
@@ -814,6 +832,22 @@ function _audioApply(){
   }
 }
 function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSaved[k]; _audioSaved={}; }
+function bindTransparentBgToggle(){
+  const btn=document.getElementById("btnTransparentBg");
+  const stage=document.getElementById("stage");
+  if(!btn) return;
+  const sync=()=>{
+    btn.textContent=transparentBg ? "bg alpha ✓" : "bg alpha";
+    btn.style.color=transparentBg ? "var(--accent)" : "";
+    if(stage) stage.classList.toggle("transparentPreview", transparentBg);
+    dirty=true;
+  };
+  btn.addEventListener("click",()=>{
+    transparentBg=!transparentBg;
+    sync();
+  });
+  sync();
+}
 function buildUI(){
   const host=document.getElementById("groups");
 
@@ -954,6 +988,7 @@ function buildUI(){
   if(accEl) accEl.addEventListener("input",e=>{colorState.acc=e.target.value;dirty=true;});
   if(inkEl) inkEl.addEventListener("input",e=>{colorState.ink=e.target.value;dirty=true;});
   initColorState(P.pal); syncColorUI();
+  bindTransparentBgToggle();
   const tSel=document.getElementById('themeSelect');
   if(tSel){
     tSel.addEventListener('change',e=>applyTheme(e.target.value));
