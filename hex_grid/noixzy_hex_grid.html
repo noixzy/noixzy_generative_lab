@@ -391,7 +391,7 @@ function saveThumb(){
 function setup(){
   const stage=document.getElementById("stage");
   const c=createCanvas(stage.clientWidth,stage.clientHeight);
-  c.parent(stage); _pCanvas=c.elt;
+  c.parent(stage); stage.insertBefore(c.elt, stage.firstChild); _pCanvas=c.elt;
   colorMode(RGB,255);
   noStroke();
   t0=millis();
