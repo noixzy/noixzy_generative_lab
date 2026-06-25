@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // cellular erosion</title>
+<title>noixzy // cellular bloom</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // cellular erosion</h1>
+  <h1>noixzy // cellular bloom</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="cellular_erosion", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="cellular_bloom", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"fill","label":"fill","min":0,"max":1,"step":0.01,"v":0.48},{"k":"iterations","label":"iterations","min":0,"max":1,"step":0.01,"v":0.5},{"k":"pix","label":"pixel size","min":0,"max":1,"step":0.01,"v":0.5},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
+const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.5,"sys":true},{"k":"radius","label":"radius","min":0,"max":1,"step":0.01,"v":0.52,"rr":true},{"k":"growth","label":"growth","min":0,"max":1,"step":0.01,"v":0.46,"rr":true},{"k":"softness","label":"softness","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"glow","label":"glow","min":0,"max":1,"step":0.01,"v":0.6,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.28},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.6,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.62,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,41 +392,54 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-let CEG,CED,CEGR,CE_MX;
-function build(){ const G=CEG=200; let grid=new Uint8Array(G*G);
-  const fillP=map(P.fill,0,1,0.35,0.62);
-  for(let y=0;y<G;y++)for(let x=0;x<G;x++){const nn=noise(x*0.05,y*0.05)*0.85+random()*0.15; grid[x+y*G]=nn<fillP?1:0;}
-  const iters=floor(map(P.iterations,0,1,1,8));
-  for(let k=0;k<iters;k++){ const o=new Uint8Array(G*G); for(let y=0;y<G;y++)for(let x=0;x<G;x++){let su=0,c=0;
-    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=G||ny>=G)continue;su+=grid[nx+ny*G];c++;} o[x+y*G]=su>c/2?1:0;} grid=o;}
-  let d=new Float32Array(G*G); for(let i=0;i<d.length;i++)d[i]=grid[i]?9999:0;
-  for(let p=0;p<60;p++){let ch=false; for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const i=x+y*G;if(!grid[i])continue;const m=Math.min(d[i-1],d[i+1],d[i-G],d[i+G])+1;if(m<d[i]){d[i]=m;ch=true;}} if(!ch)break;}
-  let mx=1; for(const v of d)mx=Math.max(mx,v); CEGR=grid; CED=d; CE_MX=mx; }
-function render(g,pal){ const G=CEG;
-  const cells=floor(map(P.pix,0,1,260,6));
-  const img=makeField(G,(x,y)=>{
-    const qx=Math.min(G-1,floor(floor(x/G*cells)/cells*G));
-    const qy=Math.min(G-1,floor(floor(y/G*cells)/cells*G));
-    const i=qx+qy*G; if(!CEGR[i]) return [0,0,0,0]; const t=CED[i]/CE_MX;
-    return [lerp(pal[1][0],pal[2][0],t),lerp(pal[1][1],pal[2][1],t),lerp(pal[1][2],pal[2][2],t)]; });
-  const dep=P.zdepth||0;
-  if(Math.abs(dep)>0.01){
-    const cx=g.width/2, cy=g.height/2;
-    for(let l=0;l<7;l++){
-      const tf=l/6, z=tf*2-1;
-      const scl=1-z*0.38*dep, yOff=z*cy*0.34*dep;
-      g.push(); g.tint(255,Math.floor(lerp(42,185,tf)));
-      g.translate(cx,cy+yOff); g.scale(scl); g.image(img,-g.width/2,-g.height/2,g.width,g.height);
-      g.pop();
+let BLOOMS=[];
+function build(){
+  const n=Math.floor(map(P.density,0,1,18,120));
+  BLOOMS=[];
+  for(let i=0;i<n;i++) BLOOMS.push({x:random(.04,.96),y:random(.04,.96),r:random(.4,1),ph:random(TWO_PI),kind:random()<.5?0:1});
+}
+function _bloomSize(b,t){
+  return map(P.radius,0,1,.012,.075)*b.r*(.65+.35*Math.sin(t+b.ph)*map(P.growth,0,1,.2,1));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  g.background(Math.min(255,pal[0][0]*1.12+10),Math.min(255,pal[0][1]*1.12+10),Math.min(255,pal[0][2]*1.12+10));
+  g.blendMode(ADD);
+  g.noStroke();
+  for(const b of BLOOMS){
+    const v=noise(b.x*5,b.y*5,t*.18);
+    const z=(v-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+    const px=cx+(b.x*W-cx)*scl;
+    const py=cy+(b.y*H-cy)*scl+z*cy*.10*dep;
+    const r=_bloomSize(b,t)*Math.min(W,H);
+    const col=b.kind?pal[2]:pal[1];
+    const rings=Math.floor(map(P.softness,0,1,3,10));
+    for(let k=rings;k>=1;k--){
+      const q=k/rings;
+      g.fill(Math.min(255,col[0]*1.2+20),Math.min(255,col[1]*1.2+20),Math.min(255,col[2]*1.2+20),map(P.glow,0,1,22,95)*q);
+      g.circle(px,py,r*q*2.2);
     }
-    g.noTint();
-  } else g.image(img,0,0,g.width,g.height); }
-function heightField(G){ const G0=CEG, out=new Float32Array(G*G);
-  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
-    const si=Math.floor(i*G0/G), sj=Math.floor(j*G0/G), idx=si+sj*G0;
-    if(!CEGR[idx]){ out[i+j*G]=0; continue; }
-    out[i+j*G]=Math.sqrt(CED[idx]/CE_MX); }
-  _edgeMask(out,G); _pxQ(out,G); return out; }
+    g.fill(255,255,255,map(P.glow,0,1,20,80));
+    g.circle(px,py,r*.28);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  for(const b of BLOOMS){
+    const r=_bloomSize(b,t);
+    const i0=Math.max(0,Math.floor((b.x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((b.x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((b.y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((b.y+r)*(G-1)));
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){
+      const dx=i/(G-1)-b.x,dy=j/(G-1)-b.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[i+j*G]=Math.min(1,out[i+j*G]+Math.pow(q,map(P.softness,0,1,3,.8))*.8);}
+    }
+  }
+  _edgeMask(out,G); return out;
+}
 /* ============================================== */
 
 function setup(){
