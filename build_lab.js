@@ -68,15 +68,31 @@ select:hover { border-color:var(--accent); }
 .navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
 .navBar a:hover { color:var(--accent); }
 .navCurrent { color:var(--accent) !important; }
-/* Thumb strip */
-.moduleNav { margin-top:12px; padding-top:10px; border-top:1px solid #1e1e21; }
-.moduleNav .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
-.thumbRow { display:flex; gap:5px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+/* Stage overlay — bottom toolbar */
+.stageTools { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); z-index:21; display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:12px; background:rgba(0,0,0,0.52); border:1px solid rgba(255,255,255,0.14); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+.stageToolGroup { display:flex; align-items:center; gap:6px; }
+.stageTools button,.stageTools select { min-height:30px; background:rgba(0,0,0,0.50); border-color:rgba(255,255,255,0.14); padding:4px 8px; margin:0; white-space:nowrap; }
+.stageTools select { width:auto; min-width:52px; }
+/* Stage overlay — left module rail */
+.stageThumbs { pointer-events:auto; position:absolute; left:14px; top:50%; transform:translateY(-50%); z-index:20; width:70px; max-height:min(640px,74vh); padding:8px; border-radius:12px; background:rgba(0,0,0,0.50); border:1px solid rgba(255,255,255,0.14); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); opacity:.42; transition:opacity .22s ease; display:flex; flex-direction:column; gap:6px; }
+.stageThumbs:hover { opacity:1; }
+.stageThumbs .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:2px; }
+.thumbScrollBtn { border:1px solid rgba(255,255,255,0.18); background:rgba(0,0,0,.46); color:var(--accent); border-radius:5px; height:22px; cursor:pointer; padding:0; }
+.thumbScrollBtn:hover { border-color:var(--accent); }
+.thumbRow { display:flex; flex-direction:column; gap:6px; max-height:min(500px,58vh); overflow-y:auto; overflow-x:hidden; padding:0; scrollbar-width:none; }
 .thumbRow::-webkit-scrollbar { display:none; }
 .navThumb { flex:0 0 auto; opacity:.55; transition:opacity .15s; }
-.navThumb:hover,.navThumb.active { opacity:1; }
-.navThumb img { width:46px; height:34px; object-fit:cover; border-radius:3px; border:1px solid #2a2a2d; display:block; }
-.navThumb.active img { border-color:var(--accent); }
+.navThumb:hover,.navThumb.active,.navThumb.selected { opacity:1; }
+.navThumb img { width:50px; height:38px; object-fit:cover; border-radius:4px; border:1px solid #2a2a2d; display:block; }
+.navThumb.active img { border-color:#fff; box-shadow:0 0 0 1px rgba(255,255,255,0.5); }
+.navThumb.selected img { border-color:var(--accent); }
+/* Panel console controls */
+.cycleLine { display:grid; grid-template-columns:30px minmax(0,1fr) 30px; gap:6px; align-items:center; margin-bottom:8px; }
+.cycleLine select { width:100%; margin:0; }
+.cycleBtn { min-width:30px; padding-left:0; padding-right:0; }
+.consoleBtns { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+.consoleBtns button { flex:1 1 calc(50% - 6px); min-width:76px; }
+.presetStatus { min-height:15px; color:var(--dim); font-size:11px; letter-spacing:.04em; margin-bottom:4px; }
 </style>
 </head>
 <body>
@@ -86,23 +102,56 @@ select:hover { border-color:var(--accent); }
   <a id="navNext" href="#">next →</a>
 </div>
 <div class="app">
-  <div class="stage" id="stage"></div>
+  <div class="stage" id="stage">
+    <div class="stageTools" id="stageTools">
+      <div class="stageToolGroup">
+        <button id="pin">★ pin</button>
+        <button id="copyP">copy</button>
+        <button id="pasteP">paste</button>
+      </div>
+      <div class="stageToolGroup">
+        <button id="btnAudio">audio</button>
+        <button id="exportFavs">export ★</button>
+        <button id="clearFavs">clear ★</button>
+      </div>
+      <div class="stageToolGroup">
+        <button id="thumb">→ thumb</button>
+        <button id="rec">rec</button>
+        <select id="recDur" title="video duration"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select>
+        <button id="save">save png</button>
+        <button id="save2x">save 2x</button>
+        <button id="savePBR">pbr</button>
+      </div>
+    </div>
+    <div class="stageThumbs" id="stageThumbs">
+      <div class="label">modules</div>
+      <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+      <div class="thumbRow" id="moduleThumbStrip"></div>
+      <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    </div>
+  </div>
   <div class="panel">
   <h1>noixzy // ${cfg.title}</h1>
+  <div class="cycleLine">
+    <button id="themePrev" class="cycleBtn">‹</button>
+    <select id="themeSelect"></select>
+    <button id="themeNext" class="cycleBtn">›</button>
+  </div>
+  <div class="consoleBtns">
+    <button id="randomAll">randomize</button>
+    <button id="randomColor">rnd color</button>
+    <button id="newSeed">new seed</button>
+    <button id="reset">reset</button>
+    <button id="pause">pause</button>
+  </div>
+  <div class="seed"><input id="seedField" type="number" value="1"><span id="seedRead" style="opacity:.55;font-size:11px;">1</span></div>
+  <div id="presetStatus" class="presetStatus"></div>
   <div id="groups"></div>
-  <details id="themeDet" open><summary>theme</summary>
-    <div style="display:flex;gap:8px;align-items:center;margin:8px 0">
-      <select id="themeSelect" style="flex:1"></select>
-      <span style="opacity:.45;font-size:11px">[ / ]</span>
-    </div>
-  </details>
   <details id="colorDet"><summary>color</summary>
     <div class="colorRow"><label>bg</label><input type="color" id="p_bgc"></div>
     <div class="colorRow"><label>accent</label><input type="color" id="p_acc"></div>
     <div class="colorRow"><label>ink</label><input type="color" id="p_ink"></div>
   </details>
-  <div class="seed"><input id="seedField" type="number" value="1"><button id="newSeed">new seed</button></div>
-  <div class="btns"><button id="pin">★ pin</button><button id="reset">reset</button><button id="copyP">copy</button><button id="pasteP">paste</button><button id="pause">pause</button><button id="save">save png</button><button id="save2x">save 2x</button><button id="savePBR">pbr pack</button><button id="rec">rec</button><button id="thumb">→ thumb</button><select id="recDur"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select><button id="btnAudio">audio</button></div>
   <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#111;border-radius:6px;font-size:12px;">
     <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:var(--dim);transition:border-color .2s;">
       drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span>
@@ -117,9 +166,7 @@ select:hover { border-color:var(--accent); }
     <div id="audioBands"></div>
   </div>
   <div id="favs" class="favs"></div>
-  <div class="btns" id="favBtns" style="display:none;"><button id="exportFavs">export ★</button><button id="clearFavs">clear ★</button></div>
-  <div class="read">seed: <span id="seedRead">1</span> &nbsp; <span style="opacity:.5">[h] hide</span></div>
-  <div class="moduleNav"><div class="label">modules</div><div class="thumbRow" id="moduleThumbStrip"></div></div>
+  <div class="read" style="margin-top:10px;opacity:.4;font-size:11px;">h hide · s save · ? help</div>
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
@@ -399,6 +446,7 @@ const ALL_MODULES=[
   {id:"gyroid",title:"gyroid"},{id:"displacement",title:"displacement"},
   {id:"displacement_primitives",title:"displacement primitives"},
   {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
+  {id:"metafluid",title:"metafluid"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -408,21 +456,49 @@ const ALL_MODULES=[
   {id:"hex_grid",title:"hex grid"},{id:"rose_curve",title:"rose curve"},
   {id:"lissajous_mesh",title:"lissajous mesh"},{id:"torus_knot",title:"torus knot"},
 ];
+function _flashConsole(msg){ const el=document.getElementById("presetStatus"); if(el) el.textContent=msg; }
 function buildNav(){
   const idx=ALL_MODULES.findIndex(m=>m.id===PIECE);
-  if(idx<0) return;
-  const prev=ALL_MODULES[(idx-1+ALL_MODULES.length)%ALL_MODULES.length];
-  const next=ALL_MODULES[(idx+1)%ALL_MODULES.length];
+  const safeIdx=idx>=0?idx:0;
+  const prev=ALL_MODULES[(safeIdx-1+ALL_MODULES.length)%ALL_MODULES.length];
+  const next=ALL_MODULES[(safeIdx+1)%ALL_MODULES.length];
   const np=document.getElementById("navPrev"); if(np){ np.href="../"+prev.id+"/noixzy_"+prev.id+".html"; np.title=prev.title; }
   const nn=document.getElementById("navNext"); if(nn){ nn.href="../"+next.id+"/noixzy_"+next.id+".html"; nn.title=next.title; }
+
+  const rail=document.getElementById("stageThumbs");
+  if(rail){
+    ["pointerdown","mousedown","mouseup","touchstart"].forEach(type=>{
+      rail.addEventListener(type,e=>e.stopPropagation(),true);
+    });
+  }
+
   const strip=document.getElementById("moduleThumbStrip"); if(!strip) return;
+  strip.innerHTML="";
+  let railSelected=safeIdx;
+
+  function selectThumb(i){
+    const links=[...strip.querySelectorAll(".navThumb")];
+    if(!links.length) return;
+    railSelected=(i+links.length)%links.length;
+    links.forEach(a=>a.classList.remove("selected"));
+    links[railSelected].classList.add("selected");
+    links[railSelected].scrollIntoView({block:"nearest",inline:"nearest",behavior:"smooth"});
+  }
+
   ALL_MODULES.forEach(m=>{
     const a=document.createElement("a"); a.href="../"+m.id+"/noixzy_"+m.id+".html"; a.title=m.title;
     a.className="navThumb"+(m.id===PIECE?" active":"");
+    a.onclick=e=>{ e.preventDefault(); e.stopPropagation(); window.location.href=a.href; };
     const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
     a.appendChild(img); strip.appendChild(a);
   });
-  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){ const off=el.offsetLeft-strip.offsetWidth/2+el.offsetWidth/2; strip.scrollLeft=Math.max(0,off); } },50);
+
+  const up=document.getElementById("thumbUp");
+  const dn=document.getElementById("thumbDown");
+  if(up){ up.onclick=e=>{ e.preventDefault(); e.stopPropagation(); selectThumb(railSelected-1); }; }
+  if(dn){ dn.onclick=e=>{ e.preventDefault(); e.stopPropagation(); selectThumb(railSelected+1); }; }
+
+  setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){ el.scrollIntoView({block:"center",inline:"nearest"}); } },50);
 }
 let _dragOnCanvas=false;
 function mousePressed(){
@@ -511,7 +587,7 @@ function draw(){
   if(P.glow>0.01){ blendMode(ADD); tint(255,110*P.glow); image(glowBuf,0,0,W,H); blendMode(BLEND); }
   pop(); noTint();
   if(P.vig>0.01){ push(); tint(255,255*P.vig); image(vigTex,0,0,W,H); pop(); noTint(); }
-  select("#seedRead").html(seed);
+  const _sr=document.getElementById("seedRead"); if(_sr) _sr.textContent=seed;
 }
 
 function normalizePastedP(src){
@@ -608,9 +684,10 @@ function buildUI(){
         if(p.sys) buildSystem(); else dirty=true; });
       fmt(); row.append(lab,inp); det.appendChild(row); });
     host.appendChild(det); });
-  document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;buildSystem();});
-  document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;buildSystem();});
+  document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;document.getElementById("seedRead").textContent=seed;buildSystem();});
+  document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;document.getElementById("seedRead").textContent=seed;buildSystem();_flashConsole("seed "+seed);});
   document.getElementById("pause").addEventListener("click",togglePause);
+  document.getElementById("reset").addEventListener("click",()=>{const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});_flashConsole("reset");});
   document.getElementById("save").addEventListener("click",triggerSavePNG);
   document.getElementById("save2x").addEventListener("click",save2xPNG);
   document.getElementById("savePBR").addEventListener("click",makePBRMaps);
@@ -618,6 +695,10 @@ function buildUI(){
   document.getElementById("thumb").addEventListener("click",saveThumb);
   document.getElementById("copyP").addEventListener("click",copyParams);
   document.getElementById("pasteP").addEventListener("click",pasteParams);
+  document.getElementById("randomAll").addEventListener("click",_randomizeAll);
+  document.getElementById("randomColor").addEventListener("click",_randomizeColor);
+  document.getElementById("themePrev").addEventListener("click",()=>cycleTheme(-1));
+  document.getElementById("themeNext").addEventListener("click",()=>cycleTheme(1));
   if(typeof renderSVG === 'function'){
     const svgBtn=document.createElement('button');
     svgBtn.id='svg'; svgBtn.textContent='svg';
@@ -700,9 +781,8 @@ function buildUI(){
     row.append(lbl,sel,dep); audioBands.appendChild(row);
   });
   document.getElementById("pin").addEventListener("click",pinFav);
-  document.getElementById("reset").addEventListener("click",()=>{const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});flash("reset","reset ✓");});
   document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(favs);
-    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>flash("exportFavs","copied ✓"),()=>prompt("favorites:",txt)); else prompt("favorites JSON:",txt);});
+    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>_flashConsole("copied ✓"),()=>prompt("favorites:",txt)); else prompt("favorites JSON:",txt);});
   document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){favs=[];saveFavs();renderFavs();}});
   const bgEl=document.getElementById("p_bgc"),accEl=document.getElementById("p_acc"),inkEl=document.getElementById("p_ink");
   if(bgEl) bgEl.addEventListener("input",e=>{colorState.bg=e.target.value;dirty=true;});
@@ -712,6 +792,24 @@ function buildUI(){
   const tSel=document.getElementById('themeSelect');
   if(tSel){ THEMES.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.name; opt.textContent=t.name; tSel.appendChild(opt); });
     tSel.addEventListener('change',e=>applyTheme(e.target.value)); }
+}
+function _randomizeAll(){
+  SYSTEM.forEach(p=>{
+    if(p.k==='pal'){ P.pal=Math.floor(Math.random()*PALETTES.length); initColorState(P.pal); }
+    else { const v=p.min+Math.random()*(p.max-p.min); P[p.k]=p.step>=1?Math.round(v):+(v.toFixed(3)); }
+    const el=document.getElementById("p_"+p.k); if(el) el.value=P[p.k];
+    const sp=document.getElementById("v_"+p.k); if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
+  });
+  syncColorUI(); buildSystem(); _flashConsole("randomized");
+}
+function _randomizeColor(){
+  const idx=Math.floor(Math.random()*PALETTES.length);
+  P.pal=idx; initColorState(idx);
+  const el=document.getElementById("p_pal"); if(el) el.value=idx;
+  const sp=document.getElementById("v_pal"); if(sp) sp.textContent=idx;
+  const thIdx=Math.floor(Math.random()*THEMES.length);
+  applyTheme(THEMES[thIdx].name);
+  syncColorUI(); dirty=true; _flashConsole("color randomized");
 }
 let favs=[];
 function loadFavs(){ try{favs=JSON.parse(localStorage.getItem(FAVKEY)||"[]");}catch(e){favs=[];} renderFavs(); }
@@ -725,7 +823,6 @@ function applyConfig(cfg){ if(cfg.seed!==undefined){seed=cfg.seed;document.getEl
   if(cfg.cs){ colorState={...colorState,...cfg.cs}; }else{ initColorState(P.pal); }
   syncColorUI(); buildSystem(); }
 function renderFavs(){ const host=document.getElementById("favs"); if(!host)return; host.innerHTML="";
-  document.getElementById("favBtns").style.display=favs.length?"flex":"none";
   favs.forEach((f,i)=>{ const chip=document.createElement("div"); chip.className="chip";
     const accentHex=(f.cs&&f.cs.acc)?f.cs.acc:PALETTES[Math.round(f.P.pal)||0][1];
     chip.innerHTML='<span class="sw" style="background:'+accentHex+'"></span><b>★'+(i+1)+'</b><span class="x">×</span>';
