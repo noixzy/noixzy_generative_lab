@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // voronoi</title>
+<title>noixzy // wave lattice</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // voronoi</h1>
+  <h1>noixzy // wave lattice</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="voronoi", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="wave_lattice", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.55},{"k":"relax","label":"relax","min":0,"max":1,"step":0.01,"v":0.4},{"k":"edgefill","label":"edge / fill","min":0,"max":1,"step":0.01,"v":0.5},{"k":"pix","label":"pixel size","min":0,"max":1,"step":0.01,"v":0.5},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
+const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.54,"sys":true},{"k":"amp","label":"amplitude","min":0,"max":1,"step":0.01,"v":0.52,"rr":true},{"k":"freq","label":"frequency","min":0,"max":1,"step":0.01,"v":0.44,"rr":true},{"k":"phase","label":"phase","min":0,"max":1,"step":0.01,"v":0.46,"rr":true},{"k":"warp","label":"warp","min":0,"max":1,"step":0.01,"v":0.38,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.32},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.6,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,50 +392,79 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-let VPTS;
-function build(){ const n=floor(map(P.density,0,1,24,260)); let pts=[]; for(let i=0;i<n;i++)pts.push([random(1),random(1)]);
-  const iters=floor(map(P.relax,0,1,0,6));
-  for(let k=0;k<iters;k++){ const sx=pts.map(()=>0),sy=pts.map(()=>0),cn=pts.map(()=>0); const S=72;
-    for(let yy=0;yy<S;yy++)for(let xx=0;xx<S;xx++){ const px=xx/S,py=yy/S; let bi=0,bd=1e9;
-      for(let i=0;i<pts.length;i++){const dx=px-pts[i][0],dy=py-pts[i][1],d=dx*dx+dy*dy; if(d<bd){bd=d;bi=i;}}
-      sx[bi]+=px;sy[bi]+=py;cn[bi]++; }
-    pts=pts.map((p,i)=>cn[i]?[sx[i]/cn[i],sy[i]/cn[i]]:p); }
-  VPTS=pts; }
-function render(g,pal){ const F=840, ef=P.edgefill, dep=P.zdepth||0;
-  const t=animT*P.speed*2.0;
-  const pts=VPTS.map((p,i)=>[p[0]+Math.sin(t*0.55+i*1.91)*0.04,p[1]+Math.cos(t*0.43+i*2.73)*0.04]);
-  const cols=pts.map((p,i)=> i%2?pal[1]:pal[2]);
-  // Higher field resolution lowers the minimum visible pixel size.
-  const cells=floor(map(P.pix,0,1,F,6));
-  const img=makeField(F,(x,y)=>{ const px=floor(x/F*cells)/cells, py=floor(y/F*cells)/cells; let b0=1e9,b1=1e9,bi=0;
-    for(let i=0;i<pts.length;i++){const dx=px-pts[i][0],dy=py-pts[i][1],d=dx*dx+dy*dy; if(d<b0){b1=b0;b0=d;bi=i;}else if(d<b1)b1=d;}
-    const edge=Math.sqrt(b1)-Math.sqrt(b0);
-    if(edge<map(ef,0,1,0.005,0.0010)) return pal[1];
-    const c=cols[bi], t=ef*0.85;
-    const z=(pts[bi][1]*2-1), sh=Math.abs(dep)>0.01?1+z*0.34*dep:1;
-    return [Math.min(255,lerp(pal[0][0],c[0],t)*sh),Math.min(255,lerp(pal[0][1],c[1],t)*sh),Math.min(255,lerp(pal[0][2],c[2],t)*sh)]; });
-  if(Math.abs(dep)>0.01){
-    const cx=g.width/2, cy=g.height/2;
-    // stacked / recursive plate feel for Voronoi
-    for(let l=0;l<9;l++){
-      const tf=l/8, z=tf*2-1;
-      const scl=1-z*0.42*dep, yOff=z*cy*0.38*dep;
-      g.push();
-      g.tint(255,Math.floor(lerp(38,210,tf)));
-      g.translate(cx,cy+yOff);
-      g.scale(scl);
-      g.image(img,-g.width/2,-g.height/2,g.width,g.height);
-      g.pop();
+function build(){}
+function _waveVal(x,y,t){
+  const f=map(P.freq,0,1,3,22);
+  const w=P.warp*.35;
+  const n=noise(x*3.2+8,y*3.2+13,t*.14);
+  x+=(n-.5)*w; y+=(noise(y*3.2,x*3.2,t*.16)-.5)*w;
+  const a=Math.sin((x+y)*f+t*1.2);
+  const b=Math.sin((x-y)*f*1.13-t*.9+P.phase*TWO_PI);
+  const c=Math.sin(Math.sqrt((x-.5)*(x-.5)+(y-.5)*(y-.5))*f*2.2-t*.7);
+  return (a+b+c)/3*.5+.5;
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.4);
+  const n=Math.floor(map(P.density,0,1,14,58));
+  const amp=map(P.amp,0,1,4,42);
+  g.background(
+    Math.min(255,pal[0][0]*1.22+14),
+    Math.min(255,pal[0][1]*1.22+14),
+    Math.min(255,pal[0][2]*1.22+14)
+  );
+  g.push();
+  g.noStroke();
+  g.fill(255,255,255,22);
+  g.rect(0,0,W,H);
+  g.pop();
+  g.noFill();
+  for(let pass=0;pass<2;pass++){
+    const col=pass?pal[1]:pal[2];
+    g.stroke(
+      Math.min(255,col[0]*1.22+20),
+      Math.min(255,col[1]*1.22+20),
+      Math.min(255,col[2]*1.22+20),
+      pass?205:150
+    );
+    g.strokeWeight(pass?2.2:1.25);
+    for(let j=0;j<n;j++){
+      g.beginShape();
+      for(let i=0;i<n;i++){
+        const x=i/(n-1),y=j/(n-1);
+        const v=_waveVal(x,y,t);
+        const z=(v-.5)*2;
+        const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+        const px=cx+(x*W-cx)*scl;
+        const py=cy+(y*H-cy)*scl+Math.sin(v*TWO_PI)*amp+z*cy*.10*dep;
+        if(pass) g.vertex(px,py); else g.curveVertex(px,py);
+      }
+      g.endShape();
     }
-    g.noTint();
-  } else g.image(img,0,0,g.width,g.height); }
-function heightField(G){ const pts=VPTS, out=new Float32Array(G*G);
-  const cH=pts.map((p,i)=>((i*1234567+987)%1000)/1000*0.8+0.2);
-  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
-    const px=i/G, py=j/G; let b0=1e9,bi=0;
-    for(let k=0;k<pts.length;k++){const dx=px-pts[k][0],dy=py-pts[k][1],d=dx*dx+dy*dy;if(d<b0){b0=d;bi=k;}}
-    out[i+j*G]=cH[bi]; }
-  _edgeMask(out,G); _pxQ(out,G); return out; }
+    for(let i=0;i<n;i++){
+      g.beginShape();
+      for(let j=0;j<n;j++){
+        const x=i/(n-1),y=j/(n-1);
+        const v=_waveVal(x,y,t);
+        const z=(v-.5)*2;
+        const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+        const px=cx+(x*W-cx)*scl+Math.cos(v*TWO_PI)*amp*.22;
+        const py=cy+(y*H-cy)*scl+z*cy*.10*dep;
+        if(pass) g.vertex(px,py); else g.curveVertex(px,py);
+      }
+      g.endShape();
+    }
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.4);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_waveVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.amp,0,1,1.8,.65));
+  }
+  _edgeMask(out,G); return out;
+}
 /* ============================================== */
 
 function setup(){

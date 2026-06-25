@@ -131,7 +131,7 @@ select:hover { border-color:var(--accent); }
       </div>
       <div class="stageToolGroup">
         <button id="thumb">→ thumb</button>
-        <button id="rec">rec</button>
+        <button id="rec">video</button>
         <select id="recDur" title="video duration"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select>
         <button id="save">save png</button>
         <button id="save2x">save 2x</button>
@@ -498,6 +498,14 @@ const ALL_MODULES=[
   {id:"displacement_primitives",title:"displacement primitives"},
   {id:"mandelbulb",title:"mandelbulb"},{id:"fold",title:"fold"},
   {id:"metafluid",title:"metafluid"},
+  {id:"moire_field",title:"moire field"},{id:"particle_orbitals",title:"particle orbitals"},
+  {id:"radial_noise",title:"radial noise"},
+  {id:"kaleidoscope_field",title:"kaleidoscope field"},
+  {id:"topographic_rings",title:"topographic rings"},{id:"ribbon_flow",title:"ribbon flow"},
+  {id:"glyph_field",title:"glyph field"},
+  {id:"crystal_growth",title:"crystal growth"},{id:"vector_scope",title:"vector scope"},
+  {id:"wave_lattice",title:"wave lattice"},
+  {id:"fractal_tiles",title:"fractal tiles"},{id:"plasma_membrane",title:"plasma membrane"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -722,6 +730,7 @@ function _audioApply(){
 function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSaved[k]; _audioSaved={}; }
 function buildUI(){
   const host=document.getElementById("groups");
+
   let rg=0;
   GROUPS.forEach(g=>{
     const gp=PARAMS.filter(p=>p.g===g); if(!gp.length) return;
@@ -1009,7 +1018,7 @@ function recordClip(dur=4){
   const btn=document.getElementById('rec');
   if(btn._recording) return;
   const canvas=document.querySelector('#stage canvas');
-  if(!canvas||!canvas.captureStream){btn.textContent='unsupported';setTimeout(()=>btn.textContent='rec',2000);return;}
+  if(!canvas||!canvas.captureStream){btn.textContent='unsupported';setTimeout(()=>btn.textContent='video',2000);return;}
   const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
   const stream=canvas.captureStream(30);
   const rec=new MediaRecorder(stream,mimeType?{mimeType}:{});
@@ -1021,7 +1030,7 @@ function recordClip(dur=4){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a'); a.href=url; a.download='noixzy_'+PIECE+'_'+seed+'.webm'; a.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
-    btn.textContent='rec';
+    btn.textContent='video';
   };
   btn._recording=true;
   rec.start();
@@ -1040,6 +1049,1020 @@ function recordClip(dur=4){
 
 // ---------------- per-piece definitions ----------------
 const PIECES=[
+
+{ id:"moire_field", title:"moire field",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.62,sys:true},
+    {k:"spacing",label:"spacing",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"rotation",label:"rotation",min:0,max:1,step:.01,v:.38,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.34,rr:true},
+    {k:"contrast",label:"contrast",min:0,max:1,step:.01,v:.72,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.35},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.5,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.55,rr:true}
+  ],
+  code:`
+function build(){}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2;
+  const dep=P.zdepth||0;
+  const dens=Math.floor(map(P.density,0,1,46,210));
+  const spacing=map(P.spacing,0,1,7,28);
+  const rotA=map(P.rotation,0,1,-Math.PI*.33,Math.PI*.33);
+  const rotB=-rotA*0.72+Math.sin(animT*.17)*0.13;
+  const warp=map(P.warp,0,1,0,58);
+  const contrast=map(P.contrast,0,1,35,230);
+  const t=animT*map(P.speed,0,1,0.08,1.3);
+  g.background(
+    Math.min(255,pal[0][0]*1.18+10),
+    Math.min(255,pal[0][1]*1.18+10),
+    Math.min(255,pal[0][2]*1.18+10)
+  );
+
+  // soft stage highlight window
+  const hg=g.drawingContext;
+  const grad=hg.createRadialGradient(cx,cy,Math.min(W,H)*.08,cx,cy,Math.min(W,H)*.58);
+  grad.addColorStop(0,"rgba(255,255,255,0.16)");
+  grad.addColorStop(.42,"rgba(255,255,255,0.08)");
+  grad.addColorStop(1,"rgba(255,255,255,0)");
+  hg.fillStyle=grad;
+  hg.fillRect(0,0,W,H);
+
+  g.noFill();
+  g.blendMode(BLEND);
+  function bandLayer(angle,col,phase,alphaMul,weightMul){
+    const ca=Math.cos(angle),sa=Math.sin(angle);
+    const diag=Math.sqrt(W*W+H*H);
+    const count=dens;
+    g.strokeWeight(map(P.density,0,1,2.8,.55)*weightMul);
+    for(let i=-count;i<=count;i++){
+      const off=i*spacing+Math.sin(i*.19+t+phase)*spacing*.45;
+      const pts=[];
+      const steps=120;
+      for(let s=-steps;s<=steps;s++){
+        const u=s/steps*diag;
+        const v=off;
+        const z=(v/(diag*.72));
+        const scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+        let x=cx+(u*ca-v*sa)*scl;
+        let y=cy+(u*sa+v*ca)*scl+z*cy*.18*dep;
+        const n=noise(x*.0035+phase,y*.0035,t*.22);
+        const wob=(n-.5)*warp;
+        x+=Math.cos(angle+Math.PI/2)*wob;
+        y+=Math.sin(angle+Math.PI/2)*wob;
+        pts.push([x,y]);
+      }
+      const pulse=.55+.45*Math.sin(i*.11+t*1.8+phase);
+      g.stroke(col[0],col[1],col[2],contrast*alphaMul*(.45+.55*pulse));
+      g.beginShape();
+      for(const p of pts) g.curveVertex(p[0],p[1]);
+      g.endShape();
+    }
+  }
+  bandLayer(rotA,pal[1],0,0.78,1.22);
+  bandLayer(rotB,pal[2],2.1,0.66,1.05);
+  g.blendMode(ADD);
+  bandLayer(rotA+rotB*.2,pal[2],4.2,0.30,.72);
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const dens=Math.floor(map(P.density,0,1,46,210));
+  const spacing=map(P.spacing,0,1,.018,.065);
+  const rotA=map(P.rotation,0,1,-Math.PI*.33,Math.PI*.33);
+  const rotB=-rotA*.72;
+  const warp=map(P.warp,0,1,0,.08);
+  const sharp=map(P.contrast,0,1,1.2,5.5);
+  const t=animT*map(P.speed,0,1,.08,1.3);
+  function layer(x,y,a,phase){
+    const ca=Math.cos(a),sa=Math.sin(a);
+    const v=(x-.5)*-sa+(y-.5)*ca;
+    const n=noise(x*3.2+phase,y*3.2,t*.22);
+    const vv=v+(n-.5)*warp;
+    const d=Math.abs(Math.sin((vv/spacing+t*.04+phase)*Math.PI));
+    return Math.pow(1-d,sharp);
+  }
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1), y=j/(G-1);
+    const h=Math.max(layer(x,y,rotA,0),layer(x,y,rotB,2.1)*.88,layer(x,y,rotA+rotB*.2,4.2)*.55);
+    out[i+j*G]=Math.min(1,h);
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"particle_orbitals", title:"particle orbitals",
+  system:[
+    {k:"count",label:"count",min:0,max:1,step:.01,v:.54,sys:true},
+    {k:"radius",label:"radius",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"orbit",label:"orbit speed",min:0,max:1,step:.01,v:.42},
+    {k:"trails",label:"trails",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"attraction",label:"attraction",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"jitter",label:"jitter",min:0,max:1,step:.01,v:.26,rr:true},
+    {k:"thickness",label:"thickness",min:0,max:1,step:.01,v:.36,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.6,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.6,rr:true}
+  ],
+  code:`
+let ORB_PARTS=[];
+function build(){
+  const n=Math.floor(map(P.count,0,1,80,1300));
+  ORB_PARTS=[];
+  for(let i=0;i<n;i++){
+    ORB_PARTS.push({
+      a:random(TWO_PI),
+      r:Math.pow(random(),.62),
+      ph:random(TWO_PI),
+      sp:random(.35,1.8)*(random()<.5?-1:1),
+      lane:Math.floor(random(5)),
+      wob:random(.2,1.4)
+    });
+  }
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2;
+  const dep=P.zdepth||0;
+  const baseR=map(P.radius,0,1,70,Math.min(W,H)*.46);
+  const orb=map(P.orbit,0,1,.08,2.4);
+  const trails=Math.floor(map(P.trails,0,1,4,34));
+  const att=map(P.attraction,0,1,0,1);
+  const jit=map(P.jitter,0,1,0,38);
+  const thick=map(P.thickness,0,1,.45,4.8);
+  const t=animT*orb;
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.noFill();
+  g.blendMode(ADD);
+  const attractors=[
+    [cx+Math.cos(t*.37)*baseR*.26,cy+Math.sin(t*.31)*baseR*.20],
+    [cx+Math.cos(t*.29+2.2)*baseR*.34,cy+Math.sin(t*.41+1.2)*baseR*.28],
+    [cx+Math.cos(t*.23+4.4)*baseR*.18,cy+Math.sin(t*.35+3.8)*baseR*.36]
+  ];
+  for(const p of ORB_PARTS){
+    const lane=(p.lane+1)/5;
+    const rr=baseR*(.18+p.r*.86)*(1+Math.sin(t*.4+p.ph)*.06);
+    const aa=p.a+t*p.sp*(.35+lane)+Math.sin(t*.3+p.ph)*att*.55;
+    const z=(lane-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
+    let x=cx+Math.cos(aa)*rr*scl;
+    let y=cy+Math.sin(aa*(1+lane*.08))*rr*(.62+lane*.38)*scl+z*cy*.13*dep;
+    const at=attractors[p.lane%attractors.length];
+    x=lerp(x,at[0],att*.18*Math.sin(t+p.ph)*.5+att*.11);
+    y=lerp(y,at[1],att*.18*Math.cos(t+p.ph)*.5+att*.11);
+    const n=noise(p.r*8+10,p.ph*2,t*.18);
+    x+=(n-.5)*jit*p.wob;
+    y+=(noise(p.ph*2,p.r*8+20,t*.18)-.5)*jit*p.wob;
+    const col=p.lane%2?pal[1]:pal[2];
+    g.stroke(col[0],col[1],col[2],map(p.r,0,1,70,210));
+    g.strokeWeight(thick*(.35+p.r*.9));
+    g.point(x,y);
+    if(trails>5){
+      g.stroke(col[0],col[1],col[2],map(P.trails,0,1,18,95));
+      g.strokeWeight(thick*.35);
+      g.beginShape();
+      for(let k=0;k<trails;k++){
+        const kk=k/trails;
+        const aaa=aa-kk*(.35+p.r*.9)*p.sp;
+        const rrr=rr*(1-kk*.025);
+        const tx=cx+Math.cos(aaa)*rrr;
+        const ty=cy+Math.sin(aaa*(1+lane*.08))*rrr*(.62+lane*.38);
+        g.curveVertex(tx,ty);
+      }
+      g.endShape();
+    }
+  }
+  g.blendMode(BLEND);
+  g.noFill();
+  for(const at of attractors){
+    const c=pal[1];
+    g.stroke(c[0],c[1],c[2],90);
+    g.strokeWeight(1);
+    g.circle(at[0],at[1],10+att*22);
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const baseR=map(P.radius,0,1,.10,.46);
+  const orb=map(P.orbit,0,1,.08,2.4);
+  const trails=Math.floor(map(P.trails,0,1,4,34));
+  const att=map(P.attraction,0,1,0,1);
+  const jit=map(P.jitter,0,1,0,.045);
+  const thick=map(P.thickness,0,1,.004,.022);
+  const t=animT*orb;
+  const attractors=[
+    [.5+Math.cos(t*.37)*baseR*.26,.5+Math.sin(t*.31)*baseR*.20],
+    [.5+Math.cos(t*.29+2.2)*baseR*.34,.5+Math.sin(t*.41+1.2)*baseR*.28],
+    [.5+Math.cos(t*.23+4.4)*baseR*.18,.5+Math.sin(t*.35+3.8)*baseR*.36]
+  ];
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))), i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))), j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x, dy=jj/(G-1)-y, d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){ const q=1-d/r; out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val); }
+    }
+  };
+  for(const p of ORB_PARTS){
+    const lane=(p.lane+1)/5;
+    const rr=baseR*(.18+p.r*.86)*(1+Math.sin(t*.4+p.ph)*.06);
+    const aa=p.a+t*p.sp*(.35+lane)+Math.sin(t*.3+p.ph)*att*.55;
+    let x=.5+Math.cos(aa)*rr;
+    let y=.5+Math.sin(aa*(1+lane*.08))*rr*(.62+lane*.38);
+    const at=attractors[p.lane%attractors.length];
+    x=lerp(x,at[0],att*.18*Math.sin(t+p.ph)*.5+att*.11);
+    y=lerp(y,at[1],att*.18*Math.cos(t+p.ph)*.5+att*.11);
+    const n=noise(p.r*8+10,p.ph*2,t*.18);
+    x+=(n-.5)*jit*p.wob;
+    y+=(noise(p.ph*2,p.r*8+20,t*.18)-.5)*jit*p.wob;
+    stamp(x,y,thick*(.45+p.r*.9),.45+p.r*.55);
+    for(let k=0;k<trails;k+=2){
+      const kk=k/Math.max(1,trails);
+      const aaa=aa-kk*(.35+p.r*.9)*p.sp;
+      const tx=.5+Math.cos(aaa)*rr*(1-kk*.025);
+      const ty=.5+Math.sin(aaa*(1+lane*.08))*rr*(.62+lane*.38)*(1-kk*.025);
+      stamp(tx,ty,thick*.45*(1-kk*.55),(.25+p.r*.45)*(1-kk));
+    }
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+
+
+{ id:"radial_noise", title:"radial noise",
+  system:[
+    {k:"rings",label:"rings",min:0,max:1,step:.01,v:.58,sys:true},
+    {k:"spokes",label:"spokes",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"noise",label:"noise",min:0,max:1,step:.01,v:.54,rr:true},
+    {k:"twist",label:"twist",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"contrast",label:"contrast",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.30},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _radialVal(x,y,t){
+  const dx=x-.5,dy=y-.5;
+  let r=Math.sqrt(dx*dx+dy*dy);
+  let a=Math.atan2(dy,dx);
+  const n=noise(x*5.4+seed*.01,y*5.4+17,t*.16);
+  a += (n-.5)*map(P.twist,0,1,.2,2.8);
+  r += (noise(x*9+23,y*9+31,t*.12)-.5)*P.noise*.18;
+  const rings=Math.sin(r*map(P.rings,0,1,18,74)-t*1.2)*.5+.5;
+  const spokes=Math.sin(a*map(P.spokes,0,1,4,48)+t*.8)*.5+.5;
+  const v=Math.max(rings,spokes*.82)*(.65+n*.35);
+  return Math.max(0,Math.min(1,v*(1-r*.95)));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  const steps=Math.floor(map(P.rings,0,1,70,170));
+  g.background(
+    Math.min(255,pal[0][0]*1.18+12),
+    Math.min(255,pal[0][1]*1.18+12),
+    Math.min(255,pal[0][2]*1.18+12)
+  );
+  g.noFill();
+  g.blendMode(ADD);
+
+  for(let j=0;j<steps;j++){
+    const rr=j/steps*.55;
+    const v=_radialVal(.5+rr,.5,t);
+    const col=j%2?pal[1]:pal[2];
+    const z=(v-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.16*dep:1;
+    g.stroke(Math.min(255,col[0]*1.22+20),Math.min(255,col[1]*1.22+20),Math.min(255,col[2]*1.22+20),map(v,0,1,28,185));
+    g.strokeWeight(map(P.contrast,0,1,.35,2.5));
+    g.circle(cx,cy+z*cy*.08*dep,rr*Math.min(W,H)*2*scl);
+  }
+
+  const spokes=Math.floor(map(P.spokes,0,1,12,96));
+  for(let i=0;i<spokes;i++){
+    const a=i/spokes*TWO_PI+Math.sin(t*.3+i)*P.twist*.12;
+    const col=i%2?pal[2]:pal[1];
+    const v=.45+.55*noise(Math.cos(a)*2+10,Math.sin(a)*2+20,t*.18);
+    g.stroke(Math.min(255,col[0]*1.2+18),Math.min(255,col[1]*1.2+18),Math.min(255,col[2]*1.2+18),map(v,0,1,22,140));
+    g.strokeWeight(map(P.contrast,0,1,.3,1.9));
+    g.line(cx,cy,cx+Math.cos(a)*Math.min(W,H)*.56,cy+Math.sin(a)*Math.min(W,H)*.56);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_radialVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.contrast,0,1,2.2,.75));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+
+{ id:"kaleidoscope_field", title:"kaleidoscope field",
+  system:[
+    {k:"wedges",label:"wedges",min:0,max:1,step:.01,v:.46,sys:true},
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.54,rr:true},
+    {k:"fold",label:"fold",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"twist",label:"twist",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.32},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _kVal(x,y,t){
+  let dx=x-.5,dy=y-.5;
+  let r=Math.sqrt(dx*dx+dy*dy);
+  let a=Math.atan2(dy,dx);
+  const wedges=Math.floor(map(P.wedges,0,1,4,18));
+  const sector=TWO_PI/wedges;
+  a=((a%sector)+sector)%sector;
+  a=Math.abs(a-sector*.5);
+  a += Math.sin(r*map(P.twist,0,1,2,18)+t*.8)*P.twist*.38;
+  const fx=.5+Math.cos(a)*r;
+  const fy=.5+Math.sin(a)*r;
+  const sc=map(P.density,0,1,2.8,12.5);
+  const n=noise(fx*sc+seed*.01,fy*sc+31,t*.15);
+  const stripe=Math.sin((fx+fy+n*P.warp)*map(P.fold,0,1,12,58)+t*1.1)*.5+.5;
+  return Math.max(0,Math.min(1,(stripe*.58+n*.42)*(1-r*.85)));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.3);
+  const wedges=Math.floor(map(P.wedges,0,1,4,18));
+  const radius=Math.min(W,H)*.58;
+  g.background(Math.min(255,pal[0][0]*1.18+12),Math.min(255,pal[0][1]*1.18+12),Math.min(255,pal[0][2]*1.18+12));
+  g.noStroke();
+  g.blendMode(ADD);
+
+  const rings=Math.floor(map(P.density,0,1,34,110));
+  for(let j=0;j<rings;j++){
+    const r0=j/rings*.56;
+    const r1=(j+1)/rings*.56;
+    for(let k=0;k<wedges;k++){
+      const a0=k/wedges*TWO_PI;
+      const a1=(k+1)/wedges*TWO_PI;
+      const midA=(a0+a1)/2, midR=(r0+r1)/2;
+      const v=_kVal(.5+Math.cos(midA)*midR,.5+Math.sin(midA)*midR,t);
+      if(v<.12) continue;
+      const z=(v-.5)*2;
+      const scl=Math.abs(dep)>0.01?1-z*.16*dep:1;
+      const col=(k+j)%2?pal[1]:pal[2];
+      g.fill(Math.min(255,col[0]*1.22+20),Math.min(255,col[1]*1.22+20),Math.min(255,col[2]*1.22+20),map(v,0,1,35,205));
+      g.beginShape();
+      for(const ar of [[a0,r0],[a1,r0],[a1,r1],[a0,r1]]){
+        const a=ar[0], r=ar[1];
+        g.vertex(cx+Math.cos(a)*r*radius*scl,cy+Math.sin(a)*r*radius*scl+z*cy*.10*dep);
+      }
+      g.endShape(CLOSE);
+    }
+  }
+
+  g.noFill();
+  g.stroke(pal[2][0],pal[2][1],pal[2][2],90);
+  g.strokeWeight(1.2);
+  for(let k=0;k<wedges;k++){
+    const a=k/wedges*TWO_PI;
+    g.line(cx,cy,cx+Math.cos(a)*radius,cy+Math.sin(a)*radius);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.3);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_kVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.fold,0,1,1.8,.72));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"topographic_rings", title:"topographic rings",
+  system:[
+    {k:"rings",label:"rings",min:0,max:1,step:.01,v:.58,sys:true},
+    {k:"levels",label:"levels",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"scale",label:"scale",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"ridge",label:"ridge",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.30},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.58,rr:true}
+  ],
+  code:`
+function build(){}
+function _topoVal(x,y,t){
+  const sc=map(P.scale,0,1,1.2,5.8);
+  const warp=map(P.warp,0,1,0,.38);
+  const dx=x-.5,dy=y-.5;
+  let r=Math.sqrt(dx*dx+dy*dy);
+  let a=Math.atan2(dy,dx);
+  const n=noise(x*sc+10,y*sc+20,t*.16);
+  r+=(n-.5)*warp*.22;
+  const swirl=Math.sin(a*map(P.rings,0,1,3,18)+r*map(P.levels,0,1,16,56)-t*1.6)*.15;
+  const field=noise(x*sc*1.35+swirl,y*sc*1.35-swirl,t*.11);
+  return Math.max(0,Math.min(1,field*.55+(1-r*1.25)*.35+swirl*.25));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const levels=Math.floor(map(P.levels,0,1,7,32));
+  const ridge=map(P.ridge,0,1,1.2,4.5);
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  g.background(
+    Math.min(255,pal[0][0]*1.14+10),
+    Math.min(255,pal[0][1]*1.14+10),
+    Math.min(255,pal[0][2]*1.14+10)
+  );
+  const dc=g.drawingContext;
+  const grad=dc.createRadialGradient(cx,cy,Math.min(W,H)*.08,cx,cy,Math.min(W,H)*.58);
+  grad.addColorStop(0,"rgba(255,255,255,0.14)");
+  grad.addColorStop(.45,"rgba(255,255,255,0.07)");
+  grad.addColorStop(1,"rgba(255,255,255,0)");
+  dc.fillStyle=grad; dc.fillRect(0,0,W,H);
+
+  g.noFill();
+  for(let lev=1;lev<levels;lev++){
+    const th=lev/levels;
+    const col=lev%2?pal[1]:pal[2];
+    g.stroke(col[0],col[1],col[2],map(lev,1,levels,58,210));
+    g.strokeWeight(map(P.ridge,0,1,.45,2.8));
+    const loops=Math.floor(map(P.rings,0,1,5,18));
+    for(let l=0;l<loops;l++){
+      g.beginShape();
+      const pts=220;
+      for(let i=0;i<=pts+3;i++){
+        const a=i/pts*TWO_PI;
+        const base=(l+1)/loops*.46;
+        const wob=(_topoVal(.5+Math.cos(a)*base,.5+Math.sin(a)*base,t)-th);
+        const rr=(base+wob*.13*ridge)*Math.min(W,H);
+        const z=(l/loops)*2-1;
+        const scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+        const x=cx+Math.cos(a)*rr*scl;
+        const y=cy+Math.sin(a)*rr*scl+z*cy*.13*dep;
+        g.curveVertex(x,y);
+      }
+      g.endShape(CLOSE);
+    }
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  const levels=Math.floor(map(P.levels,0,1,7,32));
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1);
+    const v=_topoVal(x,y,t);
+    const q=Math.abs(v*levels-Math.round(v*levels));
+    const ridge=Math.pow(Math.max(0,1-q*map(P.ridge,0,1,3,11)),2);
+    out[i+j*G]=Math.min(1,ridge*(.45+v*.7));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"ribbon_flow", title:"ribbon flow",
+  system:[
+    {k:"count",label:"count",min:0,max:1,step:.01,v:.46,sys:true},
+    {k:"length",label:"length",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"curl",label:"curl",min:0,max:1,step:.01,v:.56,rr:true},
+    {k:"width",label:"width",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"layering",label:"layering",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.34},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+let RIBS=[];
+function build(){
+  const n=Math.floor(map(P.count,0,1,12,90));
+  RIBS=[];
+  for(let i=0;i<n;i++){
+    RIBS.push({x:random(-.12,1.12),y:random(.08,.92),ph:random(TWO_PI),lane:random(),dir:random()<.5?-1:1});
+  }
+}
+function _ribPt(r,u,t){
+  const curl=map(P.curl,0,1,.4,5.6);
+  const len=map(P.length,0,1,.12,.72);
+  const x=r.x+(u-.5)*len;
+  const wave=Math.sin(u*TWO_PI*curl+r.ph+t*1.25)*.12*P.curl;
+  const y=r.y+wave+noise(x*2.4+r.ph,r.y*2.4,t*.2)*.10*P.curl;
+  return [x,y];
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const width=map(P.width,0,1,1.2,18);
+  const layers=Math.floor(map(P.layering,0,1,1,6));
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.noFill();
+  g.blendMode(ADD);
+  for(const r of RIBS){
+    for(let L=0;L<layers;L++){
+      const off=(L-(layers-1)/2)*width*.42;
+      const z=(r.lane*2-1);
+      const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
+      const col=(L+r.dir>0)?pal[1]:pal[2];
+      g.stroke(col[0],col[1],col[2],map(r.lane,0,1,48,190));
+      g.strokeWeight(width*(1-L*.10));
+      g.beginShape();
+      const steps=80;
+      for(let i=0;i<=steps;i++){
+        const u=i/steps;
+        const p=_ribPt(r,u,t);
+        const p2=_ribPt(r,Math.min(1,u+.01),t);
+        const nx=-(p2[1]-p[1]), ny=(p2[0]-p[0]);
+        const m=Math.sqrt(nx*nx+ny*ny)||1;
+        const x=cx+(p[0]*W-cx)*scl+nx/m*off;
+        const y=cy+(p[1]*H-cy)*scl+ny/m*off+z*cy*.14*dep;
+        g.curveVertex(x,y);
+      }
+      g.endShape();
+    }
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const width=map(P.width,0,1,.006,.035);
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(const r of RIBS){
+    const steps=80;
+    for(let i=0;i<=steps;i++){
+      const u=i/steps,p=_ribPt(r,u,t);
+      stamp(p[0],p[1],width,.35+r.lane*.65);
+    }
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"glyph_field", title:"glyph field",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.52,sys:true},
+    {k:"size",label:"size",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"rotation",label:"rotation",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"noise",label:"noise",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.26},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.58,rr:true}
+  ],
+  code:`
+let GLYPHS=[];
+function build(){
+  const n=Math.floor(map(P.density,0,1,9,34));
+  GLYPHS=[];
+  for(let j=0;j<n;j++)for(let i=0;i<n;i++){
+    const x=(i+.5)/n,y=(j+.5)/n;
+    const v=noise(x*5.1+seed*.01,y*5.1+17);
+    if(v>P.threshold*.85) GLYPHS.push({x,y,v,kind:Math.floor(random(5)),rot:random(TWO_PI)});
+  }
+}
+function _drawGlyph(g,x,y,sz,k,rot,col,alpha){
+  g.push(); g.translate(x,y); g.rotate(rot); g.stroke(col[0],col[1],col[2],alpha); g.noFill(); g.strokeWeight(Math.max(1,sz*.09));
+  if(k===0){ g.line(-sz*.4,0,sz*.4,0); g.line(0,-sz*.4,0,sz*.4); }
+  else if(k===1){ g.rectMode(CENTER); g.rect(0,0,sz*.7,sz*.7); }
+  else if(k===2){ g.circle(0,0,sz*.72); g.line(-sz*.35,0,sz*.35,0); }
+  else if(k===3){ g.triangle(0,-sz*.44,sz*.42,sz*.32,-sz*.42,sz*.32); }
+  else { g.line(-sz*.4,-sz*.4,sz*.4,sz*.4); g.line(sz*.4,-sz*.4,-sz*.4,sz*.4); }
+  g.pop();
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const sz=map(P.size,0,1,10,52);
+  const rotAmt=map(P.rotation,0,1,-Math.PI,Math.PI);
+  const t=animT*map(P.speed,0,1,.08,1.0);
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  for(const m of GLYPHS){
+    const n=noise(m.x*7,m.y*7,t*.2);
+    const z=(m.y*2-1);
+    const scl=Math.abs(dep)>0.01?1-z*.20*dep:1;
+    const x=cx+(m.x*W-cx)*scl+(n-.5)*P.noise*18;
+    const y=cy+(m.y*H-cy)*scl+z*cy*.13*dep+(noise(m.y*7,m.x*7,t*.2)-.5)*P.noise*18;
+    const col=m.kind%2?pal[1]:pal[2];
+    _drawGlyph(g,x,y,sz*(.65+m.v*.7),m.kind,m.rot+rotAmt*n+t*.15,col,map(m.v,0,1,55,225));
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const sz=map(P.size,0,1,.012,.045);
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(const m of GLYPHS){
+    stamp(m.x,m.y,sz*(.7+m.v*.9),.3+m.v*.7);
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+
+{ id:"crystal_growth", title:"crystal growth",
+  system:[
+    {k:"branches",label:"branches",min:0,max:1,step:.01,v:.52,sys:true},
+    {k:"spread",label:"spread",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"segments",label:"segments",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"jitter",label:"jitter",min:0,max:1,step:.01,v:.34,rr:true},
+    {k:"thickness",label:"thickness",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.24},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+let CRYS=[];
+function build(){
+  const arms=Math.floor(map(P.branches,0,1,5,18));
+  CRYS=[];
+  for(let a=0;a<arms;a++){
+    const ang=a/arms*TWO_PI+random(-.12,.12);
+    const len=random(.22,.48);
+    const seg=Math.floor(map(P.segments,0,1,4,14));
+    CRYS.push({ang,len,seg,ph:random(TWO_PI),fork:random(.25,.75)});
+  }
+}
+function _crysPoint(c,u,t){
+  const bend=Math.sin(u*PI+c.ph+t*.65)*P.jitter*.18;
+  const a=c.ang+bend;
+  const r=c.len*u*(.75+.25*Math.sin(t*.35+c.ph));
+  return [.5+Math.cos(a)*r,.5+Math.sin(a)*r];
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  const sw=map(P.thickness,0,1,.8,6.5);
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.blendMode(ADD);
+  for(const c of CRYS){
+    const col=random()<.5?pal[1]:pal[2];
+    g.stroke(col[0],col[1],col[2],180);
+    g.strokeWeight(sw);
+    g.noFill();
+    g.beginShape();
+    for(let i=0;i<=c.seg;i++){
+      const u=i/c.seg,p=_crysPoint(c,u,t),z=(u*2-1);
+      const scl=Math.abs(dep)>0.01?1-z*.20*dep:1;
+      g.vertex(cx+(p[0]*W-cx)*scl,cy+(p[1]*H-cy)*scl+z*cy*.12*dep);
+    }
+    g.endShape();
+
+    for(let f=.25;f<.9;f+=.22){
+      const p=_crysPoint(c,f,t);
+      const base=c.ang+(random()<.5?-1:1)*map(P.spread,0,1,.25,1.25);
+      for(const side of [-1,1]){
+        const a=base*side+c.ang*(1-side);
+        const L=c.len*.22*(1-f);
+        const z=(f*2-1);
+        const scl=Math.abs(dep)>0.01?1-z*.20*dep:1;
+        const x1=cx+(p[0]*W-cx)*scl,y1=cy+(p[1]*H-cy)*scl+z*cy*.12*dep;
+        const x2=x1+Math.cos(a)*L*W,y2=y1+Math.sin(a)*L*H;
+        g.strokeWeight(sw*.62); g.line(x1,y1,x2,y2);
+      }
+    }
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.2);
+  const rad=map(P.thickness,0,1,.008,.035);
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(const c of CRYS){
+    for(let i=0;i<=c.seg*5;i++){
+      const u=i/(c.seg*5),p=_crysPoint(c,u,t);
+      stamp(p[0],p[1],rad,.35+u*.65);
+    }
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"vector_scope", title:"vector scope",
+  system:[
+    {k:"traces",label:"traces",min:0,max:1,step:.01,v:.48,sys:true},
+    {k:"gain",label:"gain",min:0,max:1,step:.01,v:.55,rr:true},
+    {k:"phase",label:"phase",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"fold",label:"fold",min:0,max:1,step:.01,v:.36,rr:true},
+    {k:"glow",label:"glow",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.38},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.54,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _scopePoint(u,t,layer){
+  const gain=map(P.gain,0,1,.22,.48);
+  const ph=map(P.phase,0,1,0,TWO_PI);
+  const fold=Math.floor(map(P.fold,0,1,1,7));
+  const a=u*TWO_PI;
+  const x=Math.sin(a*(2+fold)+ph+t*.9+layer*.7)*gain + Math.sin(a*3+t*.4)*gain*.28;
+  const y=Math.sin(a*(3+fold*.5)-ph+t*1.1+layer*1.3)*gain + Math.cos(a*2-t*.5)*gain*.24;
+  return [.5+x,.5+y];
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.45);
+  const layers=Math.floor(map(P.traces,0,1,2,14));
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.noFill();
+  g.blendMode(ADD);
+  for(let L=0;L<layers;L++){
+    const col=L%2?pal[1]:pal[2];
+    const z=(L/(layers-1||1))*2-1;
+    const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
+    g.stroke(col[0],col[1],col[2],map(P.glow,0,1,45,190));
+    g.strokeWeight(map(P.glow,0,1,.8,3.8));
+    g.beginShape();
+    for(let i=0;i<=360;i++){
+      const p=_scopePoint(i/360,t,L);
+      g.curveVertex(cx+(p[0]*W-cx)*scl,cy+(p[1]*H-cy)*scl+z*cy*.14*dep);
+    }
+    g.endShape(CLOSE);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.45);
+  const layers=Math.floor(map(P.traces,0,1,2,14));
+  const stamp=(x,y,r,val)=>{
+    const i0=Math.max(0,Math.floor((x-r)*(G-1))),i1=Math.min(G-1,Math.ceil((x+r)*(G-1)));
+    const j0=Math.max(0,Math.floor((y-r)*(G-1))),j1=Math.min(G-1,Math.ceil((y+r)*(G-1)));
+    for(let jj=j0;jj<=j1;jj++)for(let ii=i0;ii<=i1;ii++){
+      const dx=ii/(G-1)-x,dy=jj/(G-1)-y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r){const q=1-d/r;out[ii+jj*G]=Math.min(1,out[ii+jj*G]+q*q*val);}
+    }
+  };
+  for(let L=0;L<layers;L++)for(let i=0;i<260;i++){
+    const p=_scopePoint(i/260,t,L);
+    stamp(p[0],p[1],.018,.22+L/layers*.55);
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"wave_lattice", title:"wave lattice",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.54,sys:true},
+    {k:"amp",label:"amplitude",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"freq",label:"frequency",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"phase",label:"phase",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.38,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.32},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _waveVal(x,y,t){
+  const f=map(P.freq,0,1,3,22);
+  const w=P.warp*.35;
+  const n=noise(x*3.2+8,y*3.2+13,t*.14);
+  x+=(n-.5)*w; y+=(noise(y*3.2,x*3.2,t*.16)-.5)*w;
+  const a=Math.sin((x+y)*f+t*1.2);
+  const b=Math.sin((x-y)*f*1.13-t*.9+P.phase*TWO_PI);
+  const c=Math.sin(Math.sqrt((x-.5)*(x-.5)+(y-.5)*(y-.5))*f*2.2-t*.7);
+  return (a+b+c)/3*.5+.5;
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.4);
+  const n=Math.floor(map(P.density,0,1,14,58));
+  const amp=map(P.amp,0,1,4,42);
+  g.background(
+    Math.min(255,pal[0][0]*1.22+14),
+    Math.min(255,pal[0][1]*1.22+14),
+    Math.min(255,pal[0][2]*1.22+14)
+  );
+  g.push();
+  g.noStroke();
+  g.fill(255,255,255,22);
+  g.rect(0,0,W,H);
+  g.pop();
+  g.noFill();
+  for(let pass=0;pass<2;pass++){
+    const col=pass?pal[1]:pal[2];
+    g.stroke(
+      Math.min(255,col[0]*1.22+20),
+      Math.min(255,col[1]*1.22+20),
+      Math.min(255,col[2]*1.22+20),
+      pass?205:150
+    );
+    g.strokeWeight(pass?2.2:1.25);
+    for(let j=0;j<n;j++){
+      g.beginShape();
+      for(let i=0;i<n;i++){
+        const x=i/(n-1),y=j/(n-1);
+        const v=_waveVal(x,y,t);
+        const z=(v-.5)*2;
+        const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+        const px=cx+(x*W-cx)*scl;
+        const py=cy+(y*H-cy)*scl+Math.sin(v*TWO_PI)*amp+z*cy*.10*dep;
+        if(pass) g.vertex(px,py); else g.curveVertex(px,py);
+      }
+      g.endShape();
+    }
+    for(let i=0;i<n;i++){
+      g.beginShape();
+      for(let j=0;j<n;j++){
+        const x=i/(n-1),y=j/(n-1);
+        const v=_waveVal(x,y,t);
+        const z=(v-.5)*2;
+        const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+        const px=cx+(x*W-cx)*scl+Math.cos(v*TWO_PI)*amp*.22;
+        const py=cy+(y*H-cy)*scl+z*cy*.10*dep;
+        if(pass) g.vertex(px,py); else g.curveVertex(px,py);
+      }
+      g.endShape();
+    }
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.4);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_waveVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.amp,0,1,1.8,.65));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+
+{ id:"fractal_tiles", title:"fractal tiles",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.56,sys:true},
+    {k:"scale",label:"scale",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"folds",label:"folds",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"drift",label:"drift",min:0,max:1,step:.01,v:.36,rr:true},
+    {k:"edge",label:"edge",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.28},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.56,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _tileVal(x,y,t){
+  const sc=map(P.scale,0,1,2.2,9.5);
+  let px=(x-.5)*sc, py=(y-.5)*sc;
+  const folds=Math.floor(map(P.folds,0,1,2,8));
+  for(let i=0;i<folds;i++){
+    px=Math.abs(px)-.62;
+    py=Math.abs(py)-.62;
+    const a=.55+Math.sin(t*.18+i)*.18;
+    const nx=px*Math.cos(a)-py*Math.sin(a);
+    const ny=px*Math.sin(a)+py*Math.cos(a);
+    px=nx; py=ny;
+  }
+  const grid=Math.abs(Math.sin((px+py+t*P.drift)*PI))*Math.abs(Math.sin((px-py-t*P.drift*.7)*PI));
+  const n=noise(x*6+seed*.01,y*6+19,t*.12);
+  return Math.min(1,Math.max(0,grid*.72+n*.28));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  const cells=Math.floor(map(P.density,0,1,14,58));
+  const cw=W/cells,ch=H/cells;
+  g.background(Math.min(255,pal[0][0]*1.16+12),Math.min(255,pal[0][1]*1.16+12),Math.min(255,pal[0][2]*1.16+12));
+  g.noStroke();
+  for(let j=0;j<cells;j++)for(let i=0;i<cells;i++){
+    const x=(i+.5)/cells,y=(j+.5)/cells;
+    const v=_tileVal(x,y,t);
+    if(v<map(P.edge,0,1,.12,.46)) continue;
+    const z=(v-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+    const px=cx+(x*W-cx)*scl,py=cy+(y*H-cy)*scl+z*cy*.10*dep;
+    const col=v>.58?pal[2]:pal[1];
+    g.fill(Math.min(255,col[0]*1.18+18),Math.min(255,col[1]*1.18+18),Math.min(255,col[2]*1.18+18),map(v,0,1,60,230));
+    g.rectMode(CENTER);
+    const sz=map(v,0,1,.25,.95);
+    g.rect(px,py,cw*sz,ch*sz,Math.max(0,2*sz));
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_tileVal(x,y,t);
+    const e=map(P.edge,0,1,.10,.42);
+    out[i+j*G]=v>e?Math.pow(v,1.35):0;
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"plasma_membrane", title:"plasma membrane",
+  system:[
+    {k:"cells",label:"cells",min:0,max:1,step:.01,v:.50,sys:true},
+    {k:"flow",label:"flow",min:0,max:1,step:.01,v:.54,rr:true},
+    {k:"softness",label:"softness",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"veins",label:"veins",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"glow",label:"glow",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.34},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _plasmaVal(x,y,t){
+  const sc=map(P.cells,0,1,2.5,8.5);
+  const flow=map(P.flow,0,1,.08,.62);
+  const n1=noise(x*sc+t*flow,y*sc-t*flow,seed*.01);
+  const n2=noise(x*sc*2.1-n1*.7,y*sc*2.1+n1*.7,t*.16);
+  const r=Math.sqrt((x-.5)*(x-.5)+(y-.5)*(y-.5));
+  const membrane=Math.sin((n1+n2+r*.9+t*.12)*TWO_PI*map(P.veins,0,1,1.5,5.5))*.5+.5;
+  return Math.max(0,Math.min(1,n1*.48+n2*.32+membrane*.20));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const step=Math.floor(map(P.softness,0,1,16,6));
+  g.background(Math.min(255,pal[0][0]*1.12+10),Math.min(255,pal[0][1]*1.12+10),Math.min(255,pal[0][2]*1.12+10));
+  g.noStroke();
+  for(let y=0;y<H;y+=step)for(let x=0;x<W;x+=step){
+    const nx=x/W,ny=y/H;
+    const v=_plasmaVal(nx,ny,t);
+    const z=(v-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.16*dep:1;
+    const px=cx+(x-cx)*scl,py=cy+(y-cy)*scl+z*cy*.10*dep;
+    const col=v>.55?pal[2]:pal[1];
+    const a=map(v,0,1,38,210)*map(P.glow,0,1,.65,1.25);
+    g.fill(Math.min(255,col[0]*1.18+18),Math.min(255,col[1]*1.18+18),Math.min(255,col[2]*1.18+18),a);
+    g.circle(px,py,step*map(v,0,1,1.0,2.8));
+  }
+  g.noFill();
+  g.stroke(pal[2][0],pal[2][1],pal[2][2],map(P.glow,0,1,35,145));
+  g.strokeWeight(map(P.veins,0,1,.4,2.2));
+  const rings=Math.floor(map(P.veins,0,1,4,18));
+  for(let r=1;r<rings;r++){
+    g.beginShape();
+    const rad=r/rings*.46*Math.min(W,H);
+    for(let i=0;i<=180;i++){
+      const a=i/180*TWO_PI;
+      const nx=.5+Math.cos(a)*rad/W,ny=.5+Math.sin(a)*rad/H;
+      const v=_plasmaVal(nx,ny,t);
+      const rr=rad+(v-.5)*map(P.flow,0,1,8,52);
+      g.curveVertex(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);
+    }
+    g.endShape(CLOSE);
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_plasmaVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.softness,0,1,1.8,.75));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
 { id:"flow_field", title:"flow field",
   system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.65},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
