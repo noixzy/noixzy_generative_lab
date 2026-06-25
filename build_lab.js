@@ -511,6 +511,8 @@ const ALL_MODULES=[
   {id:"prism_moire",title:"prism moire"},{id:"terrain_slice",title:"terrain slice"},
   {id:"signal_weave",title:"signal weave"},{id:"crater_field",title:"crater field"},
   {id:"spiral_lattice",title:"spiral lattice"},
+  {id:"signal_rain",title:"signal rain"},{id:"echo_contours",title:"echo contours"},
+  {id:"magnetic_dust",title:"magnetic dust"},{id:"neural_lattice",title:"neural lattice"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -2782,6 +2784,210 @@ function heightField(G){
   _edgeMask(out,G); return out;
 }` },
 
+
+{ id:"signal_rain", title:"signal rain",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.54,sys:true},
+    {k:"length",label:"length",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"slant",label:"slant",min:-1.5,max:1.5,step:.01,v:.18,rr:true},
+    {k:"glitch",label:"glitch",min:0,max:1,step:.01,v:.34,rr:true},
+    {k:"pulse",label:"pulse",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.36},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:6},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+let SR=[];
+function build(){
+  const n=Math.floor(map(P.density,0,1,70,520));
+  SR=[];
+  for(let i=0;i<n;i++) SR.push({x:random(),y:random(),z:random(-1,1),l:random(.35,1),p:random(TWO_PI),w:random(.4,1.5)});
+}
+function _srVal(x,y,t){
+  const sl=P.slant||0;
+  const u=x+y*sl*.18+t*.12;
+  const stripe=Math.pow(1-Math.abs(fract(u*18)-.5)*2,map(P.length,0,1,3,9));
+  const gate=noise(x*8,y*18,t*.25);
+  return stripe*lerp(.45,1,gate);
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.12,2.4);
+  g.background(pal[0][0],pal[0][1],pal[0][2]);
+  g.blendMode(ADD);
+  for(const r of SR){
+    const z=r.z;
+    const scl=Math.abs(dep)>0.01?1-z*.25*dep:1;
+    const drift=(t*r.w+r.p)%1;
+    const x=(r.x+Math.sin(t*.2+r.p)*.025+z*.04*dep)%1;
+    const y=(r.y+drift*.22)%1;
+    const v=_srVal(x,y,t+r.p);
+    const gl=noise(x*14,y*14,t*.9);
+    const len=map(P.length,0,1,16,150)*r.l*(.55+v);
+    const sl=P.slant*80+map(gl,0,1,-40,40)*P.glitch;
+    const px=cx+(x*W-cx)*scl;
+    const py=cy+(y*H-cy)*scl+z*cy*.12*dep;
+    const col=r.z>0?pal[2]:pal[1];
+    g.stroke(col[0],col[1],col[2],map(v,0,1,28,190));
+    g.strokeWeight(map(P.pulse,0,1,.45,2.8)*r.w);
+    g.line(px,py,px+sl,py+len);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.12,2.4);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1);
+    out[i+j*G]=Math.min(1,_srVal(x,y,t)*lerp(.65,1.25,noise(x*5,y*5,t*.2)));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"echo_contours", title:"echo contours",
+  system:[
+    {k:"rings",label:"rings",min:0,max:1,step:.01,v:.56,sys:true},
+    {k:"echoes",label:"echoes",min:0,max:1,step:.01,v:.52,rr:true},
+    {k:"spread",label:"spread",min:-1.5,max:1.5,step:.01,v:.28,rr:true},
+    {k:"warp",label:"warp",min:0,max:1,step:.01,v:.44,rr:true},
+    {k:"thickness",label:"thickness",min:0,max:1,step:.01,v:.38,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.22},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.58,rr:true}
+  ],
+  code:`
+let EC_CENTERS=[];
+function build(){
+  EC_CENTERS=[];
+  for(let i=0;i<5;i++) EC_CENTERS.push({x:random(.25,.75),y:random(.25,.75),p:random(TWO_PI),r:random(.5,1.2)});
+}
+function _ecVal(x,y,t){
+  let v=0;
+  for(const c of EC_CENTERS){
+    const dx=x-c.x,dy=y-c.y,d=Math.sqrt(dx*dx+dy*dy);
+    const q=Math.abs(fract((d-t*.035+c.p*.02)*map(P.rings,0,1,12,36))-.5)*2;
+    v=Math.max(v,Math.pow(1-q,map(P.thickness,0,1,8,2)));
+  }
+  return Math.min(1,v);
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  const echoes=Math.floor(map(P.echoes,0,1,2,10));
+  const spread=P.spread||0;
+  g.background(Math.min(255,pal[0][0]+8),Math.min(255,pal[0][1]+8),Math.min(255,pal[0][2]+8));
+  g.noFill(); g.blendMode(ADD);
+  for(const c of EC_CENTERS){
+    for(let e=0;e<echoes;e++){
+      const q=echoes===1?0:e/(echoes-1), signed=(q-.5)*2*spread, z=signed;
+      const scl=Math.abs(dep)>0.01?1-z*.24*dep:1;
+      const ox=cx+(c.x*W-cx)*scl+signed*W*.05;
+      const oy=cy+(c.y*H-cy)*scl+z*cy*.12*dep+signed*H*.04;
+      const col=e%2?pal[1]:pal[2];
+      for(let r=0;r<10;r++){
+        const rr=(r+1)*map(P.rings,0,1,10,26)*c.r + t*18 + e*map(P.echoes,0,1,5,22);
+        g.stroke(col[0],col[1],col[2],lerp(35,150,q)*(1-r*.055));
+        g.strokeWeight(map(P.thickness,0,1,.35,2.7)*lerp(.75,1.15,q));
+        g.beginShape();
+        for(let k=0;k<=120;k++){
+          const a=k/120*TWO_PI;
+          const wob=noise(Math.cos(a)*2+c.p,Math.sin(a)*2+c.p,t*.2)*P.warp*18;
+          g.curveVertex(ox+Math.cos(a)*(rr+wob),oy+Math.sin(a)*(rr+wob));
+        }
+        g.endShape();
+      }
+    }
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++) out[i+j*G]=_ecVal(i/(G-1),j/(G-1),t);
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"magnetic_dust", title:"magnetic dust",
+  system:[
+    {k:"count",label:"count",min:0,max:1,step:.01,v:.55,sys:true},
+    {k:"field",label:"field force",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"curl",label:"curl",min:-1.5,max:1.5,step:.01,v:.3,rr:true},
+    {k:"grain",label:"grain",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"trails",label:"trails",min:0,max:1,step:.01,v:.36,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.2},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:3},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.6,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+let MD=[];
+function build(){ const n=Math.floor(map(P.count,0,1,220,1900)); MD=[]; for(let i=0;i<n;i++)MD.push({x:random(),y:random(),z:random(-1,1),p:random(TWO_PI),m:random(.3,1.2)}); }
+function _mdVec(x,y,t){ const dx=x-.5,dy=y-.5,a=Math.atan2(dy,dx); const n=noise(x*4,y*4,t*.15); return a+HALF_PI*P.curl+n*TWO_PI*P.field; }
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.06,1.2);
+  g.background(pal[0][0],pal[0][1],pal[0][2]); g.blendMode(ADD);
+  for(const p of MD){
+    const a=_mdVec(p.x,p.y,t)+p.p*.08;
+    const pull=map(P.field,0,1,.001,.012)*p.m;
+    p.x=fract(p.x+Math.cos(a)*pull);
+    p.y=fract(p.y+Math.sin(a)*pull);
+    const z=p.z,scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+    const x=cx+(p.x*W-cx)*scl,y=cy+(p.y*H-cy)*scl+z*cy*.1*dep;
+    const col=p.z>0?pal[2]:pal[1];
+    g.stroke(col[0],col[1],col[2],map(P.grain,0,1,45,170));
+    g.strokeWeight(map(P.grain,0,1,.45,2.4)*p.m);
+    if(P.trails>.12) g.line(x,y,x-Math.cos(a)*map(P.trails,0,1,2,28),y-Math.sin(a)*map(P.trails,0,1,2,28));
+    else g.point(x,y);
+  }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.06,1.2);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){ const x=i/(G-1),y=j/(G-1),a=_mdVec(x,y,t); out[i+j*G]=Math.pow(Math.abs(Math.sin(a*3+x*8-y*6)),2.2); }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"neural_lattice", title:"neural lattice",
+  system:[
+    {k:"nodes",label:"nodes",min:0,max:1,step:.01,v:.5,sys:true},
+    {k:"links",label:"links",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"pulse",label:"pulse",min:0,max:1,step:.01,v:.56,rr:true},
+    {k:"drift",label:"drift",min:0,max:1,step:.01,v:.32,rr:true},
+    {k:"cluster",label:"cluster",min:0,max:1,step:.01,v:.42,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.24},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:5},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.62,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.6,rr:true}
+  ],
+  code:`
+let NL=[];
+function build(){ const n=Math.floor(map(P.nodes,0,1,28,180)); NL=[]; for(let i=0;i<n;i++){ const a=random(TWO_PI),r=Math.pow(random(),P.cluster*.9+1)*.45; NL.push({x:.5+Math.cos(a)*r,y:.5+Math.sin(a)*r,z:random(-1,1),p:random(TWO_PI)}); } }
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.08,1.4);
+  const pts=NL.map(n=>{ const x=n.x+(noise(n.x*4,n.y*4,t)-.5)*P.drift*.12; const y=n.y+(noise(n.y*4,n.x*4,t)-.5)*P.drift*.12; const z=n.z; const scl=Math.abs(dep)>0.01?1-z*.24*dep:1; return {x:cx+(x*W-cx)*scl,y:cy+(y*H-cy)*scl+z*cy*.12*dep,z,p:n.p}; });
+  g.background(pal[0][0],pal[0][1],pal[0][2]); g.blendMode(ADD);
+  const maxD=map(P.links,0,1,60,190);
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){ const a=pts[i],b=pts[j],d=dist(a.x,a.y,b.x,b.y); if(d<maxD){ const q=1-d/maxD,pulse=.5+.5*Math.sin(t*3+a.p+b.p); g.stroke(pal[1][0],pal[1][1],pal[1][2],q*100*(.45+pulse*P.pulse)); g.strokeWeight(q*1.7); g.line(a.x,a.y,b.x,b.y); } }
+  for(const pt of pts){ const pulse=.5+.5*Math.sin(t*3+pt.p); g.noStroke(); g.fill(pal[2][0],pal[2][1],pal[2][2],90+120*pulse*P.pulse); g.circle(pt.x,pt.y,2+7*pulse); }
+  g.blendMode(BLEND);
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  for(const n of NL){ const r=.012+.025*P.pulse; for(let j=0;j<G;j++)for(let i=0;i<G;i++){ const dx=i/(G-1)-n.x,dy=j/(G-1)-n.y,d=Math.sqrt(dx*dx+dy*dy); if(d<r){ const q=1-d/r; out[i+j*G]=Math.max(out[i+j*G],q*q); } } }
+  _edgeMask(out,G); return out;
+}` }
+
+,
 { id:"flow_field", title:"flow field",
   system:[{k:"density",label:"density",min:0,max:1,step:.01,v:.65},{k:"scale",label:"scale",min:0,max:1,step:.01,v:.4},{k:"turbulence",label:"turbulence",min:0,max:1,step:.01,v:.5},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},{k:"pal",label:"palette",min:0,max:9,step:1,v:4}],
   code:`
