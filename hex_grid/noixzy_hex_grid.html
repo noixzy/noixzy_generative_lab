@@ -11,6 +11,7 @@
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
   .app { display:flex; flex-direction:row; align-items:stretch; height:calc(100vh - 28px); }
   .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+  .stage.transparentPreview { background:#fff; }
   .stage canvas { display:block; width:100%; height:100%; }
   .panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
@@ -243,6 +244,7 @@
       </div>
       <div class="stageToolGroup">
         <button id="btnAudio" type="button">audio</button>
+        <button id="btnTransparentBg" type="button">bg alpha</button>
         <button id="btnExportFavs" type="button">export ★</button>
         <button id="btnClearFavs" type="button">clear ★</button>
       </div>
@@ -362,6 +364,7 @@ let bgVal=1,fmVal=1,hiVal=1;
 let activeTheme=null;
 let P={size:0.38,glow:0.65,freq:0.42,speed:0.35,ripple:0.55,edge:0.28,extrude:0.35,zdepth:0};
 let t0,paused=false,pauseT=0;
+let transparentBg=false;
 
 const PARAMS=[
   {id:"sSize",   vid:"vSize",   key:"size"},
@@ -524,6 +527,25 @@ function attachWorkflowControls(){
   bind("btnClearFavs",clearFavs);
 }
 
+function bindTransparentBgToggle(){
+  const btn=document.getElementById("btnTransparentBg");
+  const stage=document.getElementById("stage");
+  const sync=()=>{
+    if(btn){
+      btn.textContent=transparentBg ? "bg alpha ✓" : "bg alpha";
+      btn.style.color=transparentBg ? "var(--accent)" : "";
+    }
+    if(stage) stage.classList.toggle("transparentPreview", transparentBg);
+  };
+  const toggle=e=>{
+    if(e){ e.preventDefault(); e.stopPropagation(); }
+    transparentBg=!transparentBg;
+    sync();
+  };
+  if(btn && !btn.dataset.bgAlphaBound){ btn.dataset.bgAlphaBound="1"; btn.addEventListener("click",toggle); }
+  sync();
+}
+
 function saveThumb(){
   requestAnimationFrame(()=>{
     const btn=document.getElementById("btnThumb");
@@ -580,6 +602,7 @@ function setup(){
   });
   document.getElementById("btnThumb").addEventListener("click",saveThumb);
   attachWorkflowControls();
+  bindTransparentBgToggle();
   DEFAULT_STATE=_clone(captureState());
   renderFavs();
   document.addEventListener("keydown",e=>{
@@ -686,7 +709,7 @@ function draw(){
   const rows=Math.ceil(H/hexH)+2;
 
   const bgR=clampV(bgCol[0]*bgVal,0,255),bgG=clampV(bgCol[1]*bgVal,0,255),bgB=clampV(bgCol[2]*bgVal,0,255);
-  background(bgR,bgG,bgB);
+  if(transparentBg) clear(); else background(bgR,bgG,bgB);
 
   for(let row=-1;row<rows;row++){
     for(let col=-1;col<cols;col++){
@@ -780,7 +803,7 @@ function _noixzyHandAuthoredGridUi(){
     tools.dataset.noixzyGridOrdered="1";
     const groups = [
       ["btnPin","exportFavs","btnCopy","btnPaste"],
-      ["btnAudio","clearFavs"],
+      ["btnAudio","btnTransparentBg","clearFavs"],
       ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
     ];
     const made=[];
@@ -1164,6 +1187,7 @@ function _noixzyEnsureBottomFavButtons(){
   const paste = document.getElementById("btnPaste");
 
   const audio = document.getElementById("btnAudio");
+  const alpha = makeBtn("btnTransparentBg", "bg alpha");
   const clear = makeBtn("clearFavs", "clear ★");
 
   const thumb = document.getElementById("btnThumb");
@@ -1174,7 +1198,7 @@ function _noixzyEnsureBottomFavButtons(){
 
   const groups = [
     [pin, exp, copy, paste],
-    [audio, clear],
+    [audio, alpha, clear],
     [thumb, video, dur, save, save2]
   ];
 
@@ -1188,6 +1212,8 @@ function _noixzyEnsureBottomFavButtons(){
     live.forEach(n => g.appendChild(n));
     tools.appendChild(g);
   });
+
+  if(typeof bindTransparentBgToggle === "function") bindTransparentBgToggle();
 
   // Fallback export if this module did not already wire exportFavs natively.
   if(!exp.dataset.noixzyFallbackBound){

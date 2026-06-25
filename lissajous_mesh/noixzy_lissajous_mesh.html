@@ -11,6 +11,7 @@
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
   .app { display:flex; flex-direction:row; align-items:stretch; height:calc(100vh - 28px); }
   .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+  .stage.transparentPreview { background:#fff; }
   .stage canvas { display:block; width:100%; height:100%; }
   .panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(12,15,18,0.72); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
@@ -243,6 +244,7 @@
       </div>
       <div class="stageToolGroup">
         <button id="btnAudio" type="button">audio</button>
+        <button id="btnTransparentBg" type="button">bg alpha</button>
         <button id="btnExportFavs" type="button">export ★</button>
         <button id="btnClearFavs" type="button">clear ★</button>
       </div>
@@ -361,6 +363,7 @@ let activeTheme=null;
 let P={a:3,b:2,curves:20,speed:0.25,trail:0.62,thick:0.3,drift:0.45,depth:0.0};
 let t0,paused=false,pauseT=0;
 let pg;
+let transparentBg=false;
 
 const PARAMS=[
   {id:"sA",     vid:"vA",     key:"a",      fmt:v=>Math.round(v).toString()},
@@ -384,7 +387,7 @@ function applyTheme(name){
   bgCol=hexToRGB(PALETTES[idx][1]);
   fmCol=hexToRGB(PALETTES[idx][2]);
   hiCol=hexToRGB(PALETTES[idx][3]);
-  if(pg){pg.background(bgCol[0],bgCol[1],bgCol[2]);}
+  if(pg){ if(transparentBg) pg.clear(); else pg.background(bgCol[0],bgCol[1],bgCol[2]); }
   const sel=document.getElementById("themeSelect");if(sel)sel.value=name;
   syncColorUI();
   try{localStorage.setItem(THEMEKEY,name);}catch(e){}
@@ -534,6 +537,29 @@ function attachWorkflowControls(){
   bind("btnClearFavs",clearFavs);
 }
 
+function bindTransparentBgToggle(){
+  const btn=document.getElementById("btnTransparentBg");
+  const stage=document.getElementById("stage");
+  const sync=()=>{
+    if(btn){
+      btn.textContent=transparentBg ? "bg alpha ✓" : "bg alpha";
+      btn.style.color=transparentBg ? "var(--accent)" : "";
+    }
+    if(stage) stage.classList.toggle("transparentPreview", transparentBg);
+  };
+  const resetBuffer=()=>{
+    if(pg){ if(transparentBg) pg.clear(); else pg.background(bgCol[0],bgCol[1],bgCol[2]); }
+  };
+  const toggle=e=>{
+    if(e){ e.preventDefault(); e.stopPropagation(); }
+    transparentBg=!transparentBg;
+    resetBuffer();
+    sync();
+  };
+  if(btn && !btn.dataset.bgAlphaBound){ btn.dataset.bgAlphaBound="1"; btn.addEventListener("click",toggle); }
+  sync();
+}
+
 async function saveThumb(){
   const btn=document.getElementById("btnThumb");
   try{
@@ -583,7 +609,7 @@ function setup(){
     if(e.key==="s")document.getElementById("btnSave").click();
   });
 
-  document.getElementById("bgColor").addEventListener("input",e=>{bgCol=hexToRGB(e.target.value);if(pg)pg.background(bgCol[0],bgCol[1],bgCol[2]);});
+  document.getElementById("bgColor").addEventListener("input",e=>{bgCol=hexToRGB(e.target.value);if(pg){ if(transparentBg) pg.clear(); else pg.background(bgCol[0],bgCol[1],bgCol[2]); }});
   document.getElementById("fmColor").addEventListener("input",e=>{fmCol=hexToRGB(e.target.value);});
   document.getElementById("hiColor").addEventListener("input",e=>{hiCol=hexToRGB(e.target.value);});
   document.getElementById("sBgVal").addEventListener("input",e=>{bgVal=parseFloat(e.target.value);document.getElementById("vBgVal").textContent=bgVal.toFixed(2);});
@@ -597,6 +623,7 @@ function setup(){
   if(saved&&THEME_NAMES.includes(saved))applyTheme(saved);else applyTheme("mineral");
   document.getElementById("btnThumb").addEventListener("click",saveThumb);
   attachWorkflowControls();
+  bindTransparentBgToggle();
   DEFAULT_STATE=_clone(captureState());
   renderFavs();
   syncUI();buildNav();
@@ -671,7 +698,7 @@ function setup(){
     const n=(parseInt(sel.value||"0")+1)%STARTERS.length;
     sel.value=n; loadStarter(STARTERS[n]); _flashConsole("loaded "+STARTERS[n].name);
   });
-  window.addEventListener("resize",()=>{resizeCanvas(stage.clientWidth,stage.clientHeight);pg=createGraphics(width,height);pg.colorMode(RGB,255);pg.background(bgCol[0],bgCol[1],bgCol[2]);});
+  window.addEventListener("resize",()=>{resizeCanvas(stage.clientWidth,stage.clientHeight);pg=createGraphics(width,height);pg.colorMode(RGB,255);if(transparentBg)pg.clear();else pg.background(bgCol[0],bgCol[1],bgCol[2]);});
 }
 
 function draw(){
@@ -691,9 +718,12 @@ function draw(){
   const hiR=clampV(hiCol[0]*hiVal,0,255),hiG=clampV(hiCol[1]*hiVal,0,255),hiB=clampV(hiCol[2]*hiVal,0,255);
 
   // trail fade
-  pg.noStroke();
-  pg.fill(bgR,bgG,bgB,trailAlpha);
-  pg.rect(0,0,width,height);
+  if(transparentBg) pg.clear();
+  else {
+    pg.noStroke();
+    pg.fill(bgR,bgG,bgB,trailAlpha);
+    pg.rect(0,0,width,height);
+  }
 
   pg.push();
   pg.translate(width/2,height/2);
@@ -721,6 +751,7 @@ function draw(){
     pg.endShape();
   }
   pg.pop();
+  if(transparentBg) clear(); else background(bgR,bgG,bgB);
   image(pg,0,0);
 }
 
@@ -755,7 +786,7 @@ function _noixzyHandAuthoredGridUi(){
     tools.dataset.noixzyGridOrdered="1";
     const groups = [
       ["btnPin","exportFavs","btnCopy","btnPaste"],
-      ["btnAudio","clearFavs"],
+      ["btnAudio","btnTransparentBg","clearFavs"],
       ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
     ];
     const made=[];
@@ -1139,6 +1170,7 @@ function _noixzyEnsureBottomFavButtons(){
   const paste = document.getElementById("btnPaste");
 
   const audio = document.getElementById("btnAudio");
+  const alpha = makeBtn("btnTransparentBg", "bg alpha");
   const clear = makeBtn("clearFavs", "clear ★");
 
   const thumb = document.getElementById("btnThumb");
@@ -1149,7 +1181,7 @@ function _noixzyEnsureBottomFavButtons(){
 
   const groups = [
     [pin, exp, copy, paste],
-    [audio, clear],
+    [audio, alpha, clear],
     [thumb, video, dur, save, save2]
   ];
 
@@ -1163,6 +1195,8 @@ function _noixzyEnsureBottomFavButtons(){
     live.forEach(n => g.appendChild(n));
     tools.appendChild(g);
   });
+
+  if(typeof bindTransparentBgToggle === "function") bindTransparentBgToggle();
 
   // Fallback export if this module did not already wire exportFavs natively.
   if(!exp.dataset.noixzyFallbackBound){
