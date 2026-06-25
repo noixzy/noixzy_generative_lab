@@ -11,6 +11,12 @@
   header { padding:28px 28px 10px; }
   h1 { margin:0; font-size:15px; letter-spacing:.16em; text-transform:lowercase; color:var(--accent); }
   .sub { color:var(--dim); margin-top:6px; max-width:620px; }
+  .searchWrap { padding:14px 28px 0; max-width:460px; }
+  #gallerySearch { width:100%; box-sizing:border-box; background:#050506; color:var(--ink);
+    border:1px solid #2a2a2e; border-radius:8px; padding:10px 12px;
+    font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; outline:none; }
+  #gallerySearch:focus { border-color:var(--accent); }
+  #gallerySearch::placeholder { color:var(--dim); }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
     gap:14px; padding:18px 28px 40px; }
   a.card { display:block; text-decoration:none; color:var(--ink);
@@ -38,6 +44,9 @@
     seed on canvas, four sliders, png export. feed them into blender, music visuals,
     stills, or textures.</div>
 </header>
+<div class="searchWrap">
+  <input id="gallerySearch" type="search" placeholder="search modules…">
+</div>
 <div class="grid" id="grid"></div>
 <script>
 const pieces=[
@@ -101,6 +110,26 @@ for(const [dir,name,desc,tag,type] of pieces){
     <div class="desc">${desc}</div><span class="tag">${tag}</span></div>`;
   g.appendChild(a);
 }
+
+function initGallerySearch(){
+  const input=document.getElementById("gallerySearch");
+  const grid=document.getElementById("grid");
+  if(!input || !grid) return;
+
+  const filter=()=>{
+    const q=input.value.trim().toLowerCase();
+    const cards=Array.from(grid.querySelectorAll("a.card"));
+    cards.forEach(card=>{
+      const text=(card.textContent || "").toLowerCase();
+      card.style.display = !q || text.includes(q) ? "" : "none";
+    });
+  };
+
+  input.addEventListener("input",filter);
+  filter();
+}
+setTimeout(initGallerySearch,0);
+
 </script>
 </body>
 </html>
