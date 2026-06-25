@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // truchet</title>
+<title>noixzy // neural lattice</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // truchet</h1>
+  <h1>noixzy // neural lattice</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="truchet", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="neural_lattice", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.45},{"k":"weight","label":"weight","min":0,"max":1,"step":0.01,"v":0.4},{"k":"clustering","label":"clustering","min":0,"max":1,"step":0.01,"v":0},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
+const SYSTEM=[{"k":"nodes","label":"nodes","min":0,"max":1,"step":0.01,"v":0.5,"sys":true},{"k":"links","label":"links","min":0,"max":1,"step":0.01,"v":0.46,"rr":true},{"k":"pulse","label":"pulse","min":0,"max":1,"step":0.01,"v":0.56,"rr":true},{"k":"drift","label":"drift","min":0,"max":1,"step":0.01,"v":0.32,"rr":true},{"k":"cluster","label":"cluster","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.24},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":5},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.62,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,70 +392,21 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-function build(){}
-function render(g,pal){ const n=floor(map(P.density,0,1,6,40)), cs=Math.min(g.width,g.height)/n;
-  const cols=Math.ceil(g.width/cs), rows=Math.ceil(g.height/cs), dep=P.zdepth||0, cx=g.width/2, cy=g.height/2;
-  g.noFill(); g.strokeCap(SQUARE);
-  const ns=map(P.clustering,0,1,3.5,0.12), spd=map(P.speed,0,1,0,0.08), baseW=map(P.weight,0,1,1,cs*0.4);
-  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
-    const tf=(j+0.5)/rows, z=tf*2-1;
-    // contour_field-style z staging
-    const scl=Math.abs(dep)>0.01?1-z*0.36*dep:1, yOff=Math.abs(dep)>0.01?z*cy*0.34*dep:0;
-    const x2=cx+(x-cx)*scl, y2=cy+(y-cy)*scl+yOff, cs2=cs*scl;
-    const bias=noise(i*ns,j*ns,animT*spd); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
-    const sh=Math.abs(dep)>0.01?1+z*0.28*dep:1;
-    g.strokeWeight(baseW*(1+tf*0.45*dep));
-    g.stroke(Math.min(255,c[0]*sh),Math.min(255,c[1]*sh),Math.min(255,c[2]*sh),Math.abs(dep)>0.01?Math.floor(120+135*tf):255);
-    if(flip){ g.arc(x2,y2,cs2,cs2,0,HALF_PI); g.arc(x2+cs2,y2+cs2,cs2,cs2,PI,PI+HALF_PI); }
-    else { g.arc(x2+cs2,y2,cs2,cs2,HALF_PI,PI); g.arc(x2,y2+cs2,cs2,cs2,-HALF_PI,0); } } }
-function trHeightField(G){
-  const n=floor(map(P.density,0,1,6,40));
-  const ns=map(P.clustering,0,1,3.5,0.12);
-  const spd=map(P.speed,0,1,0,0.08);
-  // half-width of arc ridge as fraction of tile — mirrors strokeWeight mapping
-  const hw=map(P.weight,0,1,0.01,0.21);
+let NL=[];
+function build(){ const n=Math.floor(map(P.nodes,0,1,28,180)); NL=[]; for(let i=0;i<n;i++){ const a=random(TWO_PI),r=Math.pow(random(),P.cluster*.9+1)*.45; NL.push({x:.5+Math.cos(a)*r,y:.5+Math.sin(a)*r,z:random(-1,1),p:random(TWO_PI)}); } }
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.08,1.4);
+  const pts=NL.map(n=>{ const x=n.x+(noise(n.x*4,n.y*4,t)-.5)*P.drift*.12; const y=n.y+(noise(n.y*4,n.x*4,t)-.5)*P.drift*.12; const z=n.z; const scl=Math.abs(dep)>0.01?1-z*.24*dep:1; return {x:cx+(x*W-cx)*scl,y:cy+(y*H-cy)*scl+z*cy*.12*dep,z,p:n.p}; });
+  g.background(pal[0][0],pal[0][1],pal[0][2]); g.blendMode(ADD);
+  const maxD=map(P.links,0,1,60,190);
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){ const a=pts[i],b=pts[j],d=dist(a.x,a.y,b.x,b.y); if(d<maxD){ const q=1-d/maxD,pulse=.5+.5*Math.sin(t*3+a.p+b.p); g.stroke(pal[1][0],pal[1][1],pal[1][2],q*100*(.45+pulse*P.pulse)); g.strokeWeight(q*1.7); g.line(a.x,a.y,b.x,b.y); } }
+  for(const pt of pts){ const pulse=.5+.5*Math.sin(t*3+pt.p); g.noStroke(); g.fill(pal[2][0],pal[2][1],pal[2][2],90+120*pulse*P.pulse); g.circle(pt.x,pt.y,2+7*pulse); }
+  g.blendMode(BLEND);
+}
+function heightField(G){
   const out=new Float32Array(G*G);
-  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
-    const px=i/G, py=j/G;
-    const ti=Math.min(Math.floor(px*n),n-1), tj=Math.min(Math.floor(py*n),n-1);
-    const lx=px*n-ti, ly=py*n-tj;
-    const flip=noise(ti*ns,tj*ns,animT*spd)<0.5;
-    let d;
-    if(flip){
-      const d1=Math.abs(Math.sqrt(lx*lx+ly*ly)-0.5);
-      const d2=Math.abs(Math.sqrt((lx-1)*(lx-1)+(ly-1)*(ly-1))-0.5);
-      d=Math.min(d1,d2);
-    }else{
-      const d1=Math.abs(Math.sqrt((lx-1)*(lx-1)+ly*ly)-0.5);
-      const d2=Math.abs(Math.sqrt(lx*lx+(ly-1)*(ly-1))-0.5);
-      d=Math.min(d1,d2);
-    }
-    const h=Math.max(0,1-d/hw);
-    out[i+j*G]=h*h;
-  }
+  for(const n of NL){ const r=.012+.025*P.pulse; for(let j=0;j<G;j++)for(let i=0;i<G;i++){ const dx=i/(G-1)-n.x,dy=j/(G-1)-n.y,d=Math.sqrt(dx*dx+dy*dy); if(d<r){ const q=1-d/r; out[i+j*G]=Math.max(out[i+j*G],q*q); } } }
   _edgeMask(out,G); return out;
-}
-function heightField(G){ return trHeightField(G); }
-function svgArc(cx,cy,r,a0,a1){
-  const x0=cx+Math.cos(a0)*r, y0=cy+Math.sin(a0)*r, x1=cx+Math.cos(a1)*r, y1=cy+Math.sin(a1)*r;
-  return 'M '+svgNum(x0)+' '+svgNum(y0)+' A '+svgNum(r)+' '+svgNum(r)+' 0 0 1 '+svgNum(x1)+' '+svgNum(y1);
-}
-function renderSVG(){
-  randomSeed(seed); noiseSeed(seed);
-  const pal=getPal(), n=floor(map(P.density,0,1,6,40)), cs=Math.min(W,H)/n, r=cs/2;
-  const cols=Math.ceil(W/cs), rows=Math.ceil(H/cs), sw=map(P.weight,0,1,1,cs*0.4), ns=map(P.clustering,0,1,3.5,0.12);
-  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><rect width="'+W+'" height="'+H+'" fill="'+svgColor(pal[0])+'"/>';
-  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ const x=i*cs,y=j*cs;
-    const bias=noise(i*ns,j*ns); const flip=bias<0.5; const c=(i+j)%2?pal[1]:pal[2];
-    if(flip){
-      svg+='<path d="'+svgArc(x,y,r,0,HALF_PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
-      svg+='<path d="'+svgArc(x+cs,y+cs,r,PI,PI+HALF_PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
-    }else{
-      svg+='<path d="'+svgArc(x+cs,y,r,HALF_PI,PI)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
-      svg+='<path d="'+svgArc(x,y+cs,r,-HALF_PI,0)+'" fill="none" stroke="'+svgColor(c)+'" stroke-width="'+svgNum(sw)+'" stroke-linecap="square"/>';
-    }
-  }
-  downloadSVG(svg+'</svg>');
 }
 /* ============================================== */
 

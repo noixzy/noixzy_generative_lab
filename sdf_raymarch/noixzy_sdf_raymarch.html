@@ -365,7 +365,8 @@
     </div>
     <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#0a0a0a;border-radius:6px;font-size:12px;">
       <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:#666;transition:border-color .2s;">
-        drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span>
+        <button id="audioUpload" type="button" style="margin-bottom:6px;">upload audio</button>
+        <div>drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span></div>
         <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
       </div>
       <div id="audioStatus" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
@@ -1394,6 +1395,7 @@ function _buildAudioUI(){
   const btnAudio=document.getElementById("btnAudio");
   const audioPanel=document.getElementById("audioPanel");
   const audioDropZone=document.getElementById("audioDropZone");
+  const audioUpload=document.getElementById("audioUpload");
   const audioFileInput=document.getElementById("audioFileInput");
   const audioStatus=document.getElementById("audioStatus");
   const audioPlayPause=document.getElementById("audioPlayPause");
@@ -1406,6 +1408,7 @@ function _buildAudioUI(){
   function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
   audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
   const _lfd=async f=>{if(f&&f.type.startsWith("audio/"))await _loadFile(f);};
+  if(audioUpload) audioUpload.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();audioFileInput.click();});
   audioDropZone.addEventListener("click",()=>audioFileInput.click());
   audioFileInput.addEventListener("change",e=>{if(e.target.files[0])_lfd(e.target.files[0]);});
   audioDropZone.addEventListener("dragover",e=>{e.preventDefault();audioDropZone.style.borderColor="var(--accent)";});
@@ -1496,16 +1499,6 @@ function _bindSdfBottomToolbarFinal(){
 
   const paste=by("btnPaste");
   if(paste) paste.onclick=e=>{ e.preventDefault(); e.stopPropagation(); _pasteSdfState(); };
-
-  const audio=by("btnAudio");
-  if(audio) audio.onclick=e=>{
-    e.preventDefault(); e.stopPropagation();
-    const panel=by("audioPanel");
-    if(!panel) return;
-    const open=panel.style.display==="none" || !panel.style.display;
-    panel.style.display=open ? "block" : "none";
-    audio.style.color=open ? "var(--accent)" : "";
-  };
 
   const thumb=by("btnThumb");
   if(thumb) thumb.onclick=e=>{ e.preventDefault(); e.stopPropagation(); saveThumb(); };
