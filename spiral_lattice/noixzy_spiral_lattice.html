@@ -213,8 +213,31 @@ let animT=0;
 let audioCtx,analyser,audioData,audioActive=false;
 const ABANDS={bass:0,mid:0,high:0,presence:0};
 const AMAP={bass:null,mid:null,high:null,presence:null};
-const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
+const AUDIO_GAIN=2.0;
+const AUDIO_ATTACK=0.55, AUDIO_RELEASE=0.16;
+const ADEPTH={bass:0.8,mid:0.55,high:0.65,presence:0.45};
 let _audioSaved={};
+let _audioBassFloor=0;
+function _audioClamp(v){ return Math.max(0,Math.min(1,v)); }
+function _audioShape(v){
+  v=_audioClamp(v);
+  return _audioClamp(Math.pow(v,0.65)*AUDIO_GAIN);
+}
+function _audioBandHz(lo,hi){
+  if(!audioCtx||!analyser||!audioData) return 0;
+  const hzPerBin=audioCtx.sampleRate/analyser.fftSize;
+  let s=Math.max(0,Math.floor(lo/hzPerBin));
+  let e=Math.min(audioData.length,Math.ceil(hi/hzPerBin));
+  if(e<=s) e=Math.min(audioData.length,s+1);
+  let v=0;
+  for(let i=s;i<e;i++) v+=audioData[i];
+  return e>s ? v/((e-s)*255) : 0;
+}
+function _audioSmoothBand(band,target){
+  const cur=ABANDS[band]||0;
+  const rate=target>cur?AUDIO_ATTACK:AUDIO_RELEASE;
+  ABANDS[band]=cur+(target-cur)*rate;
+}
 
 // piece-specific SYSTEM params
 const SYSTEM=[{"k":"arms","label":"arms","min":0,"max":1,"step":0.01,"v":0.48,"sys":true},{"k":"turns","label":"turns","min":0,"max":1,"step":0.01,"v":0.56,"rr":true},{"k":"spacing","label":"spacing","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"nodes","label":"nodes","min":0,"max":1,"step":0.01,"v":0.54,"rr":true},{"k":"thickness","label":"thickness","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"stack","label":"stack depth","min":-1.5,"max":1.5,"step":0.01,"v":0,"rr":true},{"k":"recdepth","label":"recursive depth","min":-1.5,"max":1.5,"step":0.01,"v":0,"rr":true},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.3},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.56,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
@@ -823,9 +846,13 @@ function _audioApply(){
   _audioSaved={};
   if(!audioActive||!analyser) return;
   analyser.getByteFrequencyData(audioData);
-  const N=audioData.length;
-  const avg=(s,e)=>{let v=0;for(let i=s;i<e;i++)v+=audioData[i];return v/((e-s)*255);};
-  ABANDS.bass=avg(0,4); ABANDS.mid=avg(4,20); ABANDS.high=avg(20,60); ABANDS.presence=avg(0,N);
+  const bassLevel=_audioShape(_audioBandHz(45,140));
+  _audioBassFloor += (bassLevel-_audioBassFloor)*0.08;
+  const bassKick=_audioClamp((bassLevel-_audioBassFloor)*3.5);
+  _audioSmoothBand('bass',_audioClamp(bassLevel*0.72+bassKick*0.65));
+  _audioSmoothBand('mid',_audioShape(_audioBandHz(180,1400)));
+  _audioSmoothBand('high',_audioShape(_audioBandHz(1800,5200)));
+  _audioSmoothBand('presence',_audioShape(_audioBandHz(5200,12000)));
   for(const band of ['bass','mid','high','presence']){
     const k=AMAP[band]; if(!k||P[k]===undefined) continue;
     _audioSaved[k]=P[k];
@@ -948,7 +975,7 @@ function buildUI(){
     const none=document.createElement("option"); none.value=""; none.textContent="— off —"; sel.appendChild(none);
     mappableParams.forEach(p=>{ const o=document.createElement("option"); o.value=p.k; o.textContent=p.label||p.k; sel.appendChild(o); });
     sel.addEventListener("change",()=>{ AMAP[band]=sel.value||null; });
-    const dep=document.createElement("input"); dep.type="range"; dep.min=0; dep.max=1; dep.step=.01; dep.value=0.5;
+    const dep=document.createElement("input"); dep.type="range"; dep.min=0; dep.max=1; dep.step=.01; dep.value=ADEPTH[band];
     dep.style.cssText="width:55px;";
     dep.addEventListener("input",()=>{ ADEPTH[band]=parseFloat(dep.value); });
     row.append(lbl,sel,dep); audioBands.appendChild(row);

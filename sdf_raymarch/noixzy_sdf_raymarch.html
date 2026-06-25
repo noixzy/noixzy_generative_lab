@@ -89,6 +89,18 @@
   .chip .x:hover { opacity:1; color:var(--accent); }
   #favPanel { display:none !important; }
 
+  /* NOIXZY_TRANSPARENT_BG_PREVIEW */
+  .stage.transparentPreview {
+    background-color:#111;
+    background-image:
+      linear-gradient(45deg, rgba(255,255,255,.10) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(255,255,255,.10) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(255,255,255,.10) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.10) 75%);
+    background-size:20px 20px;
+    background-position:0 0,0 10px,10px -10px,-10px 0px;
+  }
+
   /* NOIXZY_SDF_OVERLAY_STACK_FIX */
   #stage canvas {
     position:absolute !important;
@@ -226,6 +238,7 @@
       </div>
       <div class="stageToolGroup">
         <button id="btnAudio" type="button">audio</button>
+        <button id="btnTransparentBg" type="button">bg alpha</button>
         <button id="clearFavs" type="button">clear ★</button>
       </div>
       <div class="stageToolGroup">
@@ -423,6 +436,7 @@ uniform float u_displace;  // sine ripple displacement
 uniform int   u_ttype;     // turbulence type: 0=warp 1=fbm 2=curl 3=ridged
 uniform int   u_dtype;     // displacement type: 0=sine 1=noise 2=radial 3=twist
 uniform float u_ao;        // ambient occlusion strength
+uniform int   u_transparentBg; // 1 = transparent background, geometry remains opaque
 
 // polynomial smooth min
 float smin(float a, float b, float k){
@@ -606,7 +620,8 @@ void main(){
   col *= mix(0.78, 1.0, vig);
   // gentle filmic-ish curve
   col = pow(col, vec3(0.85));
-  gl_FragColor = vec4(col, 1.0);
+  float alpha = (u_transparentBg == 1 && !hit) ? 0.0 : 1.0;
+  gl_FragColor = vec4(col, alpha);
 }
 </script>
 
@@ -644,6 +659,7 @@ let theShader, prims, running = true, t0;
 let target = [0,0,0];
 let turbType = 0;
 let displaceType = 0;
+let transparentBg = false;
 
 // controlled presets: [name, bg, lo, hi]  (hex)
 const PALETTES = [
@@ -1184,6 +1200,7 @@ function draw(){
   theShader.setUniform("u_ttype", turbType);
   theShader.setUniform("u_dtype", displaceType);
   theShader.setUniform("u_ao", P[9]);
+  theShader.setUniform("u_transparentBg", transparentBg ? 1 : 0);
   noStroke();
   // explicit normalized-device fullscreen quad (aspect-independent)
   quad(-1,-1, 1,-1, 1,1, -1,1);
@@ -1326,8 +1343,36 @@ function _bindUtilityControls(){
 let audioCtx,analyser,audioData,audioActive=false;
 const ABANDS={bass:0,mid:0,high:0,presence:0};
 const AMAP={bass:'p5',mid:'p2',high:'p6',presence:'p4'};
-const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
+const AUDIO_GAIN=2.0;
+const BASS_SENSOR_GAIN=1.85;
+const AUDIO_ATTACK=0.55, AUDIO_RELEASE=0.16;
+const ADEPTH={bass:0.8,mid:0.55,high:0.65,presence:0.45};
 let _audioSaved={};
+let _audioBassFloor=0;
+function _audioClamp(v){ return Math.max(0,Math.min(1,v)); }
+function _audioShape(v){
+  v=_audioClamp(v);
+  return _audioClamp(Math.pow(v,0.65)*AUDIO_GAIN);
+}
+function _audioShapeBass(v){
+  v=_audioShape(v);
+  return _audioClamp(v*BASS_SENSOR_GAIN);
+}
+function _audioBandHz(lo,hi){
+  if(!audioCtx||!analyser||!audioData) return 0;
+  const hzPerBin=audioCtx.sampleRate/analyser.fftSize;
+  let s=Math.max(0,Math.floor(lo/hzPerBin));
+  let e=Math.min(audioData.length,Math.ceil(hi/hzPerBin));
+  if(e<=s) e=Math.min(audioData.length,s+1);
+  let v=0;
+  for(let i=s;i<e;i++) v+=audioData[i];
+  return e>s ? v/((e-s)*255) : 0;
+}
+function _audioSmoothBand(band,target){
+  const cur=ABANDS[band]||0;
+  const rate=target>cur?AUDIO_ATTACK:AUDIO_RELEASE;
+  ABANDS[band]=cur+(target-cur)*rate;
+}
 const _pAudioParams=[
   {k:'p0',sid:'p0',label:'density'},{k:'p1',sid:'p1',label:'blend'},
   {k:'p2',sid:'p2',label:'turbulence'},{k:'p4',sid:'p4',label:'spin'},
@@ -1341,9 +1386,13 @@ function _audioApply(){
   _audioSaved={};
   if(!audioActive||!analyser) return;
   analyser.getByteFrequencyData(audioData);
-  const N=audioData.length;
-  const avg=(s,e)=>{let v=0;for(let i=s;i<e;i++)v+=audioData[i];return v/((e-s)*255);};
-  ABANDS.bass=avg(0,4);ABANDS.mid=avg(4,20);ABANDS.high=avg(20,60);ABANDS.presence=avg(0,N);
+  const bassLevel=_audioShapeBass(_audioBandHz(35,220));
+  _audioBassFloor += (bassLevel-_audioBassFloor)*0.08;
+  const bassKick=_audioClamp((bassLevel-_audioBassFloor)*5.0);
+  _audioSmoothBand('bass',_audioClamp(bassLevel*0.88+bassKick*0.85));
+  _audioSmoothBand('mid',_audioShape(_audioBandHz(180,1400)));
+  _audioSmoothBand('high',_audioShape(_audioBandHz(1800,5200)));
+  _audioSmoothBand('presence',_audioShape(_audioBandHz(5200,12000)));
   for(const band of['bass','mid','high','presence']){
     const k=AMAP[band];if(!k)continue;
     const cfg=P_CONTROLS[k];if(!cfg)continue;
@@ -1421,7 +1470,7 @@ function _buildAudioUI(){
     _pAudioParams.forEach(p=>{const o=document.createElement("option");o.value=p.k;o.textContent=p.label;sel.appendChild(o);});
     if(AMAP[band])sel.value=AMAP[band];
     sel.addEventListener("change",()=>{AMAP[band]=sel.value||null;});
-    const dep=document.createElement("input");dep.type="range";dep.min=0;dep.max=1;dep.step=.01;dep.value=0.5;dep.style.cssText="width:55px;";
+    const dep=document.createElement("input");dep.type="range";dep.min=0;dep.max=1;dep.step=.01;dep.value=ADEPTH[band];dep.style.cssText="width:55px;";
     dep.addEventListener("input",()=>{ADEPTH[band]=parseFloat(dep.value);});
     row.append(lbl,sel,dep);audioBands.appendChild(row);
   });
@@ -1633,6 +1682,29 @@ function _bindSdfVideoButtonOwnsRecording(){
 }
 /* NOIXZY_SDF_VIDEO_BUTTON_OWNS_RECORDING_END */
 
+
+function _bindTransparentBgToggle(){
+  const btn=document.getElementById("btnTransparentBg");
+  const stage=document.getElementById("stage");
+  if(!btn || btn.dataset.boundTransparentBg==="1") return;
+  btn.dataset.boundTransparentBg="1";
+
+  const sync=()=>{
+    btn.textContent = transparentBg ? "bg alpha ✓" : "bg alpha";
+    btn.style.color = transparentBg ? "var(--accent)" : "";
+    if(stage) stage.classList.toggle("transparentPreview", transparentBg);
+  };
+
+  btn.addEventListener("click", e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    transparentBg = !transparentBg;
+    sync();
+  });
+
+  sync();
+}
+
 function bindUI(){
   populateStarterPresets();
   syncPControls();
@@ -1753,6 +1825,7 @@ function bindUI(){
   document.getElementById("btnRec")?.addEventListener("click",()=>{ const b=document.getElementById("rec"); if(b) b.click(); });
   _bindSdfBottomToolbarFinal();
   _bindSdfVideoButtonOwnsRecording();
+  _bindTransparentBgToggle();
   _orderSdfPanelLikeGrid();
 }
 
