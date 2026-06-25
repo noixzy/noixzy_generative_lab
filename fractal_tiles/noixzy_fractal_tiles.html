@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // sdf field</title>
+<title>noixzy // fractal tiles</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // sdf field</h1>
+  <h1>noixzy // fractal tiles</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="sdf", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="fractal_tiles", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"count","label":"count","min":0,"max":1,"step":0.01,"v":0.5},{"k":"blend","label":"blend","min":0,"max":1,"step":0.01,"v":0.5},{"k":"warp","label":"warp","min":0,"max":1,"step":0.01,"v":0.35},{"k":"pix","label":"pixel size","min":0,"max":1,"step":0.01,"v":0.5},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"extrude","label":"extrude","min":-1,"max":1,"step":0.01,"v":0,"rr":true}];
+const SYSTEM=[{"k":"density","label":"density","min":0,"max":1,"step":0.01,"v":0.56,"sys":true},{"k":"scale","label":"scale","min":0,"max":1,"step":0.01,"v":0.48,"rr":true},{"k":"folds","label":"folds","min":0,"max":1,"step":0.01,"v":0.58,"rr":true},{"k":"drift","label":"drift","min":0,"max":1,"step":0.01,"v":0.36,"rr":true},{"k":"edge","label":"edge","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.28},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.56,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,100 +392,54 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-let SDFB;
-// ensure minimal motion on load for this 2D SDF piece
-try{ if(typeof P!=="undefined"){ if((P.speed===0||P.speed===undefined) && (P.drift===0||P.drift===undefined)){ P.speed=0.18; P.drift=0.12; }
-    // sync UI sliders shortly after buildUI runs so controls reflect these defaults
-    setTimeout(()=>{ try{ const s=document.getElementById('p_speed'); if(s) s.value = P.speed; const vs=document.getElementById('v_speed'); if(vs) vs.textContent = (P.speed).toFixed(2); const d=document.getElementById('p_drift'); if(d) d.value = P.drift; const vd=document.getElementById('v_drift'); if(vd) vd.textContent = (P.drift).toFixed(2); }catch(e){} },80);
-  } } }catch(e){}
-function build(){ const n=floor(map(P.count,0,1,3,12)); SDFB=[]; for(let i=0;i<n;i++)SDFB.push([random(.18,.82),random(.18,.82),random(.06,.15)]); }
-function render(g,pal){ const N=300, blobs=SDFB, baseK=map(P.blend,0,1,0.03,0.28), warp=P.warp, light=[-0.6,-0.9];
-  // compute animated positions (smooth orbital motion) per frame
-  const t = animT * P.speed * 5.5;
-  const motionStrength = 0.5 * (0.4 + warp*1.6); // warp biases motion
-  const positions = [];
-  for(let i=0;i<blobs.length;i++){
-    const b = blobs[i]; const phase = i*1.73 + b[0]*7.3 + b[1]*3.1;
-    const orbitR = b[2] * 0.45 * (0.8 + 0.6*map(P.count,0,1,0.6,1.2));
-    const ox = orbitR * Math.cos(t* (0.4 + 0.25*(i%3)) + phase*0.27) * motionStrength;
-    const oy = orbitR * Math.sin(t* (0.42 + 0.21*(i%2)) + phase*0.21) * motionStrength;
-    positions.push([b[0]+ox, b[1]+oy, b[2]]);
+function build(){}
+function _tileVal(x,y,t){
+  const sc=map(P.scale,0,1,2.2,9.5);
+  let px=(x-.5)*sc, py=(y-.5)*sc;
+  const folds=Math.floor(map(P.folds,0,1,2,8));
+  for(let i=0;i<folds;i++){
+    px=Math.abs(px)-.62;
+    py=Math.abs(py)-.62;
+    const a=.55+Math.sin(t*.18+i)*.18;
+    const nx=px*Math.cos(a)-py*Math.sin(a);
+    const ny=px*Math.sin(a)+py*Math.cos(a);
+    px=nx; py=ny;
   }
-  // slightly larger smooth-min k, scaled by local size for softer blending
-  const field=(px,py)=>{ let d = Math.hypot(px-positions[0][0], py-positions[0][1]) - positions[0][2];
-    for(let i=1;i<positions.length;i++){
-      const sd = Math.hypot(px-positions[i][0], py-positions[i][1]) - positions[i][2];
-      const k = baseK * (0.9 + 0.6*(positions[i][2]+positions[0][2]));
-      const h = Math.max(0, Math.min(1, 0.5 + 0.5*(sd - d)/k));
-      d = sd*(1-h) + d*h - k*h*(1-h);
-    }
-    return d;
-  };
-
-  const baseDark=[lerp(pal[0][0],pal[1][0],.32),lerp(pal[0][1],pal[1][1],.32),lerp(pal[0][2],pal[1][2],.32)];
-
-  const cells=floor(map(P.pix,0,1,560,6));
-  const img=makeField(560,(X,Y)=>{ let px=floor(X/560*cells)/cells, py=floor(Y/560*cells)/cells;
-    // time-varying warp for organic flow (no chaotic jitter)
-    if(warp>0){ const w = warp*0.08; px += w*(noise(px*5 + t*0.13, py*5) - 0.5); py += w*(noise(px*5 + 9.1, py*5 + t*0.11) - 0.5); }
-    const f = field(px,py);
-    if(f>=0) return [0,0,0,0];
-
-    // compute approximate 2D normal using smooth sampling
-    const e = 1/N;
-    const fx = field(px+e,py) - field(px-e,py);
-    const fy = field(px,py+e) - field(px,py-e);
-    const gl = Math.hypot(fx,fy) || 1;
-    const nx = fx/gl, ny = fy/gl;
-
-    // lighting (stronger directional feel like raymarch)
-    const dif = Math.max(0, nx*light[0] + ny*light[1]) * 1.05 + 0.06;
-    // rim influenced by view-normal (approx) and depth
-    const rim = Math.pow(1 - Math.min(1, -f/0.14), 3);
-
-    // soft AO: sample along normal away from surface to see occlusion
-    const s1 = field(px + nx*0.018, py + ny*0.018);
-    const s2 = field(px + nx*0.048, py + ny*0.048);
-    const occ = (Math.max(0,s1) + Math.max(0,s2)) / 2.0;
-    const ao = 1 - Math.max(0, Math.min(1, occ / 0.12));
-
-    // color ramp and warm highlight mix
-    const ramp = Math.max(0, Math.min(1, dif*0.9 + 0.08));
-    let r = lerp(baseDark[0], pal[1][0], dif), gg = lerp(baseDark[1], pal[1][1], dif), bb = lerp(baseDark[2], pal[1][2], dif);
-    const hiAmt = Math.max(0, Math.min(1, (ramp - 0.18)/(1-0.18))) * 0.62;
-    r = lerp(r, pal[2][0], hiAmt); gg = lerp(gg, pal[2][1], hiAmt); bb = lerp(bb, pal[2][2], hiAmt);
-
-    // rim contribution (soft)
-    r += rim * pal[2][0] * 0.42; gg += rim * pal[2][1] * 0.42; bb += rim * pal[2][2] * 0.42;
-
-    // apply AO and subtle depth falloff (material-local)
-    r *= ao; gg *= ao; bb *= ao;
-    const depthFall = Math.max(0, Math.min(1, (-f - 0.12) / 0.45));
-    const depthMix = lerp(1.0, 0.72, Math.min(0.65, depthFall));
-    r *= depthMix; gg *= depthMix; bb *= depthMix;
-
-    // gentle vignette and filmic curve
-    const dx = px - 0.5, dy = py - 0.5, dist = Math.hypot(dx, dy);
-    const vig = Math.max(0, Math.min(1, (1.4 - dist*1.6) / 1.2));
-    const vigMix = lerp(0.8, 1.0, vig);
-    r *= vigMix; gg *= vigMix; bb *= vigMix;
-    r = Math.pow(Math.max(0, r), 0.86); gg = Math.pow(Math.max(0, gg), 0.86); bb = Math.pow(Math.max(0, bb), 0.86);
-
-    return [r, gg, bb]; });
-  g.image(img,0,0,g.width,g.height); }
-function heightField(G){ const blobs=SDFB, baseK=map(P.blend,0,1,0.03,0.28), warp=P.warp;
-  // reuse animated positions for heightfield sampling
-  const t = millis()*0.001; const motionStrength = 0.5 * (0.4 + warp*1.6); const positions = [];
-  const tHF = animT * P.speed * 5.5;
-  for(let i=0;i<blobs.length;i++){ const b=blobs[i]; const phase=i*1.73 + b[0]*7.3 + b[1]*3.1; const orbitR=b[2]*0.45*(0.8+0.6*map(P.count,0,1,0.6,1.2)); const ox=orbitR*Math.cos(tHF*(0.4+0.25*(i%3))+phase*0.27)*motionStrength; const oy=orbitR*Math.sin(tHF*(0.42+0.21*(i%2))+phase*0.21)*motionStrength; positions.push([b[0]+ox,b[1]+oy,b[2]]); }
-  const field=(px,py)=>{ let d=Math.hypot(px-positions[0][0],py-positions[0][1])-positions[0][2];
-    for(let i=1;i<positions.length;i++){const sd=Math.hypot(px-positions[i][0],py-positions[i][1])-positions[i][2]; const k = baseK * (0.9 + 0.6*(positions[i][2]+positions[0][2])); const hh=Math.max(0,Math.min(1,0.5+0.5*(sd-d)/k)); d=sd*(1-hh)+d*hh-k*hh*(1-hh);} return d; };
+  const grid=Math.abs(Math.sin((px+py+t*P.drift)*PI))*Math.abs(Math.sin((px-py-t*P.drift*.7)*PI));
+  const n=noise(x*6+seed*.01,y*6+19,t*.12);
+  return Math.min(1,Math.max(0,grid*.72+n*.28));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  const cells=Math.floor(map(P.density,0,1,14,58));
+  const cw=W/cells,ch=H/cells;
+  g.background(Math.min(255,pal[0][0]*1.16+12),Math.min(255,pal[0][1]*1.16+12),Math.min(255,pal[0][2]*1.16+12));
+  g.noStroke();
+  for(let j=0;j<cells;j++)for(let i=0;i<cells;i++){
+    const x=(i+.5)/cells,y=(j+.5)/cells;
+    const v=_tileVal(x,y,t);
+    if(v<map(P.edge,0,1,.12,.46)) continue;
+    const z=(v-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+    const px=cx+(x*W-cx)*scl,py=cy+(y*H-cy)*scl+z*cy*.10*dep;
+    const col=v>.58?pal[2]:pal[1];
+    g.fill(Math.min(255,col[0]*1.18+18),Math.min(255,col[1]*1.18+18),Math.min(255,col[2]*1.18+18),map(v,0,1,60,230));
+    g.rectMode(CENTER);
+    const sz=map(v,0,1,.25,.95);
+    g.rect(px,py,cw*sz,ch*sz,Math.max(0,2*sz));
+  }
+}
+function heightField(G){
   const out=new Float32Array(G*G);
-  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
-    let px=i/G, py=j/G;
-    if(warp>0){px+=warp*0.06*(noise(px*6,py*6)-0.5);py+=warp*0.06*(noise(px*6+9,py*6+9)-0.5);}
-    out[i+j*G]=Math.min(1,Math.max(0,-field(px,py)/0.15)); }
-  _edgeMask(out,G); _pxQ(out,G); return out; }
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_tileVal(x,y,t);
+    const e=map(P.edge,0,1,.10,.42);
+    out[i+j*G]=v>e?Math.pow(v,1.35):0;
+  }
+  _edgeMask(out,G); return out;
+}
 /* ============================================== */
 
 function setup(){

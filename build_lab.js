@@ -503,6 +503,7 @@ const ALL_MODULES=[
   {id:"glyph_field",title:"glyph field"},
   {id:"crystal_growth",title:"crystal growth"},{id:"vector_scope",title:"vector scope"},
   {id:"wave_lattice",title:"wave lattice"},
+  {id:"fractal_tiles",title:"fractal tiles"},{id:"plasma_membrane",title:"plasma membrane"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -1765,6 +1766,140 @@ function heightField(G){
   for(let j=0;j<G;j++)for(let i=0;i<G;i++){
     const x=i/(G-1),y=j/(G-1),v=_waveVal(x,y,t);
     out[i+j*G]=Math.pow(v,map(P.amp,0,1,1.8,.65));
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+
+{ id:"fractal_tiles", title:"fractal tiles",
+  system:[
+    {k:"density",label:"density",min:0,max:1,step:.01,v:.56,sys:true},
+    {k:"scale",label:"scale",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"folds",label:"folds",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"drift",label:"drift",min:0,max:1,step:.01,v:.36,rr:true},
+    {k:"edge",label:"edge",min:0,max:1,step:.01,v:.50,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.28},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.56,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.60,rr:true}
+  ],
+  code:`
+function build(){}
+function _tileVal(x,y,t){
+  const sc=map(P.scale,0,1,2.2,9.5);
+  let px=(x-.5)*sc, py=(y-.5)*sc;
+  const folds=Math.floor(map(P.folds,0,1,2,8));
+  for(let i=0;i<folds;i++){
+    px=Math.abs(px)-.62;
+    py=Math.abs(py)-.62;
+    const a=.55+Math.sin(t*.18+i)*.18;
+    const nx=px*Math.cos(a)-py*Math.sin(a);
+    const ny=px*Math.sin(a)+py*Math.cos(a);
+    px=nx; py=ny;
+  }
+  const grid=Math.abs(Math.sin((px+py+t*P.drift)*PI))*Math.abs(Math.sin((px-py-t*P.drift*.7)*PI));
+  const n=noise(x*6+seed*.01,y*6+19,t*.12);
+  return Math.min(1,Math.max(0,grid*.72+n*.28));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  const cells=Math.floor(map(P.density,0,1,14,58));
+  const cw=W/cells,ch=H/cells;
+  g.background(Math.min(255,pal[0][0]*1.16+12),Math.min(255,pal[0][1]*1.16+12),Math.min(255,pal[0][2]*1.16+12));
+  g.noStroke();
+  for(let j=0;j<cells;j++)for(let i=0;i<cells;i++){
+    const x=(i+.5)/cells,y=(j+.5)/cells;
+    const v=_tileVal(x,y,t);
+    if(v<map(P.edge,0,1,.12,.46)) continue;
+    const z=(v-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.18*dep:1;
+    const px=cx+(x*W-cx)*scl,py=cy+(y*H-cy)*scl+z*cy*.10*dep;
+    const col=v>.58?pal[2]:pal[1];
+    g.fill(Math.min(255,col[0]*1.18+18),Math.min(255,col[1]*1.18+18),Math.min(255,col[2]*1.18+18),map(v,0,1,60,230));
+    g.rectMode(CENTER);
+    const sz=map(v,0,1,.25,.95);
+    g.rect(px,py,cw*sz,ch*sz,Math.max(0,2*sz));
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.25);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_tileVal(x,y,t);
+    const e=map(P.edge,0,1,.10,.42);
+    out[i+j*G]=v>e?Math.pow(v,1.35):0;
+  }
+  _edgeMask(out,G); return out;
+}` },
+
+{ id:"plasma_membrane", title:"plasma membrane",
+  system:[
+    {k:"cells",label:"cells",min:0,max:1,step:.01,v:.50,sys:true},
+    {k:"flow",label:"flow",min:0,max:1,step:.01,v:.54,rr:true},
+    {k:"softness",label:"softness",min:0,max:1,step:.01,v:.48,rr:true},
+    {k:"veins",label:"veins",min:0,max:1,step:.01,v:.46,rr:true},
+    {k:"glow",label:"glow",min:0,max:1,step:.01,v:.58,rr:true},
+    {k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:0},
+    {k:"speed",label:"speed",min:0,max:1,step:.01,v:.34},
+    {k:"pal",label:"palette",min:0,max:9,step:1,v:4},
+    {k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:0,rr:true},
+    {k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},
+    {k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _plasmaVal(x,y,t){
+  const sc=map(P.cells,0,1,2.5,8.5);
+  const flow=map(P.flow,0,1,.08,.62);
+  const n1=noise(x*sc+t*flow,y*sc-t*flow,seed*.01);
+  const n2=noise(x*sc*2.1-n1*.7,y*sc*2.1+n1*.7,t*.16);
+  const r=Math.sqrt((x-.5)*(x-.5)+(y-.5)*(y-.5));
+  const membrane=Math.sin((n1+n2+r*.9+t*.12)*TWO_PI*map(P.veins,0,1,1.5,5.5))*.5+.5;
+  return Math.max(0,Math.min(1,n1*.48+n2*.32+membrane*.20));
+}
+function render(g,pal){
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  const step=Math.floor(map(P.softness,0,1,16,6));
+  g.background(Math.min(255,pal[0][0]*1.12+10),Math.min(255,pal[0][1]*1.12+10),Math.min(255,pal[0][2]*1.12+10));
+  g.noStroke();
+  for(let y=0;y<H;y+=step)for(let x=0;x<W;x+=step){
+    const nx=x/W,ny=y/H;
+    const v=_plasmaVal(nx,ny,t);
+    const z=(v-.5)*2;
+    const scl=Math.abs(dep)>0.01?1-z*.16*dep:1;
+    const px=cx+(x-cx)*scl,py=cy+(y-cy)*scl+z*cy*.10*dep;
+    const col=v>.55?pal[2]:pal[1];
+    const a=map(v,0,1,38,210)*map(P.glow,0,1,.65,1.25);
+    g.fill(Math.min(255,col[0]*1.18+18),Math.min(255,col[1]*1.18+18),Math.min(255,col[2]*1.18+18),a);
+    g.circle(px,py,step*map(v,0,1,1.0,2.8));
+  }
+  g.noFill();
+  g.stroke(pal[2][0],pal[2][1],pal[2][2],map(P.glow,0,1,35,145));
+  g.strokeWeight(map(P.veins,0,1,.4,2.2));
+  const rings=Math.floor(map(P.veins,0,1,4,18));
+  for(let r=1;r<rings;r++){
+    g.beginShape();
+    const rad=r/rings*.46*Math.min(W,H);
+    for(let i=0;i<=180;i++){
+      const a=i/180*TWO_PI;
+      const nx=.5+Math.cos(a)*rad/W,ny=.5+Math.sin(a)*rad/H;
+      const v=_plasmaVal(nx,ny,t);
+      const rr=rad+(v-.5)*map(P.flow,0,1,8,52);
+      g.curveVertex(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);
+    }
+    g.endShape(CLOSE);
+  }
+}
+function heightField(G){
+  const out=new Float32Array(G*G);
+  const t=animT*map(P.speed,0,1,.08,1.35);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_plasmaVal(x,y,t);
+    out[i+j*G]=Math.pow(v,map(P.softness,0,1,1.8,.75));
   }
   _edgeMask(out,G); return out;
 }` },
