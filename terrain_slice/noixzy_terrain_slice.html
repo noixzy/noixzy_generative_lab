@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>noixzy // wave interference</title>
+<title>noixzy // terrain slice</title>
 <link rel="icon" href="data:,">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
@@ -141,7 +141,7 @@ select:hover { border-color:var(--accent); }
     </div>
   </div>
   <div class="panel">
-  <h1>noixzy // wave interference</h1>
+  <h1>noixzy // terrain slice</h1>
   <div id="themeDet">
     <div class="consoleLabel">theme</div>
     <div class="cycleLine">
@@ -205,7 +205,7 @@ select:hover { border-color:var(--accent); }
 </div>
 <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
 <script>
-let W=820,H=820; const PIECE="wave_interference", FAVKEY="noixzy_"+PIECE+"_favs";
+let W=820,H=820; const PIECE="terrain_slice", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
@@ -216,7 +216,7 @@ const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
 let _audioSaved={};
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"sources","label":"sources","min":0,"max":1,"step":0.01,"v":0.25,"sys":true},{"k":"freq","label":"frequency","min":0,"max":1,"step":0.01,"v":0.35},{"k":"contrast","label":"contrast","min":0,"max":1,"step":0.01,"v":0.4},{"k":"pix","label":"pixel size","min":0,"max":1,"step":0.01,"v":0.25},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
+const SYSTEM=[{"k":"slices","label":"slices","min":0,"max":1,"step":0.01,"v":0.52,"sys":true},{"k":"scale","label":"scale","min":0,"max":1,"step":0.01,"v":0.48,"rr":true},{"k":"heightamp","label":"height amp","min":0,"max":1,"step":0.01,"v":0.58,"rr":true},{"k":"strata","label":"strata","min":0,"max":1,"step":0.01,"v":0.5,"rr":true},{"k":"erosion","label":"erosion","min":0,"max":1,"step":0.01,"v":0.44,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.22},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.62,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.62,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -392,60 +392,51 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 
 /* ================= PIECE CODE ================= */
 
-let WI_SRCS;
-function build(){
-  const n=floor(map(P.sources,0,1,2,6));
-  WI_SRCS=[];
-  for(let i=0;i<n;i++){
-    const a=TWO_PI*i/n+random(-0.38,0.38);
-    const r=0.22+random()*0.18;
-    WI_SRCS.push([0.5+cos(a)*r, 0.5+sin(a)*r]);
+function build(){}
+function _terrain(x,y,t){
+  const sc=map(P.scale,0,1,1.4,6.8);
+  let v=0,amp=.55,f=1;
+  for(let o=0;o<5;o++){
+    v+=noise(x*sc*f+seed*.01,y*sc*f+17,t*.08)*amp;
+    f*=2.05; amp*=.48;
   }
+  const strata=Math.sin((v+y*map(P.strata,0,1,3,18))*TWO_PI)*.5+.5;
+  return Math.max(0,Math.min(1,v*.62+strata*.18));
 }
 function render(g,pal){
-  const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5), dep=P.zdepth||0;
-  const t=animT*P.speed*0.5;
-  const cells=floor(map(P.pix,0,1,600,6));
-  const img=makeField(600,(xi,yi)=>{
-    const x=floor(xi/600*cells)/cells, y=floor(yi/600*cells)/cells;
-    let sum=0;
-    for(const [sx,sy] of WI_SRCS){
-      const d=Math.sqrt((x-sx)*(x-sx)+(y-sy)*(y-sy));
-      sum+=Math.sin(d*freq*Math.PI*2-t);
+  const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0;
+  const t=animT*map(P.speed,0,1,.08,1.0);
+  const slices=Math.floor(map(P.slices,0,1,9,42));
+  const amp=map(P.heightamp,0,1,20,170);
+  g.background(Math.min(255,pal[0][0]*1.12+10),Math.min(255,pal[0][1]*1.12+10),Math.min(255,pal[0][2]*1.12+10));
+  g.noFill();
+  for(let s=0;s<slices;s++){
+    const y=(s+.5)/slices;
+    const z=(s/(slices-1||1))*2-1;
+    const scl=Math.abs(dep)>0.01?1-z*.22*dep:1;
+    const col=s%2?pal[1]:pal[2];
+    g.stroke(Math.min(255,col[0]*1.16+16),Math.min(255,col[1]*1.16+16),Math.min(255,col[2]*1.16+16),map(s,0,slices,70,205));
+    g.strokeWeight(map(P.erosion,0,1,.8,3.2));
+    g.beginShape();
+    for(let i=0;i<=160;i++){
+      const x=i/160;
+      const v=_terrain(x,y,t);
+      const px=cx+(x*W-cx)*scl;
+      const py=cy+(y*H-cy)*scl-v*amp+z*cy*.12*dep;
+      g.curveVertex(px,py);
     }
-    sum/=WI_SRCS.length;
-    const v=0.5+0.5*Math.tanh(sum*sharp);
-    const c0=pal[0],c1=pal[1],c2=pal[2];
-    const z=(v*2-1), sh=Math.abs(dep)>0.01?1+z*0.36*dep:1;
-    if(v<0.5){const f=v*2; return [Math.min(255,lerp(c0[0],c1[0],f)*sh),Math.min(255,lerp(c0[1],c1[1],f)*sh),Math.min(255,lerp(c0[2],c1[2],f)*sh)];}
-    const f=(v-0.5)*2; return [Math.min(255,lerp(c1[0],c2[0],f)*sh),Math.min(255,lerp(c1[1],c2[1],f)*sh),Math.min(255,lerp(c1[2],c2[2],f)*sh)];
-  });
-  if(Math.abs(dep)>0.01){
-    const cx=g.width/2, cy=g.height/2;
-    for(let l=0;l<7;l++){
-      const tf=l/6, z=tf*2-1;
-      const scl=1-z*0.38*dep, yOff=z*cy*0.34*dep;
-      g.push(); g.tint(255,Math.floor(lerp(42,185,tf)));
-      g.translate(cx,cy+yOff); g.scale(scl); g.image(img,-g.width/2,-g.height/2,g.width,g.height);
-      g.pop();
-    }
-    g.noTint();
-  } else g.image(img,0,0,g.width,g.height);
+    g.endShape();
+  }
 }
 function heightField(G){
-  const freq=map(P.freq,0,1,4,30), sharp=map(P.contrast,0,1,0.8,5);
   const out=new Float32Array(G*G);
-  for(let j=0;j<G;j++) for(let i=0;i<G;i++){
-    const x=i/(G-1), y=j/(G-1);
-    let sum=0;
-    for(const [sx,sy] of WI_SRCS){
-      const d=Math.sqrt((x-sx)*(x-sx)+(y-sy)*(y-sy));
-      sum+=Math.sin(d*freq*Math.PI*2);
-    }
-    sum/=WI_SRCS.length;
-    out[i+j*G]=0.5+0.5*Math.tanh(sum*sharp);
+  const t=animT*map(P.speed,0,1,.08,1.0);
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const x=i/(G-1),y=j/(G-1),v=_terrain(x,y,t);
+    const band=Math.sin((v+y*map(P.strata,0,1,3,18))*TWO_PI)*.5+.5;
+    out[i+j*G]=Math.min(1,v*.75+band*.25);
   }
-  _edgeMask(out,G); _pxQ(out,G); return out;
+  _edgeMask(out,G); return out;
 }
 /* ============================================== */
 
