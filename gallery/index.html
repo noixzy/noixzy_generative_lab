@@ -35,9 +35,123 @@
     color:#b7ff2a; }
   .badge-e { background:rgba(183,255,42,.14); border:1px solid #b7ff2a;
     color:#fff; }
+  /* NOIXZY_CENTER_GALLERY */
+  body {
+    text-align:center;
+  }
+  header {
+    max-width:960px;
+    margin:0 auto;
+    text-align:center;
+  }
+  .sub {
+    margin:6px auto 0;
+  }
+  .searchWrap {
+    margin:0 auto;
+  }
+  .grid {
+    max-width:1480px;
+    margin:0 auto;
+    justify-content:center;
+  }
+  a.card {
+    text-align:left;
+  }
+
+  /* NOIXZY_HEADER_1500X50 */
+  .navBar {
+    position: fixed !important;
+    top: 12px !important;
+    left: 50% !important;
+    width: min(1500px, calc(100vw - 32px)) !important;
+    height: 50px !important;
+    transform: translateX(-50%) !important;
+    z-index: 50 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    box-sizing: border-box !important;
+    padding: 0 18px !important;
+    background: rgba(0, 0, 0, 0.34) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 16px !important;
+    box-shadow:
+      0 14px 40px rgba(0, 0, 0, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+    backdrop-filter: blur(14px) saturate(1.15) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
+  }
+
+  .navBar a {
+    color: var(--accent, #e8c86c) !important;
+    text-decoration: none !important;
+    font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    letter-spacing: .08em !important;
+  }
+
+  body {
+    padding-top: 74px !important;
+    box-sizing: border-box !important;
+  }
+
+  main,
+  .app {
+    box-sizing: border-box !important;
+  }
+
+  /* NOIXZY_CUSTOM_SVG_HEADER */
+  .navBar {
+    justify-content: center !important;
+  }
+
+  .navBar a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    line-height: 1 !important;
+  }
+
+  .navBar .galleryMark {
+    display: block !important;
+    width: auto !important;
+    height: 45px !important;
+    max-width: 460px !important;
+    object-fit: contain !important;
+    opacity: .96 !important;
+    filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) !important;
+  }
+
+  /* NOIXZY_GALLERY_16X9_THUMBS */
+  .card {
+    overflow: hidden !important;
+  }
+
+  .thumb {
+    aspect-ratio: 16 / 9 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: hidden !important;
+    display: block !important;
+  }
+
+  .thumb img,
+  .card img {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+
 </style>
 </head>
 <body>
+<div class="navBar">
+  <a href="index.html" aria-label="gallery"><img class="galleryMark" src="gallery.svg" alt="gallery"></a>
+</div>
+
 <header>
   <h1>noixzy // generative lab</h1>
   <div class="sub">small algorithmic experiments. each is one self-contained file —
@@ -131,5 +245,7 @@ function initGallerySearch(){
 setTimeout(initGallerySearch,0);
 
 </script>
+
+<script src="noixzy_ruler_overlay.js"></script>
 </body>
 </html>

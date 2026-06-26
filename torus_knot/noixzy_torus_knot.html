@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>noixzy // torus knot</title>
 <link rel="icon" href="data:,">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js">
+
+
+
+</script>
 <style>
   :root { --bg:#0e0e10; --panel:#101316; --ink:#e8e8ea; --accent:#f0c890; --dim:#8b969c; }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
@@ -224,30 +228,118 @@
     font-size:10px;
   }
 
+  /* NOIXZY_STRIP_VISIBLE_UI_KEEP_RENDER */
+  .panel,
+  [data-zone="right-panel"],
+  #panel,
+  #stageTools,
+  .stageTools,
+  .stageToolGroup,
+  #stageThumbs,
+  .stageThumbs,
+  #stageFavs,
+  .stageFavs,
+  #favs,
+  #favBtns,
+  .previewHistory,
+  #previewHistory,
+  .seed,
+  .btns,
+  #audioPanel,
+  #audioStatus,
+  #audioBands,
+  #audioDropZone,
+  #videoPanel {
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+
+  /* NOIXZY_HEADER_1500X50 */
+  .navBar {
+    position: fixed !important;
+    top: 12px !important;
+    left: 50% !important;
+    width: min(1500px, calc(100vw - 32px)) !important;
+    height: 50px !important;
+    transform: translateX(-50%) !important;
+    z-index: 50 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    box-sizing: border-box !important;
+    padding: 0 18px !important;
+    background: rgba(0, 0, 0, 0.34) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 16px !important;
+    box-shadow:
+      0 14px 40px rgba(0, 0, 0, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+    backdrop-filter: blur(14px) saturate(1.15) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
+  }
+
+  .navBar a {
+    color: var(--accent, #e8c86c) !important;
+    text-decoration: none !important;
+    font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    letter-spacing: .08em !important;
+  }
+
+  body {
+    padding-top: 74px !important;
+    box-sizing: border-box !important;
+  }
+
+  main,
+  .app {
+    box-sizing: border-box !important;
+  }
+
+  /* NOIXZY_CUSTOM_SVG_HEADER */
+  .navBar {
+    justify-content: center !important;
+  }
+
+  .navBar a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    line-height: 1 !important;
+  }
+
+  .navBar .galleryMark {
+    display: block !important;
+    width: auto !important;
+    height: 45px !important;
+    max-width: 460px !important;
+    object-fit: contain !important;
+    opacity: .96 !important;
+    filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) !important;
+  }
+
 </style>
 </head>
 <body>
 <div class="navBar">
-  <a id="navPrev" href="#">← prev</a>
-  <a href="../gallery/index.html" class="navCurrent">⊞ gallery</a>
-  <a id="navNext" href="#">next →</a>
+  <a href="../gallery/index.html" class="navCurrent"><img class="galleryMark" src="../gallery/gallery.svg" alt="gallery"></a>
 </div>
 <div class="app">
   <div id="stage" class="stage">
     <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
-        <button id="btnPin" type="button">★ pin</button>
+        <button id="btnPin" type="button">pin</button>
         <button id="btnCopy" type="button">copy</button>
         <button id="btnPaste" type="button">paste</button>
       </div>
-      <div class="stageToolGroup">
-        <button id="btnExportFavs" type="button">export ★</button>
-        <button id="btnTransparentBg" type="button">bg alpha</button>
-        <button id="btnClearFavs" type="button">clear ★</button>
+      <div class="stageToolGroup" data-zone="native-bridge">
+        <button id="btnExportFavs" type="button">export </button>
+        <button id="btnClearFavs" type="button">clear </button>
       </div>
       <div class="stageToolGroup">
-        <button id="btnThumb" type="button">→ thumb</button>
+        <button id="btnThumb" type="button"> thumb</button>
         <button id="btnRec" type="button">video</button>
         <select id="recDur" title="video duration"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select>
         <button id="btnSave" type="button">save png</button>
@@ -261,59 +353,53 @@
       <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
     </div>
   </div>
-  <div class="panel" id="panel">
-    <h1>noixzy // torus knot</h1>
-    <div class="cycleLine" style="margin-bottom:10px">
-      <button id="themePrev" class="cycleBtn" type="button">‹</button>
+  <div class="panel" data-zone="right-panel" id="panel">
+    <h1></h1>
+    <div class="cycleLine" style="margin-bottom:10px" data-zone="theme-controls">
       <select id="themeSelect"></select>
-      <button id="themeNext" class="cycleBtn" type="button">›</button>
     </div>
-    <div class="consoleBtns">
-      <button id="btnReset" type="button">reset</button>
-      <button id="btnPause" type="button">pause</button>
+    <div class="consoleBtns" data-zone="right-panel-controls">
     </div>
     <div id="presetStatus" class="presetStatus"></div>
 
-    <div class="row"><label>p (winds) <span id="vP">—</span></label>
+    <div class="row"><label><span id="vP"></span></label>
       <input id="sP" type="range" min="2" max="9" step="1" value="2"></div>
-    <div class="row"><label>q (loops) <span id="vQ">—</span></label>
+    <div class="row"><label><span id="vQ"></span></label>
       <input id="sQ" type="range" min="3" max="11" step="1" value="3"></div>
-    <div class="row"><label>tube radius <span id="vTube">—</span></label>
+    <div class="row"><label><span id="vTube"></span></label>
       <input id="sTube" type="range" min="0" max="1" step="0.01" value="0.28"></div>
-    <div class="row"><label>knot scale <span id="vScale">—</span></label>
+    <div class="row"><label><span id="vScale"></span></label>
       <input id="sScale" type="range" min="0" max="1" step="0.01" value="0.55"></div>
-    <div class="row"><label>spin <span id="vSpin">—</span></label>
+    <div class="row"><label><span id="vSpin"></span></label>
       <input id="sSpin" type="range" min="0" max="1" step="0.01" value="0.22"></div>
-    <div class="row"><label>distance <span id="vDist">—</span></label>
+    <div class="row"><label><span id="vDist"></span></label>
       <input id="sDist" type="range" min="2" max="9" step="0.05" value="5.5"></div>
-    <div class="row"><label>elevation <span id="vElev">—</span></label>
+    <div class="row"><label><span id="vElev"></span></label>
       <input id="sElev" type="range" min="-2" max="2" step="0.05" value="0.8"></div>
-    <div class="row"><label>ao <span id="vAO">—</span></label>
+    <div class="row"><label><span id="vAO"></span></label>
       <input id="sAO" type="range" min="0" max="1" step="0.01" value="0.6"></div>
 
-    <div class="row colorRow"><label for="bgColor">background</label>
+    <div class="row colorRow"><label for="bgColor"></label>
       <input id="bgColor" type="color" value="#140d06"></div>
-    <div class="row"><label>bg value <span id="vBgVal">—</span></label>
+    <div class="row"><label><span id="vBgVal"></span></label>
       <input id="sBgVal" type="range" min="0" max="2" step="0.01" value="1"></div>
-    <div class="row colorRow"><label for="fmColor">form color</label>
+    <div class="row colorRow"><label for="fmColor"></label>
       <input id="fmColor" type="color" value="#6b4514"></div>
-    <div class="row"><label>form sat <span id="vFSat">—</span></label>
+    <div class="row"><label><span id="vFSat"></span></label>
       <input id="sFSat" type="range" min="0" max="2" step="0.01" value="1"></div>
-    <div class="row"><label>form value <span id="vFVal">—</span></label>
+    <div class="row"><label><span id="vFVal"></span></label>
       <input id="sFVal" type="range" min="0" max="2" step="0.01" value="1"></div>
-    <div class="row colorRow"><label for="hiColor">rim / highlight</label>
+    <div class="row colorRow"><label for="hiColor"></label>
       <input id="hiColor" type="color" value="#ffe0a0"></div>
-    <div class="row"><label>rim strength <span id="vRim">—</span></label>
+    <div class="row"><label><span id="vRim"></span></label>
       <input id="sRim" type="range" min="0" max="2" step="0.01" value="1"></div>
 
     <div class="cycleLine" style="margin-top:8px">
-      <button id="starterPrev" class="cycleBtn" type="button">‹</button>
       <select id="starterPreset"></select>
-      <button id="starterNext" class="cycleBtn" type="button">›</button>
     </div>
 
     <div id="favs" class="favs"></div>
-    <div class="hint">h hide · space pause · [ ] theme · drag orbit · scroll zoom · s save</div>
+    <div class="hint"></div>
   </div>
 </div>
 
@@ -453,6 +539,52 @@ void main(){
 </script>
 
 <script>
+(function initNoixzyLegacyControlBridge(){
+  if(window.__noixzyLegacyControlBridge) return;
+  window.__noixzyLegacyControlBridge=true;
+
+  function ensureHost(){
+    let host=document.getElementById('noixzyLegacyControlBridge');
+    if(!host){
+      host=document.createElement('div');
+      host.id='noixzyLegacyControlBridge';
+      host.style.display='none';
+      document.body.appendChild(host);
+    }
+    return host;
+  }
+
+  function ensureButton(id){
+    if(document.getElementById(id)) return;
+    const host=ensureHost();
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.id=id;
+    host.appendChild(btn);
+  }
+
+  function ensureSelect(id,values,selected){
+    if(document.getElementById(id)) return;
+    const host=ensureHost();
+    const sel=document.createElement('select');
+    sel.id=id;
+    values.forEach(v=>{
+      const opt=document.createElement('option');
+      opt.value=String(v);
+      opt.textContent=String(v);
+      if(String(v)===String(selected)) opt.selected=true;
+      sel.appendChild(opt);
+    });
+    host.appendChild(sel);
+  }
+
+  [
+    'newSeed','randomUnlocked','randomForm','randomColor',
+    'reset','copy','paste','pause','save','save2x','rec','thumb'
+  ].forEach(ensureButton);
+  ensureSelect('recDur',[2,4,8,16],4);
+})();
+
 const PIECE="torus_knot";
 const THEMEKEY="noixzy_lab_theme";
 const PALETTES=[
@@ -672,7 +804,6 @@ function bindTransparentBgToggle(){
     transparentBg=!transparentBg;
     sync();
   };
-  if(btn && !btn.dataset.bgAlphaBound){ btn.dataset.bgAlphaBound="1"; btn.addEventListener("click",toggle); }
   sync();
 }
 
@@ -728,8 +859,8 @@ function setup(){
     const n=(parseInt(starterSel.value||"0")+1)%STARTERS.length;
     starterSel.value=n;loadStarter(STARTERS[n]);_flashConsole("loaded "+STARTERS[n].name);
   });
-  document.getElementById("btnSave").addEventListener("click",()=>saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`,"png"));
-  document.getElementById("btnPause").addEventListener("click",()=>{
+  document.getElementById("btnSave")?.addEventListener("click",()=>saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`,"png"));
+  document.getElementById("btnPause")?.addEventListener("click",()=>{
     paused=!paused;if(paused)pauseT=millis()-t0;else t0=millis()-pauseT;
     document.getElementById("btnPause").textContent=paused?"play":"pause";
   });
@@ -740,13 +871,13 @@ function setup(){
     if(e.key==="s")document.getElementById("btnSave").click();
   });
 
-  document.getElementById("bgColor").addEventListener("input",e=>{cs.bg=e.target.value;});
-  document.getElementById("fmColor").addEventListener("input",e=>{cs.form=e.target.value;});
-  document.getElementById("hiColor").addEventListener("input",e=>{cs.hi=e.target.value;});
-  document.getElementById("sBgVal").addEventListener("input",e=>{cs.bgVal=parseFloat(e.target.value);document.getElementById("vBgVal").textContent=cs.bgVal.toFixed(2);});
-  document.getElementById("sFSat").addEventListener("input",e=>{cs.fSat=parseFloat(e.target.value);document.getElementById("vFSat").textContent=cs.fSat.toFixed(2);});
-  document.getElementById("sFVal").addEventListener("input",e=>{cs.fVal=parseFloat(e.target.value);document.getElementById("vFVal").textContent=cs.fVal.toFixed(2);});
-  document.getElementById("sRim").addEventListener("input",e=>{cs.rim=parseFloat(e.target.value);document.getElementById("vRim").textContent=cs.rim.toFixed(2);});
+  document.getElementById("bgColor")?.addEventListener("input",e=>{cs.bg=e.target.value;});
+  document.getElementById("fmColor")?.addEventListener("input",e=>{cs.form=e.target.value;});
+  document.getElementById("hiColor")?.addEventListener("input",e=>{cs.hi=e.target.value;});
+  document.getElementById("sBgVal")?.addEventListener("input",e=>{cs.bgVal=parseFloat(e.target.value);document.getElementById("vBgVal").textContent=cs.bgVal.toFixed(2);});
+  document.getElementById("sFSat")?.addEventListener("input",e=>{cs.fSat=parseFloat(e.target.value);document.getElementById("vFSat").textContent=cs.fSat.toFixed(2);});
+  document.getElementById("sFVal")?.addEventListener("input",e=>{cs.fVal=parseFloat(e.target.value);document.getElementById("vFVal").textContent=cs.fVal.toFixed(2);});
+  document.getElementById("sRim")?.addEventListener("input",e=>{cs.rim=parseFloat(e.target.value);document.getElementById("vRim").textContent=cs.rim.toFixed(2);});
   // init color slider displays
   document.getElementById("vBgVal").textContent=cs.bgVal.toFixed(2);
   document.getElementById("vFSat").textContent=cs.fSat.toFixed(2);
@@ -779,7 +910,7 @@ function setup(){
   });
   const saved=localStorage.getItem(THEMEKEY);
   if(saved&&THEME_NAMES.includes(saved))applyTheme(saved);else applyTheme("amber");
-  document.getElementById("btnThumb").addEventListener("click",saveThumb);
+  document.getElementById("btnThumb")?.addEventListener("click",saveThumb);
   attachWorkflowControls();
   bindTransparentBgToggle();
   DEFAULT_STATE=_clone(captureState());
@@ -849,7 +980,7 @@ function _noixzyHandAuthoredGridUi(){
     tools.dataset.noixzyGridOrdered="1";
     const groups = [
       ["btnPin","exportFavs","btnCopy","btnPaste"],
-      ["btnAudio","btnTransparentBg","clearFavs"],
+      ["btnAudio","clearFavs"],
       ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
     ];
     const made=[];
@@ -1244,7 +1375,7 @@ function _noixzyEnsureBottomFavButtons(){
 
   const groups = [
     [pin, exp, copy, paste],
-    [audio, alpha, clear],
+    [clear],
     [thumb, video, dur, save, save2]
   ];
 
@@ -1264,7 +1395,7 @@ function _noixzyEnsureBottomFavButtons(){
   // Fallback export if this module did not already wire exportFavs natively.
   if(!exp.dataset.noixzyFallbackBound){
     exp.dataset.noixzyFallbackBound = "1";
-    exp.addEventListener("click", e => {
+    exp?.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1299,7 +1430,7 @@ function _noixzyEnsureBottomFavButtons(){
   // Fallback clear if this module did not already wire clearFavs natively.
   if(!clear.dataset.noixzyFallbackBound){
     clear.dataset.noixzyFallbackBound = "1";
-    clear.addEventListener("click", e => {
+    clear?.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1384,5 +1515,10 @@ function buildNav(){
   setTimeout(()=>{const el=strip.querySelector(".active");if(el){el.scrollIntoView({block:"center",inline:"nearest"});}},50);
 }
 </script>
+
+
+
+
+<script src="../gallery/noixzy_ruler_overlay.js"></script>
 </body>
 </html>

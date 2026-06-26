@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>noixzy // hex grid</title>
 <link rel="icon" href="data:,">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js">
+
+
+
+</script>
 <style>
   :root { --bg:#0e0e10; --panel:#101316; --ink:#e8e8ea; --accent:#48dfff; --dim:#8b969c; }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
@@ -225,31 +229,119 @@
     font-size:10px;
   }
 
+  /* NOIXZY_STRIP_VISIBLE_UI_KEEP_RENDER */
+  .panel,
+  [data-zone="right-panel"],
+  #panel,
+  #stageTools,
+  .stageTools,
+  .stageToolGroup,
+  #stageThumbs,
+  .stageThumbs,
+  #stageFavs,
+  .stageFavs,
+  #favs,
+  #favBtns,
+  .previewHistory,
+  #previewHistory,
+  .seed,
+  .btns,
+  #audioPanel,
+  #audioStatus,
+  #audioBands,
+  #audioDropZone,
+  #videoPanel {
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+
+  /* NOIXZY_HEADER_1500X50 */
+  .navBar {
+    position: fixed !important;
+    top: 12px !important;
+    left: 50% !important;
+    width: min(1500px, calc(100vw - 32px)) !important;
+    height: 50px !important;
+    transform: translateX(-50%) !important;
+    z-index: 50 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    box-sizing: border-box !important;
+    padding: 0 18px !important;
+    background: rgba(0, 0, 0, 0.34) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 16px !important;
+    box-shadow:
+      0 14px 40px rgba(0, 0, 0, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+    backdrop-filter: blur(14px) saturate(1.15) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
+  }
+
+  .navBar a {
+    color: var(--accent, #e8c86c) !important;
+    text-decoration: none !important;
+    font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    letter-spacing: .08em !important;
+  }
+
+  body {
+    padding-top: 74px !important;
+    box-sizing: border-box !important;
+  }
+
+  main,
+  .app {
+    box-sizing: border-box !important;
+  }
+
+  /* NOIXZY_CUSTOM_SVG_HEADER */
+  .navBar {
+    justify-content: center !important;
+  }
+
+  .navBar a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    line-height: 1 !important;
+  }
+
+  .navBar .galleryMark {
+    display: block !important;
+    width: auto !important;
+    height: 45px !important;
+    max-width: 460px !important;
+    object-fit: contain !important;
+    opacity: .96 !important;
+    filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) !important;
+  }
+
 </style>
 </head>
 <body>
 <div class="navBar">
-  <a id="navPrev" href="#">← prev</a>
-  <a href="../gallery/index.html" class="navCurrent">⊞ gallery</a>
-  <a id="navNext" href="#">next →</a>
+  <a href="../gallery/index.html" class="navCurrent"><img class="galleryMark" src="../gallery/gallery.svg" alt="gallery"></a>
 </div>
 <div class="app">
   <div id="stage" class="stage">
     <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
-        <button id="btnPin" type="button">★ pin</button>
+        <button id="btnPin" type="button">pin</button>
         <button id="btnCopy" type="button">copy</button>
         <button id="btnPaste" type="button">paste</button>
       </div>
-      <div class="stageToolGroup">
+      <div class="stageToolGroup" data-zone="native-bridge">
         <button id="btnAudio" type="button">audio</button>
-        <button id="btnTransparentBg" type="button">bg alpha</button>
-        <button id="btnExportFavs" type="button">export ★</button>
-        <button id="btnClearFavs" type="button">clear ★</button>
+        <button id="btnExportFavs" type="button">export </button>
+        <button id="btnClearFavs" type="button">clear </button>
       </div>
       <div class="stageToolGroup">
-        <button id="btnThumb" type="button">→ thumb</button>
+        <button id="btnThumb" type="button"> thumb</button>
         <button id="btnRec" type="button">video</button>
         <select id="recDur" title="video duration">
           <option value="2">2s</option>
@@ -268,63 +360,103 @@
       <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
     </div>
   </div>
-  <div class="panel" id="panel">
-    <h1>noixzy // hex grid</h1>
+  <div class="panel" data-zone="right-panel" id="panel">
+    <h1></h1>
 
-    <div class="cycleLine" style="margin-bottom:10px">
-      <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    <div class="cycleLine" style="margin-bottom:10px" data-zone="theme-controls">
       <select id="themeSelect"></select>
-      <button id="themeNext" class="cycleBtn" type="button">›</button>
     </div>
-    <div class="consoleBtns">
-      <button id="btnReset" type="button">reset</button>
-      <button id="btnPause" type="button">pause</button>
+    <div class="consoleBtns" data-zone="right-panel-controls">
     </div>
     <div id="presetStatus" class="presetStatus"></div>
 
-    <div class="row"><label>hex size <span id="vSize">—</span></label>
+    <div class="row"><label><span id="vSize"></span></label>
       <input id="sSize" type="range" min="0" max="1" step="0.01" value="0.38"></div>
-    <div class="row"><label>glow <span id="vGlow">—</span></label>
+    <div class="row"><label><span id="vGlow"></span></label>
       <input id="sGlow" type="range" min="0" max="1" step="0.01" value="0.65"></div>
-    <div class="row"><label>wave freq <span id="vFreq">—</span></label>
+    <div class="row"><label><span id="vFreq"></span></label>
       <input id="sFreq" type="range" min="0" max="1" step="0.01" value="0.42"></div>
-    <div class="row"><label>speed <span id="vSpeed">—</span></label>
+    <div class="row"><label><span id="vSpeed"></span></label>
       <input id="sSpeed" type="range" min="0" max="1" step="0.01" value="0.35"></div>
-    <div class="row"><label>ripple <span id="vRipple">—</span></label>
+    <div class="row"><label><span id="vRipple"></span></label>
       <input id="sRipple" type="range" min="0" max="1" step="0.01" value="0.55"></div>
-    <div class="row"><label>edge <span id="vEdge">—</span></label>
+    <div class="row"><label><span id="vEdge"></span></label>
       <input id="sEdge" type="range" min="0" max="1" step="0.01" value="0.28"></div>
-    <div class="row"><label>extrude <span id="vExtrude">—</span></label>
+    <div class="row"><label><span id="vExtrude"></span></label>
       <input id="sExtrude" type="range" min="0" max="1" step="0.01" value="0.35"></div>
-    <div class="row"><label>z depth <span id="vZdepth">—</span></label>
+    <div class="row"><label><span id="vZdepth"></span></label>
       <input id="sZdepth" type="range" min="-1.5" max="1.5" step="0.01" value="0"></div>
 
-    <div class="row colorRow"><label for="bgColor">background</label>
+    <div class="row colorRow"><label for="bgColor"></label>
       <input id="bgColor" type="color" value="#0e0e10"></div>
-    <div class="row"><label>bg value <span id="vBgVal">—</span></label>
+    <div class="row"><label><span id="vBgVal"></span></label>
       <input id="sBgVal" type="range" min="0" max="2" step="0.01" value="1"></div>
-    <div class="row colorRow"><label for="fmColor">form color</label>
+    <div class="row colorRow"><label for="fmColor"></label>
       <input id="fmColor" type="color" value="#5a2400"></div>
-    <div class="row"><label>form value <span id="vFmVal">—</span></label>
+    <div class="row"><label><span id="vFmVal"></span></label>
       <input id="sFmVal" type="range" min="0" max="2" step="0.01" value="1"></div>
-    <div class="row colorRow"><label for="hiColor">highlight</label>
+    <div class="row colorRow"><label for="hiColor"></label>
       <input id="hiColor" type="color" value="#ed8a3a"></div>
-    <div class="row"><label>hi value <span id="vHiVal">—</span></label>
+    <div class="row"><label><span id="vHiVal"></span></label>
       <input id="sHiVal" type="range" min="0" max="2" step="0.01" value="1"></div>
 
     <div id="favs" class="favs"></div>
 
     <div class="presetBox">
       <div class="cycleLine" style="margin-top:8px">
-        <button id="starterPrev" class="cycleBtn" type="button">‹</button>
         <select id="starterPreset"></select>
-        <button id="starterNext" class="cycleBtn" type="button">›</button>
       </div>
     </div>
-    <div class="hint">h hide · space pause · [ ] theme · s save</div>
+    <div class="hint"></div>
   </div>
 </div>
 <script>
+(function initNoixzyLegacyControlBridge(){
+  if(window.__noixzyLegacyControlBridge) return;
+  window.__noixzyLegacyControlBridge=true;
+
+  function ensureHost(){
+    let host=document.getElementById('noixzyLegacyControlBridge');
+    if(!host){
+      host=document.createElement('div');
+      host.id='noixzyLegacyControlBridge';
+      host.style.display='none';
+      document.body.appendChild(host);
+    }
+    return host;
+  }
+
+  function ensureButton(id){
+    if(document.getElementById(id)) return;
+    const host=ensureHost();
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.id=id;
+    host.appendChild(btn);
+  }
+
+  function ensureSelect(id,values,selected){
+    if(document.getElementById(id)) return;
+    const host=ensureHost();
+    const sel=document.createElement('select');
+    sel.id=id;
+    values.forEach(v=>{
+      const opt=document.createElement('option');
+      opt.value=String(v);
+      opt.textContent=String(v);
+      if(String(v)===String(selected)) opt.selected=true;
+      sel.appendChild(opt);
+    });
+    host.appendChild(sel);
+  }
+
+  [
+    'newSeed','randomUnlocked','randomForm','randomColor',
+    'reset','copy','paste','pause','save','save2x','rec','thumb'
+  ].forEach(ensureButton);
+  ensureSelect('recDur',[2,4,8,16],4);
+})();
+
 const PIECE="hex_grid";
 function _flashConsole(msg){ const el=document.getElementById("presetStatus"); if(el) el.textContent=msg; }
 const mix=(a,b,t)=>a+(b-a)*t;
@@ -542,7 +674,6 @@ function bindTransparentBgToggle(){
     transparentBg=!transparentBg;
     sync();
   };
-  if(btn && !btn.dataset.bgAlphaBound){ btn.dataset.bgAlphaBound="1"; btn.addEventListener("click",toggle); }
   sync();
 }
 
@@ -586,21 +717,21 @@ function setup(){
     el.addEventListener("input",()=>{P[cfg.key]=parseFloat(el.value);document.getElementById(cfg.vid).textContent=P[cfg.key].toFixed(2);});
   });
 
-  document.getElementById("bgColor").addEventListener("input",e=>{bgCol=hexToRGB(e.target.value);});
-  document.getElementById("fmColor").addEventListener("input",e=>{fmCol=hexToRGB(e.target.value);});
-  document.getElementById("hiColor").addEventListener("input",e=>{hiCol=hexToRGB(e.target.value);});
-  document.getElementById("sBgVal").addEventListener("input",e=>{bgVal=parseFloat(e.target.value);document.getElementById("vBgVal").textContent=bgVal.toFixed(2);});
-  document.getElementById("sFmVal").addEventListener("input",e=>{fmVal=parseFloat(e.target.value);document.getElementById("vFmVal").textContent=fmVal.toFixed(2);});
-  document.getElementById("sHiVal").addEventListener("input",e=>{hiVal=parseFloat(e.target.value);document.getElementById("vHiVal").textContent=hiVal.toFixed(2);});
+  document.getElementById("bgColor")?.addEventListener("input",e=>{bgCol=hexToRGB(e.target.value);});
+  document.getElementById("fmColor")?.addEventListener("input",e=>{fmCol=hexToRGB(e.target.value);});
+  document.getElementById("hiColor")?.addEventListener("input",e=>{hiCol=hexToRGB(e.target.value);});
+  document.getElementById("sBgVal")?.addEventListener("input",e=>{bgVal=parseFloat(e.target.value);document.getElementById("vBgVal").textContent=bgVal.toFixed(2);});
+  document.getElementById("sFmVal")?.addEventListener("input",e=>{fmVal=parseFloat(e.target.value);document.getElementById("vFmVal").textContent=fmVal.toFixed(2);});
+  document.getElementById("sHiVal")?.addEventListener("input",e=>{hiVal=parseFloat(e.target.value);document.getElementById("vHiVal").textContent=hiVal.toFixed(2);});
 
   const starterSel=document.getElementById("starterPreset");
   STARTERS.forEach((s,i)=>{const o=document.createElement("option");o.value=i;o.textContent=s.name;starterSel.appendChild(o);});
-  document.getElementById("btnSave").addEventListener("click",()=>saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`,"png"));
-  document.getElementById("btnPause").addEventListener("click",()=>{
+  document.getElementById("btnSave")?.addEventListener("click",()=>saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`,"png"));
+  document.getElementById("btnPause")?.addEventListener("click",()=>{
     paused=!paused;if(paused)pauseT=millis()-t0;else t0=millis()-pauseT;
     document.getElementById("btnPause").textContent=paused?"play":"pause";
   });
-  document.getElementById("btnThumb").addEventListener("click",saveThumb);
+  document.getElementById("btnThumb")?.addEventListener("click",saveThumb);
   attachWorkflowControls();
   bindTransparentBgToggle();
   DEFAULT_STATE=_clone(captureState());
@@ -803,7 +934,7 @@ function _noixzyHandAuthoredGridUi(){
     tools.dataset.noixzyGridOrdered="1";
     const groups = [
       ["btnPin","exportFavs","btnCopy","btnPaste"],
-      ["btnAudio","btnTransparentBg","clearFavs"],
+      ["btnAudio","clearFavs"],
       ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
     ];
     const made=[];
@@ -1198,7 +1329,7 @@ function _noixzyEnsureBottomFavButtons(){
 
   const groups = [
     [pin, exp, copy, paste],
-    [audio, alpha, clear],
+    [clear],
     [thumb, video, dur, save, save2]
   ];
 
@@ -1218,7 +1349,7 @@ function _noixzyEnsureBottomFavButtons(){
   // Fallback export if this module did not already wire exportFavs natively.
   if(!exp.dataset.noixzyFallbackBound){
     exp.dataset.noixzyFallbackBound = "1";
-    exp.addEventListener("click", e => {
+    exp?.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1253,7 +1384,7 @@ function _noixzyEnsureBottomFavButtons(){
   // Fallback clear if this module did not already wire clearFavs natively.
   if(!clear.dataset.noixzyFallbackBound){
     clear.dataset.noixzyFallbackBound = "1";
-    clear.addEventListener("click", e => {
+    clear?.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1338,5 +1469,10 @@ function buildNav(){
   setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){ el.scrollIntoView({block:"center",inline:"nearest"}); } },50);
 }
 </script>
+
+
+
+
+<script src="../gallery/noixzy_ruler_overlay.js"></script>
 </body>
 </html>

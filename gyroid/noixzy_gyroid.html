@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>noixzy // gyroid</title>
 <link rel="icon" href="data:,">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js">
+
+
+
+</script>
 <style>
   :root { --bg:#0e0e10; --panel:#101316; --ink:#e8e8ea; --accent:#48dfff; --lime:#b7ff3c; --dim:#8b969c; }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
@@ -60,7 +64,14 @@
   .cycleLine select { width:100%; margin:0; }
   .cycleBtn { min-width:30px; padding-left:0; padding-right:0; }
   .consoleBtns { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
-  .consoleBtns button { flex:1 1 calc(50% - 6px); min-width:76px; }
+  .consoleBtns button { flex:1 1 calc(33.333% - 6px); min-width:58px; padding:6px 7px; }
+  /* NOIXZY_RANDOM_HISTORY_BUTTON_SIZE */
+  .consoleBtns .historyBtn {
+    flex:0 0 42px;
+    min-width:42px;
+    font-size:13px;
+    padding:6px 0;
+  }
   .presetStatus { min-height:15px; color:var(--dim); font-size:11px; letter-spacing:.04em; margin-bottom:4px; }
   /* NOIXZY_HAND_AUTHORED_GRID_UI_CSS */
   .stageFavs {
@@ -220,31 +231,141 @@
     font-size:10px;
   }
 
+  /* NOIXZY_GYROID_RANDOM_SECTION_CLEAN */
+  .randomMiniLabel {
+    display:block;
+    margin:0 0 4px;
+    color:var(--dim);
+    font-size:10px;
+    line-height:1;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:400;
+    text-shadow:none;
+    opacity:.72;
+  }
+  .consoleBtnRow {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:4px;
+  }
+  .consoleBtnRow + .consoleBtnRow {
+    margin-top:4px;
+  }
+
+  /* NOIXZY_STRIP_VISIBLE_UI_KEEP_RENDER */
+  .panel,
+  [data-zone="right-panel"],
+  #panel,
+  #stageTools,
+  .stageTools,
+  .stageToolGroup,
+  #stageThumbs,
+  .stageThumbs,
+  #stageFavs,
+  .stageFavs,
+  #favs,
+  #favBtns,
+  .previewHistory,
+  #previewHistory,
+  .seed,
+  .btns,
+  #audioPanel,
+  #audioStatus,
+  #audioBands,
+  #audioDropZone,
+  #videoPanel {
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+
+  /* NOIXZY_HEADER_1500X50 */
+  .navBar {
+    position: fixed !important;
+    top: 12px !important;
+    left: 50% !important;
+    width: min(1500px, calc(100vw - 32px)) !important;
+    height: 50px !important;
+    transform: translateX(-50%) !important;
+    z-index: 50 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    box-sizing: border-box !important;
+    padding: 0 18px !important;
+    background: rgba(0, 0, 0, 0.34) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 16px !important;
+    box-shadow:
+      0 14px 40px rgba(0, 0, 0, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+    backdrop-filter: blur(14px) saturate(1.15) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
+  }
+
+  .navBar a {
+    color: var(--accent, #e8c86c) !important;
+    text-decoration: none !important;
+    font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    letter-spacing: .08em !important;
+  }
+
+  body {
+    padding-top: 74px !important;
+    box-sizing: border-box !important;
+  }
+
+  main,
+  .app {
+    box-sizing: border-box !important;
+  }
+
+  /* NOIXZY_CUSTOM_SVG_HEADER */
+  .navBar {
+    justify-content: center !important;
+  }
+
+  .navBar a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    line-height: 1 !important;
+  }
+
+  .navBar .galleryMark {
+    display: block !important;
+    width: auto !important;
+    height: 45px !important;
+    max-width: 460px !important;
+    object-fit: contain !important;
+    opacity: .96 !important;
+    filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) !important;
+  }
+
 </style>
 </head>
 <body>
 <div class="navBar">
-  <a id="navPrev" href="#">← prev</a>
-  <a href="../gallery/index.html" class="navCurrent">⊞ gallery</a>
-  <a id="navNext" href="#">next →</a>
+  <a href="../gallery/index.html" class="navCurrent"><img class="galleryMark" src="../gallery/gallery.svg" alt="gallery"></a>
 </div>
 <div class="app">
   <div id="stage" class="stage">
     <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
-        <button id="btnPin" type="button">★ pin</button>
+        <button id="btnPin" type="button">pin</button>
         <button id="btnCopy" type="button">copy</button>
         <button id="btnPaste" type="button">paste</button>
       </div>
-      <div class="stageToolGroup">
+      <div class="stageToolGroup" data-zone="native-bridge">
         <button id="btnAudio" type="button">audio</button>
-        <button id="btnTransparentBg" type="button">bg alpha</button>
-        <button id="exportFavs" type="button">export ★</button>
-        <button id="clearFavs" type="button">clear ★</button>
+        <button id="exportFavs" type="button">export</button>
+        <button id="clearFavs" type="button">clear</button>
       </div>
       <div class="stageToolGroup">
-        <button id="btnThumb" type="button">→ thumb</button>
+        <button id="btnThumb" type="button"> thumb</button>
         <button id="btnRec" type="button">video</button>
         <select id="recDur" title="video duration">
           <option value="2">2s</option>
@@ -263,76 +384,67 @@
       <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
     </div>
   </div>
-  <div class="panel" id="panel">
-    <h1>noixzy // gyroid</h1>
+  <div class="panel" data-zone="right-panel" id="panel">
+    <h1></h1>
 
-    <div class="cycleLine" style="margin-bottom:10px">
-      <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    <div class="cycleLine" style="margin-bottom:10px" data-zone="theme-controls">
       <select id="themeSelect"></select>
-      <button id="themeNext" class="cycleBtn" type="button">›</button>
     </div>
-    <div class="consoleBtns">
-      <button id="btnReset" type="button">reset</button>
-      <button id="btnPause" type="button">pause</button>
+    <div class="consoleBtns" data-zone="right-panel-controls">
     </div>
     <div id="presetStatus" class="presetStatus"></div>
 
-    <div class="row"><label>scale <span id="vScale">—</span></label>
+    <div class="row"><label><span id="vScale"></span></label>
       <input id="sScale" type="range" min="0" max="1" step="0.01" value="0.4"></div>
-    <div class="row"><label>threshold <span id="vThresh">—</span></label>
+    <div class="row"><label><span id="vThresh"></span></label>
       <input id="sThresh" type="range" min="0" max="1" step="0.01" value="0.22"></div>
-    <div class="row"><label>phase shift <span id="vPhase">—</span></label>
+    <div class="row"><label><span id="vPhase"></span></label>
       <input id="sPhase" type="range" min="0" max="1" step="0.01" value="0.3"></div>
-    <div class="row"><label>spin <span id="vSpin">—</span></label>
+    <div class="row"><label><span id="vSpin"></span></label>
       <input id="sSpin" type="range" min="0" max="1" step="0.01" value="0.25"></div>
-    <div class="row"><label>distance <span id="vDist">—</span></label>
+    <div class="row"><label><span id="vDist"></span></label>
       <input id="sDist" type="range" min="2.6" max="8" step="0.05" value="4.8"></div>
-    <div class="row"><label>elevation <span id="vElev">—</span></label>
+    <div class="row"><label><span id="vElev"></span></label>
       <input id="sElev" type="range" min="-1.5" max="2.5" step="0.05" value="0.9"></div>
-    <div class="row"><label>ao <span id="vAO">—</span></label>
+    <div class="row"><label><span id="vAO"></span></label>
       <input id="sAO" type="range" min="0" max="1" step="0.01" value="0.6"></div>
-    <div class="row"><label>palette <span id="vPal">—</span></label>
+    <div class="row"><label><span id="vPal"></span></label>
       <input id="sPal" type="range" min="0" max="11" step="1" value="4"></div>
 
-    <div class="row colorRow"><label for="bgColor">background</label>
+    <div class="row colorRow"><label for="bgColor"></label>
       <input id="bgColor" type="color" value="#0c0c0c"></div>
-    <div class="row"><label>bg value <span id="vBgVal">—</span></label>
+    <div class="row"><label><span id="vBgVal"></span></label>
       <input id="sBgVal" type="range" min="0" max="2" step="0.01" value="1"></div>
-    <div class="row colorRow"><label for="formColor">form color</label>
+    <div class="row colorRow"><label for="formColor"></label>
       <input id="formColor" type="color" value="#3a3a3a"></div>
-    <div class="row colorRow"><label for="hiColor">highlight / rim</label>
+    <div class="row colorRow"><label for="hiColor"></label>
       <input id="hiColor" type="color" value="#f2f2f2"></div>
-    <div class="row"><label>form saturation <span id="vFormSat">—</span></label>
+    <div class="row"><label><span id="vFormSat"></span></label>
       <input id="sFormSat" type="range" min="0" max="2" step="0.01" value="1"></div>
-    <div class="row"><label>form value <span id="vFormVal">—</span></label>
+    <div class="row"><label><span id="vFormVal"></span></label>
       <input id="sFormVal" type="range" min="0" max="2" step="0.01" value="1"></div>
-    <div class="row"><label>rim strength <span id="vRim">—</span></label>
+    <div class="row"><label><span id="vRim"></span></label>
       <input id="sRim" type="range" min="0" max="2" step="0.01" value="1"></div>
 
     <div class="presetBox">
       <div class="cycleLine" style="margin-top:8px">
-        <button id="starterPrev" class="cycleBtn" type="button">‹</button>
         <select id="starterPreset"></select>
-        <button id="starterNext" class="cycleBtn" type="button">›</button>
       </div>
     </div>
 
     <div id="audioPanel" style="display:none;margin-top:10px;padding:8px;background:#0a0a0a;border-radius:6px;font-size:12px;">
-      <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:#666;transition:border-color .2s;">
-        drop audio file &nbsp;·&nbsp; <span style="color:var(--accent);">click to browse</span>
+      <div id="audioDropZone" style="border:1px dashed #444;border-radius:5px;padding:10px 8px;text-align:center;cursor:pointer;margin-bottom:8px;color:#666;transition:border-color .2s;"><span style="color:var(--accent);"></span>
         <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
       </div>
       <div id="audioStatus" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
-        <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
         <span id="audioFilename" style="color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
-        <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
       </div>
-      <div style="color:var(--accent);margin-bottom:6px;letter-spacing:.08em;">audio → params</div>
+      <div style="color:var(--accent);margin-bottom:6px;letter-spacing:.08em;"></div>
       <div id="audioBands"></div>
     </div>
     <div id="favPanel" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
 
-    <div class="hint">h hide · space pause · [ ] theme · s save</div>
+    <div class="hint"></div>
   </div>
 </div>
 
@@ -463,6 +575,52 @@ void main() {
 </script>
 
 <script>
+(function initNoixzyLegacyControlBridge(){
+  if(window.__noixzyLegacyControlBridge) return;
+  window.__noixzyLegacyControlBridge=true;
+
+  function ensureHost(){
+    let host=document.getElementById('noixzyLegacyControlBridge');
+    if(!host){
+      host=document.createElement('div');
+      host.id='noixzyLegacyControlBridge';
+      host.style.display='none';
+      document.body.appendChild(host);
+    }
+    return host;
+  }
+
+  function ensureButton(id){
+    if(document.getElementById(id)) return;
+    const host=ensureHost();
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.id=id;
+    host.appendChild(btn);
+  }
+
+  function ensureSelect(id,values,selected){
+    if(document.getElementById(id)) return;
+    const host=ensureHost();
+    const sel=document.createElement('select');
+    sel.id=id;
+    values.forEach(v=>{
+      const opt=document.createElement('option');
+      opt.value=String(v);
+      opt.textContent=String(v);
+      if(String(v)===String(selected)) opt.selected=true;
+      sel.appendChild(opt);
+    });
+    host.appendChild(sel);
+  }
+
+  [
+    'newSeed','randomUnlocked','randomForm','randomColor',
+    'reset','copy','paste','pause','save','save2x','rec','thumb'
+  ].forEach(ensureButton);
+  ensureSelect('recDur',[2,4,8,16],4);
+})();
+
 const PIECE = "gyroid";
 let transparentBg = false;
 function _flashConsole(msg){ const el=document.getElementById("presetStatus"); if(el) el.textContent=msg; }
@@ -709,15 +867,15 @@ function _buildAudioUI(){
   function _ensureCtx(){if(!audioCtx){audioCtx=new AudioContext();analyser=audioCtx.createAnalyser();analyser.fftSize=512;audioData=new Uint8Array(analyser.frequencyBinCount);}if(audioCtx.state==="suspended")audioCtx.resume();}
   async function _loadFile(file){_ensureCtx();if(audioSource){try{audioSource.stop();}catch(e){}audioSource=null;}const ab=await file.arrayBuffer();audioBuffer=await audioCtx.decodeAudioData(ab);audioFilename.textContent=file.name;audioStatus.style.display="flex";_playBuffer();}
   function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
-  audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
+  audioPlayPause?.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
   const _lfd=async f=>{if(f&&f.type.startsWith("audio/"))await _loadFile(f);};
-  audioDropZone.addEventListener("click",()=>audioFileInput.click());
-  audioFileInput.addEventListener("change",e=>{if(e.target.files[0])_lfd(e.target.files[0]);});
-  audioDropZone.addEventListener("dragover",e=>{e.preventDefault();audioDropZone.style.borderColor="var(--accent)";});
-  audioDropZone.addEventListener("dragleave",()=>{audioDropZone.style.borderColor="#444";});
-  audioDropZone.addEventListener("drop",e=>{e.preventDefault();audioDropZone.style.borderColor="#444";_lfd(e.dataTransfer.files[0]);});
-  btnMic.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
-  btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+  audioDropZone?.addEventListener("click",()=>audioFileInput.click());
+  audioFileInput?.addEventListener("change",e=>{if(e.target.files[0])_lfd(e.target.files[0]);});
+  audioDropZone?.addEventListener("dragover",e=>{e.preventDefault();audioDropZone.style.borderColor="var(--accent)";});
+  audioDropZone?.addEventListener("dragleave",()=>{audioDropZone.style.borderColor="#444";});
+  audioDropZone?.addEventListener("drop",e=>{e.preventDefault();audioDropZone.style.borderColor="#444";_lfd(e.dataTransfer.files[0]);});
+  btnMic?.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
+  btnAudio?.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
   _pAudioParams.forEach(band_=>{}); // use _pAudioParams for dropdown
   ['bass','mid','high','presence'].forEach(band=>{
     const row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:6px;margin-bottom:5px;";
@@ -730,9 +888,9 @@ function _buildAudioUI(){
     dep.addEventListener("input",()=>{ADEPTH[band]=parseFloat(dep.value);});
     row.append(lbl,sel,dep);audioBands.appendChild(row);
   });
-  document.getElementById("btnPin").addEventListener("click",_pinFav);
-  document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
-  document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
+  document.getElementById("btnPin")?.addEventListener("click",_pinFav);
+  document.getElementById("exportFavs")?.addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
+  document.getElementById("clearFavs")?.addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
 }
 
 
@@ -791,15 +949,15 @@ function setup() {
     });
   });
 
-  document.getElementById("bgColor").addEventListener("input",   e=>{ cs.bg   = e.target.value; });
-  document.getElementById("formColor").addEventListener("input",  e=>{ cs.form = e.target.value; });
-  document.getElementById("hiColor").addEventListener("input",    e=>{ cs.hi   = e.target.value; });
-  document.getElementById("sBgVal").addEventListener("input",     e=>{ cs.bgVal=parseFloat(e.target.value); document.getElementById("vBgVal").textContent=cs.bgVal.toFixed(2); });
-  document.getElementById("sFormSat").addEventListener("input",   e=>{ cs.fSat =parseFloat(e.target.value); document.getElementById("vFormSat").textContent=cs.fSat.toFixed(2); });
-  document.getElementById("sFormVal").addEventListener("input",   e=>{ cs.fVal =parseFloat(e.target.value); document.getElementById("vFormVal").textContent=cs.fVal.toFixed(2); });
-  document.getElementById("sRim").addEventListener("input",       e=>{ cs.rim  =parseFloat(e.target.value); document.getElementById("vRim").textContent=cs.rim.toFixed(2); });
+  document.getElementById("bgColor")?.addEventListener("input",   e=>{ cs.bg   = e.target.value; });
+  document.getElementById("formColor")?.addEventListener("input",  e=>{ cs.form = e.target.value; });
+  document.getElementById("hiColor")?.addEventListener("input",    e=>{ cs.hi   = e.target.value; });
+  document.getElementById("sBgVal")?.addEventListener("input",     e=>{ cs.bgVal=parseFloat(e.target.value); document.getElementById("vBgVal").textContent=cs.bgVal.toFixed(2); });
+  document.getElementById("sFormSat")?.addEventListener("input",   e=>{ cs.fSat =parseFloat(e.target.value); document.getElementById("vFormSat").textContent=cs.fSat.toFixed(2); });
+  document.getElementById("sFormVal")?.addEventListener("input",   e=>{ cs.fVal =parseFloat(e.target.value); document.getElementById("vFormVal").textContent=cs.fVal.toFixed(2); });
+  document.getElementById("sRim")?.addEventListener("input",       e=>{ cs.rim  =parseFloat(e.target.value); document.getElementById("vRim").textContent=cs.rim.toFixed(2); });
 
-  document.getElementById("sPal").addEventListener("input", e=>{
+  document.getElementById("sPal")?.addEventListener("input", e=>{
     const idx = parseInt(e.target.value);
     document.getElementById("vPal").textContent = `${idx} ${PALETTES[idx][0]}`;
     applyPalette(idx);
@@ -811,12 +969,12 @@ function setup() {
   const starterSel = document.getElementById("starterPreset");
   STARTERS.forEach((s,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=s.name; starterSel.appendChild(o); });
 
-  document.getElementById("btnSave").addEventListener("click", ()=>{
+  document.getElementById("btnSave")?.addEventListener("click", ()=>{
     saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`, "png");
   });
-  document.getElementById("btnThumb").addEventListener("click", saveThumb);
+  document.getElementById("btnThumb")?.addEventListener("click", saveThumb);
 
-  document.getElementById("btnPause").addEventListener("click", ()=>{
+  document.getElementById("btnPause")?.addEventListener("click", ()=>{
     paused = !paused;
     if(paused) pauseT = millis() - t0;
     else t0 = millis() - pauseT;
@@ -982,7 +1140,7 @@ function _noixzyHandAuthoredGridUi(){
     tools.dataset.noixzyGridOrdered="1";
     const groups = [
       ["btnPin","exportFavs","btnCopy","btnPaste"],
-      ["btnAudio","btnTransparentBg","clearFavs"],
+      ["btnAudio","clearFavs"],
       ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
     ];
     const made=[];
@@ -1242,23 +1400,44 @@ function _noixzyEnsureTopRightButtons(){
     return b;
   };
 
-  const bRandom = existingRandom || makeBtn("btnRandom", "randomize<br>unlocked");
-  const bForm   = existingForm   || makeBtn("btnRandomForm", "randomize<br>form");
-  const bColor  = existingColor  || makeBtn("btnRndColor", "randomize<br>color");
-  const bSeed   = existingSeed   || makeBtn("btnNewSeed", '<span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span>');
+  const bUndo   = makeBtn("btnUndo", "undo");
+  const bRedo   = makeBtn("btnRedo", "redo");
+  bUndo.classList.add("historyBtn");
+  bRedo.classList.add("historyBtn");
+  bUndo.title = "undo parameter change";
+  bRedo.title = "redo parameter change";
+
+  const bRandom = existingRandom || makeBtn("btnRandom", "all");
+  const bForm   = existingForm   || makeBtn("btnRandomForm", "form");
+  const bColor  = existingColor  || makeBtn("btnRndColor", "color");
+  const bSeed   = existingSeed   || makeBtn("btnNewSeed", '<span class="seedLabel">seed</span>');
   const bReset  = existingReset  || makeBtn("btnReset", "reset");
   const bPause  = existingPause  || makeBtn("btnPause", "pause");
 
   // Normalize labels without breaking IDs.
-  bRandom.innerHTML = "randomize<br>unlocked";
-  bForm.innerHTML = "randomize<br>form";
-  bColor.innerHTML = "randomize<br>color";
-  if(!bSeed.querySelector(".seedLabel")){
-    bSeed.innerHTML = '<span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span>';
-  }
+  bRandom.innerHTML = "all";
+  bForm.innerHTML = "form";
+  bColor.innerHTML = "color";
+  bSeed.innerHTML = '<span class="seedLabel">seed</span>';
 
   btnBox.innerHTML = "";
-  [bRandom,bForm,bColor,bSeed,bReset,bPause].forEach(b => btnBox.appendChild(b));
+  const randomLabel = document.createElement("div");
+  randomLabel.className = "randomMiniLabel";
+  randomLabel.textContent = "RANDOM";
+
+  const randomRow = document.createElement("div");
+  randomRow.className = "consoleBtnRow";
+  [bRandom,bForm,bColor].forEach(b => randomRow.appendChild(b));
+
+  const historyRow = document.createElement("div");
+  historyRow.className = "consoleBtnRow";
+  [bRedo,bUndo,bSeed].forEach(b => historyRow.appendChild(b));
+
+  const utilityRow = document.createElement("div");
+  utilityRow.className = "consoleBtnRow";
+  [bReset,bPause].forEach(b => utilityRow.appendChild(b));
+
+  [randomLabel,randomRow,historyRow,utilityRow].forEach(n => btnBox.appendChild(n));
 
   if(themeLine){
     panel.insertBefore(btnBox, themeLine.nextSibling);
@@ -1344,6 +1523,122 @@ window.addEventListener("load", () => {
 /* NOIXZY_TOP_RIGHT_BUTTONS_ONLY_END */
 
 
+
+/* NOIXZY_RANDOM_SECTION_HISTORY_START */
+(function(){
+  if(window.__noixzyRandomSectionHistory) return;
+  window.__noixzyRandomSectionHistory = true;
+
+  const H = { undo:[], redo:[], before:null, applying:false };
+
+  function snap(){
+    const out = {};
+    document.querySelectorAll('.panel input, .panel select').forEach(el=>{
+      if(!el.id) return;
+      if(el.type === "button" || el.type === "file") return;
+      out[el.id] = el.type === "checkbox" ? !!el.checked : el.value;
+    });
+    return out;
+  }
+
+  function same(a,b){ return JSON.stringify(a) === JSON.stringify(b); }
+
+  function buttons(){
+    const u=document.getElementById("btnUndo");
+    const r=document.getElementById("btnRedo");
+    if(u) u.disabled = !H.undo.length;
+    if(r) r.disabled = !H.redo.length;
+  }
+
+  function apply(x){
+    if(!x) return;
+    H.applying = true;
+    Object.entries(x).forEach(([id,val])=>{
+      const el=document.getElementById(id);
+      if(!el) return;
+      if(el.type === "checkbox") el.checked = !!val;
+      else el.value = val;
+      el.dispatchEvent(new Event("input",{bubbles:true}));
+      el.dispatchEvent(new Event("change",{bubbles:true}));
+    });
+    H.applying = false;
+    buttons();
+  }
+
+  function push(before){
+    if(H.applying || !before) return;
+    const after = snap();
+    if(same(before, after)) return;
+    H.undo.push(before);
+    if(H.undo.length > 80) H.undo.shift();
+    H.redo = [];
+    buttons();
+  }
+
+  function start(){ if(!H.before) H.before = snap(); }
+  function end(){ const b=H.before; H.before=null; push(b); }
+
+  function undo(){
+    if(!H.undo.length) return;
+    const cur=snap();
+    const prev=H.undo.pop();
+    H.redo.push(cur);
+    apply(prev);
+  }
+
+  function redo(){
+    if(!H.redo.length) return;
+    const cur=snap();
+    const next=H.redo.pop();
+    H.undo.push(cur);
+    apply(next);
+  }
+
+  function bind(){
+    document.querySelectorAll('.panel input, .panel select').forEach(el=>{
+      if(el.dataset.noixzyRandomHist === "1") return;
+      if(el.type === "button" || el.type === "file") return;
+      el.dataset.noixzyRandomHist = "1";
+      el.addEventListener("pointerdown", start);
+      el.addEventListener("focus", start);
+      el.addEventListener("change", end);
+      el.addEventListener("pointerup", end);
+    });
+
+    ["btnRandom","btnRandomForm","btnRndColor","btnNewSeed","btnReset"].forEach(id=>{
+      const b=document.getElementById(id);
+      if(!b || b.dataset.noixzyRandomHistClick === "1") return;
+      b.dataset.noixzyRandomHistClick = "1";
+      b.addEventListener("click", ()=>{
+        const before = snap();
+        setTimeout(()=>push(before), 0);
+      }, true);
+    });
+
+    const u=document.getElementById("btnUndo");
+    const r=document.getElementById("btnRedo");
+
+    if(u && u.dataset.noixzyRandomHist !== "1"){
+      u.dataset.noixzyRandomHist = "1";
+      u.addEventListener("click", e=>{ e.preventDefault(); e.stopPropagation(); undo(); });
+    }
+    if(r && r.dataset.noixzyRandomHist !== "1"){
+      r.dataset.noixzyRandomHist = "1";
+      r.addEventListener("click", e=>{ e.preventDefault(); e.stopPropagation(); redo(); });
+    }
+
+    buttons();
+  }
+
+  window.addEventListener("load", ()=>{
+    setTimeout(bind,120);
+    setTimeout(bind,420);
+    setTimeout(bind,900);
+  });
+})();
+/* NOIXZY_RANDOM_SECTION_HISTORY_END */
+
+
 /* NOIXZY_BOTTOM_FAV_BUTTONS_ONLY_START */
 function _noixzyEnsureBottomFavButtons(){
   const tools = document.getElementById("stageTools");
@@ -1377,7 +1672,7 @@ function _noixzyEnsureBottomFavButtons(){
 
   const groups = [
     [pin, exp, copy, paste],
-    [audio, bgAlpha, clear],
+    [clear],
     [thumb, video, dur, save, save2]
   ];
 
@@ -1395,7 +1690,7 @@ function _noixzyEnsureBottomFavButtons(){
   // Fallback export if this module did not already wire exportFavs natively.
   if(!exp.dataset.noixzyFallbackBound){
     exp.dataset.noixzyFallbackBound = "1";
-    exp.addEventListener("click", e => {
+    exp?.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1430,7 +1725,7 @@ function _noixzyEnsureBottomFavButtons(){
   // Fallback clear if this module did not already wire clearFavs natively.
   if(!clear.dataset.noixzyFallbackBound){
     clear.dataset.noixzyFallbackBound = "1";
-    clear.addEventListener("click", e => {
+    clear?.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1515,5 +1810,10 @@ function buildNav(){
   setTimeout(()=>{ const el=strip.querySelector(".active"); if(el){ el.scrollIntoView({block:"center",inline:"nearest"}); } },50);
 }
 </script>
+
+
+
+
+<script src="../gallery/noixzy_ruler_overlay.js"></script>
 </body>
 </html>

@@ -1,0 +1,2511 @@
+=== HAND-AUTHORED BUTTON WIRING AUDIT ===
+
+## grid_extrude/noixzy_grid_extrude.html
+
+  BUTTON: ↶
+  id: btnUndo
+  wired/referenced at:
+    L175: <button id="btnUndo" type="button" title="undo parameter change">↶</button>
+    L381: const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+    L439: const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+
+  BUTTON: ↷
+  id: btnRedo
+  wired/referenced at:
+    L176: <button id="btnRedo" type="button" title="redo parameter change">↷</button>
+    L381: const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+    L439: const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L181: <button id="btnPin" type="button">★ pin</button>
+    L561: document.getElementById("btnPin")?.addEventListener("click",()=>{ const b=document.getElementById("pin"); if(b) b.click(); });
+    L1128: const bp=document.getElementById("btnPin");
+
+  BUTTON: export ★
+  id: exportFavs2
+  wired/referenced at:
+    L182: <button id="exportFavs2" type="button">export ★</button>
+    L565: document.getElementById("exportFavs2")?.addEventListener("click",()=>{ const b=document.getElementById("exportFavs"); if(b) b.click(); });
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L183: <button id="btnCopy" type="button">copy</button>
+    L562: document.getElementById("btnCopy")?.addEventListener("click",()=>{ const b=document.getElementById("copyP"); if(b) b.click(); });
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L184: <button id="btnPaste" type="button">paste</button>
+    L563: document.getElementById("btnPaste")?.addEventListener("click",()=>{ const b=document.getElementById("pasteP"); if(b) b.click(); });
+
+  BUTTON: audio
+  id: btnAudio2
+  wired/referenced at:
+    L187: <button id="btnAudio2" type="button">audio</button>
+    L564: document.getElementById("btnAudio2")?.addEventListener("click",()=>{ const b=document.getElementById("btnAudio"); if(b) b.click(); });
+
+  BUTTON: bg alpha
+  id: btnTransparentBg2
+  wired/referenced at:
+    L188: <button id="btnTransparentBg2" type="button">bg alpha</button>
+    L514: const btn2=document.getElementById("btnTransparentBg2");
+
+  BUTTON: clear ★
+  id: clearFavs2
+  wired/referenced at:
+    L189: <button id="clearFavs2" type="button">clear ★</button>
+    L566: document.getElementById("clearFavs2")?.addEventListener("click",()=>{ const b=document.getElementById("clearFavs"); if(b) b.click(); });
+
+  BUTTON: → thumb
+  id: btnThumb2
+  wired/referenced at:
+    L192: <button id="btnThumb2" type="button">→ thumb</button>
+    L567: document.getElementById("btnThumb2")?.addEventListener("click",saveThumb);
+
+  BUTTON: video
+  id: btnRec2
+  wired/referenced at:
+    L193: <button id="btnRec2" type="button">video</button>
+    L568: document.getElementById("btnRec2")?.addEventListener("click",()=>{ const b=document.getElementById("rec"); if(b) b.click(); });
+
+  BUTTON: save png
+  id: btnSave2
+  wired/referenced at:
+    L200: <button id="btnSave2" type="button">save png</button>
+    L201: <button id="btnSave2x2" type="button">save 2x</button>
+    L569: document.getElementById("btnSave2")?.addEventListener("click",()=>{ const b=document.getElementById("save"); if(b) b.click(); });
+    L570: document.getElementById("btnSave2x2")?.addEventListener("click",()=>{ const b=document.getElementById("save2x"); if(b) b.click(); });
+
+  BUTTON: save 2x
+  id: btnSave2x2
+  wired/referenced at:
+    L201: <button id="btnSave2x2" type="button">save 2x</button>
+    L570: document.getElementById("btnSave2x2")?.addEventListener("click",()=>{ const b=document.getElementById("save2x"); if(b) b.click(); });
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L206: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1239: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L208: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1240: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L216: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L548: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L218: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L549: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: random all
+  id: btnRandom
+  wired/referenced at:
+    L222: <button id="btnRandom" type="button">random<br>all</button>
+    L223: <button id="btnRandomForm" type="button">random<br>form</button>
+    L553: document.getElementById("btnRandom")?.addEventListener("click",()=>randomizeParams("all"));
+    L554: document.getElementById("btnRandomForm")?.addEventListener("click",()=>randomizeParams("form"));
+
+  BUTTON: random form
+  id: btnRandomForm
+  wired/referenced at:
+    L223: <button id="btnRandomForm" type="button">random<br>form</button>
+    L554: document.getElementById("btnRandomForm")?.addEventListener("click",()=>randomizeParams("form"));
+
+  BUTTON: random color
+  id: btnRndColor
+  wired/referenced at:
+    L224: <button id="btnRndColor" type="button">random<br>color</button>
+    L555: document.getElementById("btnRndColor")?.addEventListener("click",randomizeColor);
+
+  BUTTON: extrude off
+  id: extrudeOff
+  wired/referenced at:
+    L225: <button id="extrudeOff" type="button">extrude<br>off</button>
+    L356: let extrudeOff=false;
+    L358: const snap={__extrudeOff:extrudeOff};
+    L386: const b=document.getElementById("extrudeOff");
+    L388: b.innerHTML=extrudeOff ? "extrude<br>off ✓" : "extrude<br>off";
+    L389: b.classList.toggle("active",extrudeOff);
+    L392: if(!extrudeOff) return;
+    L403: if(snap.__extrudeOff!==undefined) extrudeOff=!!snap.__extrudeOff;
+    L430: extrudeOff=!extrudeOff;
+    L556: document.getElementById("extrudeOff")?.addEventListener("click",_toggleExtrudeOff);
+    L880: if(extrudeOff && p.g==="extrude") return;
+
+  BUTTON: new seed —
+  id: btnNewSeed
+  wired/referenced at:
+    L226: <button id="btnNewSeed" type="button"><span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span></button>
+    L557: document.getElementById("btnNewSeed")?.addEventListener("click",()=>{const before=_histSnapshot();newSeedFromConsole();_histPush(before);});
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L227: <button id="btnReset" type="button">reset</button>
+    L551: document.getElementById("btnReset")?.addEventListener("click",()=>{const before=_histSnapshot();resetFromConsole();_histPush(before);});
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L228: <button id="btnPause" type="button">pause</button>
+    L552: document.getElementById("btnPause")?.addEventListener("click",pauseFromConsole);
+    L922: const bp=document.getElementById("btnPause");
+    L929: const b=document.getElementById("btnPause");
+    L934: const b=document.getElementById("btnPause");
+
+  BUTTON: save preset
+  id: savePreset
+  wired/referenced at:
+    L232: <button id="savePreset" type="button">save preset</button>
+    L1047: document.getElementById("savePreset")?.addEventListener("click",_gridSavePreset);
+
+  BUTTON: load
+  id: loadPreset
+  wired/referenced at:
+    L236: <button id="loadPreset" type="button">load</button>
+    L1048: document.getElementById("loadPreset")?.addEventListener("click",_gridLoadPreset);
+
+  BUTTON: delete
+  id: deletePreset
+  wired/referenced at:
+    L237: <button id="deletePreset" type="button">delete</button>
+    L1049: document.getElementById("deletePreset")?.addEventListener("click",_gridDeletePreset);
+
+  BUTTON: new seed
+  id: newSeed
+  wired/referenced at:
+    L244: <button id="newSeed">new seed</button>
+    L557: document.getElementById("btnNewSeed")?.addEventListener("click",()=>{const before=_histSnapshot();newSeedFromConsole();_histPush(before);});
+    L911: function newSeedFromConsole(){
+    L912: const b=document.getElementById("newSeed");
+    L992: document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);
+
+  BUTTON: ★ pin
+  id: pin
+  wired/referenced at:
+    L181: <button id="btnPin" type="button">★ pin</button>
+    L247: <button id="pin">★ pin</button>
+    L543: loadFavs();       // restore pinned favorites from previous sessions
+    L561: document.getElementById("btnPin")?.addEventListener("click",()=>{ const b=document.getElementById("pin"); if(b) b.click(); });
+    L1036: document.getElementById("pin").addEventListener("click",pinFav);
+    L1119: // ---- favorites / presets: pin states you like, recall, export ----
+    L1123: function pinFav(){
+    L1127: flash("pin","★ pinned");
+    L1129: if(bp){ const old=bp.textContent; bp.textContent="★ pinned"; setTimeout(()=>{bp.textContent=old;},1100); }
+
+  BUTTON: reset
+  id: reset
+  wired/referenced at:
+    L131: .presetStatus { margin-top:8px; min-height:16px; color:var(--dim); font-size:11px; letter-spacing:.04em; }
+    L132: .presetLine { display:grid; grid-template-columns:minmax(0,1fr) 96px; gap:8px; margin-top:8px; }
+    L133: .presetLine.triple { grid-template-columns:minmax(0,1fr) 72px 82px; }
+    L134: .presetLine input,.presetLine select {
+    L139: .presetLine input::placeholder { color:var(--dim); opacity:1; }
+    L227: <button id="btnReset" type="button">reset</button>
+    L230: <div class="presetLine">
+    L231: <input id="presetName" type="text" placeholder="preset name">
+    L232: <button id="savePreset" type="button">save preset</button>
+    L234: <div class="presetLine triple">
+    L235: <select id="localPreset"></select>
+    L236: <button id="loadPreset" type="button">load</button>
+    L237: <button id="deletePreset" type="button">delete</button>
+    L239: <div id="presetStatus" class="presetStatus"></div>
+    L248: <button id="reset">reset</button>
+    L289: function _flashConsole(msg){ const el=document.getElementById("presetStatus"); if(el) el.textContent=msg; }
+    L550: // reset / pause / random console controls
+    L551: document.getElementById("btnReset")?.addEventListener("click",()=>{const before=_histSnapshot();resetFromConsole();_histPush(before);});
+    L917: function resetFromConsole(){
+    L918: const b=document.getElementById("reset");
+    ... 44 more references
+
+  BUTTON: copy
+  id: copyP
+  wired/referenced at:
+    L249: <button id="copyP">copy</button>
+    L562: document.getElementById("btnCopy")?.addEventListener("click",()=>{ const b=document.getElementById("copyP"); if(b) b.click(); });
+    L811: function copyParams(){
+    L814: navigator.clipboard.writeText(txt).then(()=>flash("copyP","copied ✓"),()=>{prompt("params JSON:",txt);flash("copyP","copied ✓");});
+    L815: }else{ prompt("params JSON:",txt); flash("copyP","copied ✓"); }
+    L999: document.getElementById("copyP").addEventListener("click",copyParams);
+
+  BUTTON: paste
+  id: pasteP
+  wired/referenced at:
+    L250: <button id="pasteP">paste</button>
+    L563: document.getElementById("btnPaste")?.addEventListener("click",()=>{ const b=document.getElementById("pasteP"); if(b) b.click(); });
+    L817: function pasteParams(){
+    L818: const fail=()=>flash("pasteP","✗ invalid");
+    L831: flash("pasteP","pasted ✓");
+    L1000: document.getElementById("pasteP").addEventListener("click",pasteParams);
+
+  BUTTON: pause
+  id: pause
+  wired/referenced at:
+    L228: <button id="btnPause" type="button">pause</button>
+    L251: <button id="pause">pause</button>
+    L281: <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
+    L290: let seed=1, running=true, t0, pauseT=0, dirty=true;
+    L550: // reset / pause / random console controls
+    L552: document.getElementById("btnPause")?.addEventListener("click",pauseFromConsole);
+    L596: const b=document.getElementById("pause");
+    L597: if(running){ pauseT=(millis()-t0)/1000; running=false; if(b)b.textContent="play"; }
+    L598: else { t0=millis()-pauseT*1000; running=true; if(b)b.textContent="pause"; }
+    L708: const time = (running ? (millis()-t0)/1000 : pauseT);
+    L789: if(P.displace>0.01){ const t=(running?(millis()-t0)/1000:pauseT), strips=64, amp=P.displace*44;
+    L855: drawScene(running?(millis()-t0)/1000:pauseT);
+    L923: if(bp) bp.textContent=running?"pause":"play";
+    L927: function pauseFromConsole(){
+    L930: if(b) b.textContent=running?"pause":"play";
+    L935: if(b) b.textContent=running?"pause":"play";
+    L994: document.getElementById("pause").addEventListener("click",togglePause);
+
+  BUTTON: save png
+  id: save
+  wired/referenced at:
+    L200: <button id="btnSave2" type="button">save png</button>
+    L201: <button id="btnSave2x2" type="button">save 2x</button>
+    L232: <button id="savePreset" type="button">save preset</button>
+    L252: <button id="save">save png</button>
+    L253: <button id="save2x">save 2x</button>
+    L281: <div id="kbHelp" aria-hidden="true"><div class="kbCard"><h2>keyboard shortcuts</h2><div class="kbGrid"><b>h</b><span>hide / show panel</span><b>?</b><span>this help</span><b>space</b><span>pause / play</span><b>[ / ]</b><span>cycle theme</span><b>s</b><span>save png</span></div></div></div>
+    L567: document.getElementById("btnThumb2")?.addEventListener("click",saveThumb);
+    L569: document.getElementById("btnSave2")?.addEventListener("click",()=>{ const b=document.getElementById("save"); if(b) b.click(); });
+    L570: document.getElementById("btnSave2x2")?.addEventListener("click",()=>{ const b=document.getElementById("save2x"); if(b) b.click(); });
+    L601: function triggerSavePNG(){ saveCanvas(`noixzy_${PIECE}_${seed}`,"png"); }
+    L603: async function saveThumb(){
+    L612: if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+    L839: function saveGraphicsPNG(g,name){
+    L843: function save2xPNG(){
+    L844: const btn=document.getElementById("save2x"), old=btn?btn.textContent:"save 2x";
+    L856: saveGraphicsPNG(tempScene,`noixzy_${PIECE}_${seed}_2x.png`);
+    L995: document.getElementById("save").addEventListener("click",triggerSavePNG);
+    L996: document.getElementById("thumb").addEventListener("click",saveThumb);
+    L997: document.getElementById("save2x").addEventListener("click",save2xPNG);
+    L1042: document.getElementById("clearFavs").addEventListener("click",()=>{ if(confirm("clear all favorites?")){favs=[];saveFavs();renderFavs();} });
+    ... 5 more references
+
+  BUTTON: save 2x
+  id: save2x
+  wired/referenced at:
+    L253: <button id="save2x">save 2x</button>
+    L570: document.getElementById("btnSave2x2")?.addEventListener("click",()=>{ const b=document.getElementById("save2x"); if(b) b.click(); });
+    L843: function save2xPNG(){
+    L844: const btn=document.getElementById("save2x"), old=btn?btn.textContent:"save 2x";
+    L997: document.getElementById("save2x").addEventListener("click",save2xPNG);
+
+  BUTTON: rec
+  id: rec
+  wired/referenced at:
+    L13: .app { display:flex; flex-direction:row; align-items:stretch; height:calc(100vh - 28px); }
+    L53: @media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
+    L107: .stageThumbs { pointer-events:auto; position:absolute; left:14px; top:50%; transform:translateY(-50%); z-index:20; width:70px; max-height:min(640px,74vh); padding:8px; border-radius:12px; background:rgba(0,0,0,0.50); border:1px solid rgba(72,223,255,0.18); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); opacity:.42; transition:opacity .22s ease; display:flex; flex-direction:column; gap:6px; }
+    L112: .thumbRow { display:flex; flex-direction:column; gap:6px; max-height:min(500px,58vh); overflow-y:auto; overflow-x:hidden; padding:0; scrollbar-width:none; }
+    L194: <select id="recDur2" title="video duration">
+    L254: <button id="rec">rec</button>
+    L255: <select id="recDur"><option value="2">2s</option><option value="4" selected>4s</option><option value="8">8s</option><option value="16">16s</option></select>
+    L568: document.getElementById("btnRec2")?.addEventListener("click",()=>{ const b=document.getElementById("rec"); if(b) b.click(); });
+    L582: // GPU post: precompute vignette gradient + grain noise once (cheap per-frame compositing)
+    L605: if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
+    L632: // ---- SYSTEM layer: recursive subdivision -> leaf cells ----
+    L732: // LOOK: vignette (precomputed gradient overlay)
+    L738: drawingContext.beginPath(); drawingContext.rect(x,y,w,h); drawingContext.clip();
+    L835: const el=document.getElementById("recDur");
+    L998: document.getElementById("rec").addEventListener("click",()=>recordClip(getRecDuration()));
+    L1119: // ---- favorites / presets: pin states you like, recall, export ----
+    L1160: function recordClip(dur=4){
+    L1161: const btn=document.getElementById('rec');
+    L1162: if(btn._recording) return;
+    L1164: if(!canvas||!canvas.captureStream){btn.textContent='unsupported';setTimeout(()=>btn.textContent='rec',2000);return;}
+    ... 9 more references
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L187: <button id="btnAudio2" type="button">audio</button>
+    L256: <button id="btnAudio">audio</button>
+    L564: document.getElementById("btnAudio2")?.addEventListener("click",()=>{ const b=document.getElementById("btnAudio"); if(b) b.click(); });
+    L1002: const btnAudio=document.getElementById("btnAudio");
+    L1023: btnAudio.addEventListener("click",()=>{ const open=audioPanel.style.display==="none"; audioPanel.style.display=open?"block":"none"; btnAudio.style.color=open?"var(--accent)":""; });
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L188: <button id="btnTransparentBg2" type="button">bg alpha</button>
+    L257: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L513: const btn=document.getElementById("btnTransparentBg");
+    L514: const btn2=document.getElementById("btnTransparentBg2");
+
+  BUTTON: → thumb
+  id: thumb
+  wired/referenced at:
+    L110: .thumbScrollBtn { border:1px solid rgba(72,223,255,0.3); background:rgba(0,0,0,.46); color:var(--accent); border-radius:5px; height:22px; cursor:pointer; padding:0; }
+    L111: .thumbScrollBtn:hover { border-color:var(--accent); }
+    L112: .thumbRow { display:flex; flex-direction:column; gap:6px; max-height:min(500px,58vh); overflow-y:auto; overflow-x:hidden; padding:0; scrollbar-width:none; }
+    L113: .thumbRow::-webkit-scrollbar { display:none; }
+    L192: <button id="btnThumb2" type="button">→ thumb</button>
+    L206: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L207: <div class="thumbRow" id="moduleThumbStrip"></div>
+    L208: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L258: <button id="thumb">→ thumb</button>
+    L602: let _thumbDir=null;
+    L605: if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
+    L609: const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
+    L611: const btn=document.getElementById("thumb");
+    L612: if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+    L996: document.getElementById("thumb").addEventListener("click",saveThumb);
+    L1235: const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
+    L1239: const up=document.getElementById("thumbUp");
+    L1240: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ▶
+  id: audioPlayPause
+  wired/referenced at:
+    L266: <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+    L1007: const audioPlayPause=document.getElementById("audioPlayPause");
+    L1014: function _playBuffer(){ if(!audioBuffer)return; if(audioSource){try{audioSource.stop();}catch(e){}} audioSource=audioCtx.createBufferSource(); audioSource.buffer=audioBuffer; audioSource.loop=true; audioSource.connect(analyser); analyser.connect(audioCtx.destination); audioSource.start(); audioPlaying=true; audioPlayPause.textContent="⏸"; audioActive=true; }
+    L1015: audioPlayPause.addEventListener("click",()=>{ if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();} });
+
+  BUTTON: mic
+  id: btnMic
+  wired/referenced at:
+    L268: <button id="btnMic" title="mic input" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    L1009: const btnMic=document.getElementById("btnMic");
+    L1022: btnMic.addEventListener("click",async()=>{ if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;} try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");} });
+
+  BUTTON: export ★
+  id: exportFavs
+  wired/referenced at:
+    L182: <button id="exportFavs2" type="button">export ★</button>
+    L275: <button id="exportFavs">export ★</button>
+    L565: document.getElementById("exportFavs2")?.addEventListener("click",()=>{ const b=document.getElementById("exportFavs"); if(b) b.click(); });
+    L1039: document.getElementById("exportFavs").addEventListener("click",()=>{ const txt=JSON.stringify(favs);
+    L1040: if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>flash("exportFavs","copied ✓"),()=>prompt("favorites:",txt));
+
+  BUTTON: clear ★
+  id: clearFavs
+  wired/referenced at:
+    L189: <button id="clearFavs2" type="button">clear ★</button>
+    L276: <button id="clearFavs">clear ★</button>
+    L566: document.getElementById("clearFavs2")?.addEventListener("click",()=>{ const b=document.getElementById("clearFavs"); if(b) b.click(); });
+    L1042: document.getElementById("clearFavs").addEventListener("click",()=>{ if(confirm("clear all favorites?")){favs=[];saveFavs();renderFavs();} });
+
+## sdf_raymarch/noixzy_sdf_raymarch.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L255: <button id="btnPin" type="button">★ pin</button>
+    L1440: const bp=document.getElementById("btnPin");
+    L1543: const pin=by("btnPin");
+
+  BUTTON: export ★
+  id: exportFavs
+  wired/referenced at:
+    L256: <button id="exportFavs" type="button">export ★</button>
+    L1546: const exp=by("exportFavs");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L257: <button id="btnCopy" type="button">copy</button>
+    L1564: const copy=by("btnCopy");
+    L1843: document.getElementById("btnCopy")?.addEventListener("click",()=>{ const b=document.getElementById("copy"); if(b) b.click(); });
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L258: <button id="btnPaste" type="button">paste</button>
+    L1567: const paste=by("btnPaste");
+    L1844: document.getElementById("btnPaste")?.addEventListener("click",()=>{ const b=document.getElementById("paste"); if(b) b.click(); });
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L261: <button id="btnAudio" type="button">audio</button>
+    L1465: const btnAudio=document.getElementById("btnAudio");
+    L1485: btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L262: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L1708: const btn=document.getElementById("btnTransparentBg");
+
+  BUTTON: clear ★
+  id: clearFavs
+  wired/referenced at:
+    L263: <button id="clearFavs" type="button">clear ★</button>
+    L1554: const clr=by("clearFavs");
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L266: <button id="btnThumb" type="button">→ thumb</button>
+    L655: const btn=document.getElementById("btnThumb");
+    L1570: const thumb=by("btnThumb");
+    L1830: document.getElementById("btnThumb")?.addEventListener("click",saveThumb);
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L267: <button id="btnRec" type="button">video</button>
+    L268: <select id="btnRecDur" title="video duration">
+    L1292: const visibleBtn=document.getElementById("btnRec");
+    L1303: const durEl=document.getElementById("btnRecDur") || document.getElementById("recDur");
+    L1506: const btn=document.getElementById("btnRec");
+    L1573: const rec=by("btnRec");
+    L1576: const src=by("btnRecDur"), dst=by("recDur");
+    L1640: const btn=document.getElementById("btnRec");
+    L1656: const durEl=document.getElementById("btnRecDur");
+    L1846: document.getElementById("btnRec")?.addEventListener("click",()=>{ const b=document.getElementById("rec"); if(b) b.click(); });
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L274: <button id="btnSave" type="button">save png</button>
+    L275: <button id="btnSave2x" type="button">save 2x</button>
+    L1581: const save=by("btnSave");
+    L1587: const save2=by("btnSave2x");
+    L1829: document.getElementById("btnSave")?.addEventListener("click",()=>{ const b=document.getElementById("save"); if(b) b.click(); });
+    L1845: document.getElementById("btnSave2x")?.addEventListener("click",()=>{ const b=document.getElementById("save2x"); if(b) b.click(); });
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L275: <button id="btnSave2x" type="button">save 2x</button>
+    L1587: const save2=by("btnSave2x");
+    L1845: document.getElementById("btnSave2x")?.addEventListener("click",()=>{ const b=document.getElementById("save2x"); if(b) b.click(); });
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L280: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1956: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L282: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1957: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L288: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L1821: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L290: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L1822: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L293: <button id="btnReset" type="button">reset</button>
+    L1824: document.getElementById("btnReset")?.addEventListener("click",()=>{ if(typeof loadState==="function"&&typeof captureState==="function"){ const def=captureState(); location.reload(); } else location.reload(); });
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L294: <button id="btnPause" type="button">pause</button>
+    L1825: document.getElementById("btnPause")?.addEventListener("click",()=>{
+
+  BUTTON: randomize unlocked
+  id: randomUnlocked
+  wired/referenced at:
+    L298: <button id="randomUnlocked" type="button">randomize unlocked</button>
+    L1770: document.getElementById("randomUnlocked").addEventListener("click", randomizeUnlockedControls);
+
+  BUTTON: randomize form
+  id: randomForm
+  wired/referenced at:
+    L300: <button id="randomForm" type="button">randomize form</button>
+    L1771: document.getElementById("randomForm").addEventListener("click", ()=>randomizeFormControls(true));
+
+  BUTTON: randomize color
+  id: randomColor
+  wired/referenced at:
+    L301: <button id="randomColor" type="button">randomize color</button>
+    L1772: document.getElementById("randomColor").addEventListener("click", ()=>randomizeColorControls(true));
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L307: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L1832: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L309: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L1837: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+  BUTTON: save preset
+  id: savePreset
+  wired/referenced at:
+    L313: <button id="savePreset" type="button">save preset</button>
+    L1773: document.getElementById("savePreset").addEventListener("click", ()=>{
+
+  BUTTON: load
+  id: loadPreset
+  wired/referenced at:
+    L317: <button id="loadPreset" type="button">load</button>
+    L1787: document.getElementById("loadPreset").addEventListener("click", ()=>{
+
+  BUTTON: delete
+  id: deletePreset
+  wired/referenced at:
+    L318: <button id="deletePreset" type="button">delete</button>
+    L1794: document.getElementById("deletePreset").addEventListener("click", ()=>{
+
+  BUTTON: new seed
+  id: newSeed
+  wired/referenced at:
+    L326: <button id="newSeed" type="button">new seed</button>
+    L1767: document.getElementById("newSeed").addEventListener("click", ()=>{
+
+  BUTTON: pause
+  id: pause
+  wired/referenced at:
+    L294: <button id="btnPause" type="button">pause</button>
+    L385: <button id="pause" type="button">pause</button>
+    L1193: const t = running ? (millis()-t0)/1000 : pauseT;
+    L1231: let pauseT = 0;
+    L1807: document.getElementById("pause").addEventListener("click", e=>{
+    L1808: if(running){ pauseT=(millis()-t0)/1000; running=false; e.target.textContent="play"; }
+    L1809: else { t0 = millis()-pauseT*1000; running=true; e.target.textContent="pause"; }
+    L1823: // reset/pause (new panel buttons)
+    L1826: const b=document.getElementById("pause"); if(b) b.click();
+
+  BUTTON: reset
+  id: reset
+  wired/referenced at:
+    L36: .tools button, .presetBox button { min-height:40px; }
+    L37: .presetBox { margin-top:12px; padding-top:12px; border-top:1px solid rgba(72,223,255,0.18); }
+    L38: .presetLine { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:8px; }
+    L39: .presetLine.triple { grid-template-columns:1fr auto auto; }
+    L74: .presetStatus { min-height:15px; color:var(--dim); font-size:11px; letter-spacing:.04em; margin-bottom:4px; }
+    L293: <button id="btnReset" type="button">reset</button>
+    L305: <div class="presetBox">
+    L308: <select id="starterPreset"></select>
+    L311: <div class="presetLine">
+    L312: <input id="presetName" type="text" placeholder="preset name">
+    L313: <button id="savePreset" type="button">save preset</button>
+    L315: <div class="presetLine triple">
+    L316: <select id="localPreset"></select>
+    L317: <button id="loadPreset" type="button">load</button>
+    L318: <button id="deletePreset" type="button">delete</button>
+    L320: <div id="presetStatus" class="read status"></div>
+    L386: <button id="reset" type="button">reset</button>
+    L651: function _flashConsole(msg){ const el=document.getElementById("presetStatus"); if(el) el.textContent=msg; }
+    L685: // controlled presets: [name, bg, lo, hi]  (hex)
+    L711: const PRESET_STORAGE_KEY = "noixzy_sdf_raymarch_presets_v1";
+    ... 58 more references
+
+  BUTTON: copy
+  id: copy
+  wired/referenced at:
+    L257: <button id="btnCopy" type="button">copy</button>
+    L387: <button id="copy" type="button">copy</button>
+    L1260: async function _copySdfState(){
+    L1262: try{ await navigator.clipboard.writeText(payload); _flashBtn("copy","copied ✓"); }
+    L1263: catch(e){ prompt("copy state",payload); }
+    L1358: document.getElementById("copy")?.addEventListener("click",_copySdfState);
+    L1564: const copy=by("btnCopy");
+    L1565: if(copy) copy.onclick=e=>{ e.preventDefault(); e.stopPropagation(); _copySdfState(); };
+    L1843: document.getElementById("btnCopy")?.addEventListener("click",()=>{ const b=document.getElementById("copy"); if(b) b.click(); });
+
+  BUTTON: paste
+  id: paste
+  wired/referenced at:
+    L258: <button id="btnPaste" type="button">paste</button>
+    L388: <button id="paste" type="button">paste</button>
+    L1265: async function _pasteSdfState(){
+    L1269: _flashBtn("paste","pasted ✓");
+    L1270: }catch(e){ _flashBtn("paste","paste ✗",1200); }
+    L1359: document.getElementById("paste")?.addEventListener("click",_pasteSdfState);
+    L1567: const paste=by("btnPaste");
+    L1568: if(paste) paste.onclick=e=>{ e.preventDefault(); e.stopPropagation(); _pasteSdfState(); };
+    L1844: document.getElementById("btnPaste")?.addEventListener("click",()=>{ const b=document.getElementById("paste"); if(b) b.click(); });
+
+  BUTTON: save png
+  id: save
+  wired/referenced at:
+    L274: <button id="btnSave" type="button">save png</button>
+    L275: <button id="btnSave2x" type="button">save 2x</button>
+    L313: <button id="savePreset" type="button">save preset</button>
+    L389: <button id="save" type="button">save png</button>
+    L390: <button id="save2x" type="button">save 2x</button>
+    L653: function saveThumb(){
+    L664: if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+    L1151: const savedTheme=localStorage.getItem(THEMEKEY); if(savedTheme) applyTheme(savedTheme);
+    L1275: function _saveSdf2x(){
+    L1277: if(!src) return _flashBtn("save2x","no canvas",1200);
+    L1288: _flashBtn("save2x","saved ✓");
+    L1360: document.getElementById("save2x")?.addEventListener("click",_saveSdf2x);
+    L1435: function _saveFavs(){try{localStorage.setItem(SDF_FAVKEY,JSON.stringify(_favs));}catch(e){}}
+    L1438: _saveFavs();
+    L1459: chip.querySelector(".x").addEventListener("click",e=>{ e.stopPropagation(); _favs.splice(i,1); _saveFavs(); _renderFavs(); });
+    L1559: _saveFavs();
+    L1571: if(thumb) thumb.onclick=e=>{ e.preventDefault(); e.stopPropagation(); saveThumb(); };
+    L1581: const save=by("btnSave");
+    L1582: if(save) save.onclick=e=>{
+    L1584: saveCanvas(`noixzy_${PIECE}_${seed}`, "png");
+    ... 12 more references
+
+  BUTTON: save 2x
+  id: save2x
+  wired/referenced at:
+    L390: <button id="save2x" type="button">save 2x</button>
+    L1277: if(!src) return _flashBtn("save2x","no canvas",1200);
+    L1288: _flashBtn("save2x","saved ✓");
+    L1360: document.getElementById("save2x")?.addEventListener("click",_saveSdf2x);
+    L1845: document.getElementById("btnSave2x")?.addEventListener("click",()=>{ const b=document.getElementById("save2x"); if(b) b.click(); });
+
+  BUTTON: rec
+  id: rec
+  wired/referenced at:
+    L12: .app { display:flex; flex-direction:row; align-items:stretch; height:calc(100vh - 28px); }
+    L46: @media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
+    L57: .stageThumbs { pointer-events:auto; position:absolute; left:14px; top:50%; transform:translateY(-50%); z-index:20; width:70px; max-height:min(640px,74vh); padding:8px; border-radius:12px; background:rgba(0,0,0,0.50); border:1px solid rgba(72,223,255,0.18); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); opacity:.42; transition:opacity .22s ease; display:flex; flex-direction:column; gap:6px; }
+    L62: .thumbRow { display:flex; flex-direction:column; gap:6px; max-height:min(500px,58vh); overflow-y:auto; overflow-x:hidden; padding:0; scrollbar-width:none; }
+    L391: <button id="rec" type="button">rec</button>
+    L392: <select id="recDur" title="record duration">
+    L432: precision highp float;
+    L661: if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
+    L963: function applyColorRecipe(recipe, respectLocks=true){
+    L964: if(!respectLocks || !locks.bgColor) colorState.bg = recipe.bg;
+    L965: if(!respectLocks || !locks.blobColor) colorState.blob = recipe.blob;
+    L966: if(!respectLocks || !locks.hiColor) colorState.hi = recipe.hi;
+    L967: if(!respectLocks || !locks.bgValue) colorState.bgValue = rand(recipe.bgValue[0], recipe.bgValue[1]);
+    L968: if(!respectLocks || !locks.blobSat) colorState.blobSat = rand(recipe.blobSat[0], recipe.blobSat[1]);
+    L969: if(!respectLocks || !locks.blobValue) colorState.blobValue = rand(recipe.blobValue[0], recipe.blobValue[1]);
+    L970: if(!respectLocks || !locks.rimStrength) colorState.rim = rand(recipe.rim[0], recipe.rim[1]);
+    L1177: // recenter cluster on the origin so the form is always centered in frame
+    L1291: function _recSdf(){
+    L1293: const hiddenBtn=document.getElementById("rec");
+    L1298: if(_sdfRecorder && _sdfRecorder.state==="recording"){
+    ... 16 more references
+
+  BUTTON: → thumb
+  id: thumb
+  wired/referenced at:
+    L60: .thumbScrollBtn { border:1px solid rgba(72,223,255,0.3); background:rgba(0,0,0,.46); color:var(--accent); border-radius:5px; height:22px; cursor:pointer; padding:0; }
+    L61: .thumbScrollBtn:hover { border-color:var(--accent); }
+    L62: .thumbRow { display:flex; flex-direction:column; gap:6px; max-height:min(500px,58vh); overflow-y:auto; overflow-x:hidden; padding:0; scrollbar-width:none; }
+    L63: .thumbRow::-webkit-scrollbar { display:none; }
+    L266: <button id="btnThumb" type="button">→ thumb</button>
+    L280: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L281: <div class="thumbRow" id="moduleThumbStrip"></div>
+    L282: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L398: <button id="thumb" type="button">→ thumb</button>
+    L652: let _thumbDir=null,_pCanvas=null;
+    L661: if(!_thumbDir) _thumbDir=await window.showDirectoryPicker({mode:"readwrite",startIn:"downloads"});
+    L662: const fh=await _thumbDir.getFileHandle(PIECE+".png",{create:true});
+    L664: if(btn){btn.textContent="✓ saved";setTimeout(()=>btn.textContent="→ thumb",1400);}
+    L669: if(btn){btn.textContent="✓ dl";setTimeout(()=>btn.textContent="→ thumb",1400);}
+    L1570: const thumb=by("btnThumb");
+    L1571: if(thumb) thumb.onclick=e=>{ e.preventDefault(); e.stopPropagation(); saveThumb(); };
+    L1814: document.getElementById("thumb").addEventListener("click", saveThumb);
+    L1828: // save / thumb (new stage buttons pointing to existing logic)
+    L1952: const img=document.createElement("img"); img.src="../gallery/thumbs/"+m.id+".png"; img.alt=m.title;
+    L1956: const up=document.getElementById("thumbUp");
+    ... 1 more references
+
+  BUTTON: ▶
+  id: audioPlayPause
+  wired/referenced at:
+    L407: <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+    L1470: const audioPlayPause=document.getElementById("audioPlayPause");
+    L1477: function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
+    L1478: audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
+
+  BUTTON: mic
+  id: btnMic
+  wired/referenced at:
+    L409: <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    L1472: const btnMic=document.getElementById("btnMic");
+    L1484: btnMic.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
+
+## gyroid/noixzy_gyroid.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L286: <button id="btnPin" type="button">★ pin</button>
+    L783: document.getElementById("btnPin").addEventListener("click",_pinFav);
+    L1034: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1550: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L287: <button id="btnCopy" type="button">copy</button>
+    L903: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L1034: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1552: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L288: <button id="btnPaste" type="button">paste</button>
+    L907: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L1034: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1553: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L291: <button id="btnAudio" type="button">audio</button>
+    L749: const btnAudio=document.getElementById("btnAudio");
+    L770: btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+    L1035: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1555: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L292: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L790: const btn=document.getElementById("btnTransparentBg");
+    L1035: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1556: const bgAlpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: export ★
+  id: exportFavs
+  wired/referenced at:
+    L293: <button id="exportFavs" type="button">export ★</button>
+    L784: document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
+    L1034: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1551: const exp   = makeBtn("exportFavs", "export ★");
+    L1582: // Fallback export if this module did not already wire exportFavs natively.
+
+  BUTTON: clear ★
+  id: clearFavs
+  wired/referenced at:
+    L294: <button id="clearFavs" type="button">clear ★</button>
+    L785: document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
+    L1035: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1557: const clear = makeBtn("clearFavs", "clear ★");
+    L1617: // Fallback clear if this module did not already wire clearFavs natively.
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L297: <button id="btnThumb" type="button">→ thumb</button>
+    L522: const btn=document.getElementById("btnThumb");
+    L867: document.getElementById("btnThumb").addEventListener("click", saveThumb);
+    L1036: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1559: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L298: <button id="btnRec" type="button">video</button>
+    L929: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L930: const btn=document.getElementById("btnRec");
+    L1036: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1560: const video = document.getElementById("btnRec");
+    L1561: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L305: <button id="btnSave" type="button">save png</button>
+    L306: <button id="btnSave2x" type="button">save 2x</button>
+    L864: document.getElementById("btnSave").addEventListener("click", ()=>{
+    L881: if(e.key === "s") document.getElementById("btnSave").click();
+    L918: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L1036: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1562: const save  = document.getElementById("btnSave");
+    L1563: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L306: <button id="btnSave2x" type="button">save 2x</button>
+    L918: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L1036: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1563: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L311: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1697: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L313: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1698: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L320: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L898: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L322: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L899: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L325: <button id="btnReset" type="button">reset</button>
+    L901: document.getElementById("btnReset")?.addEventListener("click",()=>location.reload());
+    L1281: const existingReset = document.getElementById("btnReset");
+    L1306: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+    L1500: ["btnRandom","btnRandomForm","btnRndColor","btnNewSeed","btnReset"].forEach(id=>{
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L326: <button id="btnPause" type="button">pause</button>
+    L869: document.getElementById("btnPause").addEventListener("click", ()=>{
+    L873: document.getElementById("btnPause").textContent = paused ? "play" : "pause";
+    L878: if(e.key === " "){ e.preventDefault(); document.getElementById("btnPause").click(); }
+    L1282: const existingPause = document.getElementById("btnPause");
+    L1307: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L364: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L960: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L366: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L965: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+  BUTTON: ▶
+  id: audioPlayPause
+  wired/referenced at:
+    L376: <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+    L754: const audioPlayPause=document.getElementById("audioPlayPause");
+    L761: function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
+    L762: audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
+
+  BUTTON: mic
+  id: btnMic
+  wired/referenced at:
+    L378: <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    L756: const btnMic=document.getElementById("btnMic");
+    L769: btnMic.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
+
+## displacement/noixzy_displacement.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L257: <button id="btnPin" type="button">★ pin</button>
+    L784: document.getElementById("btnPin").addEventListener("click",_pinFav);
+    L1037: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1416: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L258: <button id="btnCopy" type="button">copy</button>
+    L905: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L1037: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1418: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L259: <button id="btnPaste" type="button">paste</button>
+    L909: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L1037: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1419: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L262: <button id="btnAudio" type="button">audio</button>
+    L750: const btnAudio=document.getElementById("btnAudio");
+    L771: btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+    L1038: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1421: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L263: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L791: const btn=document.getElementById("btnTransparentBg");
+    L1038: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1422: const bgAlpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: export ★
+  id: exportFavs
+  wired/referenced at:
+    L264: <button id="exportFavs" type="button">export ★</button>
+    L785: document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
+    L1037: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1417: const exp   = makeBtn("exportFavs", "export ★");
+    L1448: // Fallback export if this module did not already wire exportFavs natively.
+
+  BUTTON: clear ★
+  id: clearFavs
+  wired/referenced at:
+    L265: <button id="clearFavs" type="button">clear ★</button>
+    L786: document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
+    L1038: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1423: const clear = makeBtn("clearFavs", "clear ★");
+    L1483: // Fallback clear if this module did not already wire clearFavs natively.
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L268: <button id="btnThumb" type="button">→ thumb</button>
+    L517: const btn=document.getElementById("btnThumb");
+    L869: document.getElementById("btnThumb").addEventListener("click", saveThumb);
+    L1039: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1425: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L269: <button id="btnRec" type="button">video</button>
+    L931: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L932: const btn=document.getElementById("btnRec");
+    L1039: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1426: const video = document.getElementById("btnRec");
+    L1427: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L276: <button id="btnSave" type="button">save png</button>
+    L277: <button id="btnSave2x" type="button">save 2x</button>
+    L866: document.getElementById("btnSave").addEventListener("click", ()=>{
+    L883: if(e.key === "s") document.getElementById("btnSave").click();
+    L920: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L1039: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1428: const save  = document.getElementById("btnSave");
+    L1429: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L277: <button id="btnSave2x" type="button">save 2x</button>
+    L920: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L1039: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1429: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L282: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1563: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L284: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1564: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L291: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L900: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L293: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L901: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L296: <button id="btnReset" type="button">reset</button>
+    L903: document.getElementById("btnReset")?.addEventListener("click",()=>location.reload());
+    L1284: const existingReset = document.getElementById("btnReset");
+    L1302: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L297: <button id="btnPause" type="button">pause</button>
+    L871: document.getElementById("btnPause").addEventListener("click", ()=>{
+    L875: document.getElementById("btnPause").textContent = paused ? "play" : "pause";
+    L880: if(e.key === " "){ e.preventDefault(); document.getElementById("btnPause").click(); }
+    L1285: const existingPause = document.getElementById("btnPause");
+    L1303: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L337: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L962: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L339: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L967: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+  BUTTON: ▶
+  id: audioPlayPause
+  wired/referenced at:
+    L349: <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+    L755: const audioPlayPause=document.getElementById("audioPlayPause");
+    L762: function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
+    L763: audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
+
+  BUTTON: mic
+  id: btnMic
+  wired/referenced at:
+    L351: <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    L757: const btnMic=document.getElementById("btnMic");
+    L770: btnMic.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
+
+## displacement_primitives/noixzy_displacement_primitives.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L256: <button id="btnPin" type="button">★ pin</button>
+    L694: const b=document.getElementById("btnPin");
+    L804: document.getElementById("btnPin").addEventListener("click",_pinFav);
+    L1098: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1477: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L257: <button id="btnCopy" type="button">copy</button>
+    L995: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L1098: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1479: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L258: <button id="btnPaste" type="button">paste</button>
+    L999: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L1098: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1480: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L261: <button id="btnAudio" type="button">audio</button>
+    L771: const btnAudio=document.getElementById("btnAudio");
+    L792: btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+    L1099: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1482: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L262: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L873: const btn=document.getElementById("btnTransparentBg");
+    L1099: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1483: const bgAlpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: export ★
+  id: exportFavs
+  wired/referenced at:
+    L263: <button id="exportFavs" type="button">export ★</button>
+    L805: document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
+    L1098: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1478: const exp   = makeBtn("exportFavs", "export ★");
+    L1509: // Fallback export if this module did not already wire exportFavs natively.
+
+  BUTTON: clear ★
+  id: clearFavs
+  wired/referenced at:
+    L264: <button id="clearFavs" type="button">clear ★</button>
+    L806: document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
+    L1099: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1484: const clear = makeBtn("clearFavs", "clear ★");
+    L1544: // Fallback clear if this module did not already wire clearFavs natively.
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L267: <button id="btnThumb" type="button">→ thumb</button>
+    L650: const btn=document.getElementById("btnThumb");
+    L983: document.getElementById("btnThumb").addEventListener("click", saveThumb);
+    L1100: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1486: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L268: <button id="btnRec" type="button">video</button>
+    L1021: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L1022: const btn=document.getElementById("btnRec");
+    L1100: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1487: const video = document.getElementById("btnRec");
+    L1488: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L275: <button id="btnSave" type="button">save png</button>
+    L276: <button id="btnSave2x" type="button">save 2x</button>
+    L956: document.getElementById("btnSave").addEventListener("click", ()=>{
+    L972: if(e.key === "s") document.getElementById("btnSave").click();
+    L1010: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L1100: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1489: const save  = document.getElementById("btnSave");
+    L1490: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L276: <button id="btnSave2x" type="button">save 2x</button>
+    L1010: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L1100: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1490: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L281: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1624: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L283: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1625: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L290: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L990: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L292: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L991: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L295: <button id="btnReset" type="button">reset</button>
+    L993: document.getElementById("btnReset")?.addEventListener("click",()=>location.reload());
+    L1345: const existingReset = document.getElementById("btnReset");
+    L1363: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L296: <button id="btnPause" type="button">pause</button>
+    L960: document.getElementById("btnPause").addEventListener("click", ()=>{
+    L964: document.getElementById("btnPause").textContent = paused ? "play" : "pause";
+    L969: if(e.key === " "){ e.preventDefault(); document.getElementById("btnPause").click(); }
+    L1346: const existingPause = document.getElementById("btnPause");
+    L1364: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ▶
+  id: audioPlayPause
+  wired/referenced at:
+    L354: <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+    L776: const audioPlayPause=document.getElementById("audioPlayPause");
+    L783: function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
+    L784: audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
+
+  BUTTON: mic
+  id: btnMic
+  wired/referenced at:
+    L356: <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    L778: const btnMic=document.getElementById("btnMic");
+    L791: btnMic.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L365: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L1052: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L367: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L1057: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+## mandelbulb/noixzy_mandelbulb.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L257: <button id="btnPin" type="button">★ pin</button>
+    L776: document.getElementById("btnPin").addEventListener("click",_pinFav);
+    L997: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1376: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L258: <button id="btnCopy" type="button">copy</button>
+    L868: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L997: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1378: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L259: <button id="btnPaste" type="button">paste</button>
+    L872: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L997: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1379: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L262: <button id="btnAudio" type="button">audio</button>
+    L742: const btnAudio=document.getElementById("btnAudio");
+    L763: btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+    L998: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1381: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L263: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L783: const btn=document.getElementById("btnTransparentBg");
+    L998: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1382: const bgAlpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: export ★
+  id: exportFavs
+  wired/referenced at:
+    L264: <button id="exportFavs" type="button">export ★</button>
+    L777: document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
+    L997: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1377: const exp   = makeBtn("exportFavs", "export ★");
+    L1408: // Fallback export if this module did not already wire exportFavs natively.
+
+  BUTTON: clear ★
+  id: clearFavs
+  wired/referenced at:
+    L265: <button id="clearFavs" type="button">clear ★</button>
+    L778: document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
+    L998: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1383: const clear = makeBtn("clearFavs", "clear ★");
+    L1443: // Fallback clear if this module did not already wire clearFavs natively.
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L268: <button id="btnThumb" type="button">→ thumb</button>
+    L526: const btn=document.getElementById("btnThumb");
+    L838: document.getElementById("btnThumb").addEventListener("click", saveThumb);
+    L999: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1385: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L269: <button id="btnRec" type="button">video</button>
+    L894: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L895: const btn=document.getElementById("btnRec");
+    L999: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1386: const video = document.getElementById("btnRec");
+    L1387: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L276: <button id="btnSave" type="button">save png</button>
+    L277: <button id="btnSave2x" type="button">save 2x</button>
+    L837: document.getElementById("btnSave").addEventListener("click", ()=>{ saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`, "png"); });
+    L850: if(e.key==="s") document.getElementById("btnSave").click();
+    L883: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L999: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1388: const save  = document.getElementById("btnSave");
+    L1389: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L277: <button id="btnSave2x" type="button">save 2x</button>
+    L883: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L999: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1389: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L282: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1523: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L284: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1524: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L291: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L863: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L293: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L864: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L296: <button id="btnReset" type="button">reset</button>
+    L866: document.getElementById("btnReset")?.addEventListener("click",()=>location.reload());
+    L1244: const existingReset = document.getElementById("btnReset");
+    L1262: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L297: <button id="btnPause" type="button">pause</button>
+    L839: document.getElementById("btnPause").addEventListener("click", ()=>{
+    L842: document.getElementById("btnPause").textContent=paused?"play":"pause";
+    L847: if(e.key===" "){ e.preventDefault(); document.getElementById("btnPause").click(); }
+    L1245: const existingPause = document.getElementById("btnPause");
+    L1263: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L337: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L925: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L339: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L930: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+  BUTTON: ▶
+  id: audioPlayPause
+  wired/referenced at:
+    L349: <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+    L747: const audioPlayPause=document.getElementById("audioPlayPause");
+    L754: function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
+    L755: audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
+
+  BUTTON: mic
+  id: btnMic
+  wired/referenced at:
+    L351: <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    L749: const btnMic=document.getElementById("btnMic");
+    L762: btnMic.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
+
+## fold/noixzy_fold.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L257: <button id="btnPin" type="button">★ pin</button>
+    L795: document.getElementById("btnPin").addEventListener("click",_pinFav);
+    L1019: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1398: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L258: <button id="btnCopy" type="button">copy</button>
+    L887: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L1019: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1400: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L259: <button id="btnPaste" type="button">paste</button>
+    L891: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L1019: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1401: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L262: <button id="btnAudio" type="button">audio</button>
+    L761: const btnAudio=document.getElementById("btnAudio");
+    L782: btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+    L1020: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1403: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L263: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L802: const btn=document.getElementById("btnTransparentBg");
+    L1020: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1404: const bgAlpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: export ★
+  id: exportFavs
+  wired/referenced at:
+    L264: <button id="exportFavs" type="button">export ★</button>
+    L796: document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
+    L1019: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1399: const exp   = makeBtn("exportFavs", "export ★");
+    L1430: // Fallback export if this module did not already wire exportFavs natively.
+
+  BUTTON: clear ★
+  id: clearFavs
+  wired/referenced at:
+    L265: <button id="clearFavs" type="button">clear ★</button>
+    L797: document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
+    L1020: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1405: const clear = makeBtn("clearFavs", "clear ★");
+    L1465: // Fallback clear if this module did not already wire clearFavs natively.
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L268: <button id="btnThumb" type="button">→ thumb</button>
+    L549: const btn=document.getElementById("btnThumb");
+    L857: document.getElementById("btnThumb").addEventListener("click", saveThumb);
+    L1021: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1407: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L269: <button id="btnRec" type="button">video</button>
+    L913: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L914: const btn=document.getElementById("btnRec");
+    L1021: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1408: const video = document.getElementById("btnRec");
+    L1409: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L276: <button id="btnSave" type="button">save png</button>
+    L277: <button id="btnSave2x" type="button">save 2x</button>
+    L856: document.getElementById("btnSave").addEventListener("click", ()=>{ saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`, "png"); });
+    L869: if(e.key==="s") document.getElementById("btnSave").click();
+    L902: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L1021: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1410: const save  = document.getElementById("btnSave");
+    L1411: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L277: <button id="btnSave2x" type="button">save 2x</button>
+    L902: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L1021: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1411: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L282: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1545: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L284: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1546: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L291: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L882: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L293: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L883: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L296: <button id="btnReset" type="button">reset</button>
+    L885: document.getElementById("btnReset")?.addEventListener("click",()=>location.reload());
+    L1266: const existingReset = document.getElementById("btnReset");
+    L1284: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L297: <button id="btnPause" type="button">pause</button>
+    L858: document.getElementById("btnPause").addEventListener("click", ()=>{
+    L861: document.getElementById("btnPause").textContent=paused?"play":"pause";
+    L866: if(e.key===" "){ e.preventDefault(); document.getElementById("btnPause").click(); }
+    L1267: const existingPause = document.getElementById("btnPause");
+    L1285: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L345: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L944: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L347: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L949: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+  BUTTON: ▶
+  id: audioPlayPause
+  wired/referenced at:
+    L357: <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+    L766: const audioPlayPause=document.getElementById("audioPlayPause");
+    L773: function _playBuffer(){if(!audioBuffer)return;if(audioSource){try{audioSource.stop();}catch(e){}}audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;audioSource.loop=true;audioSource.connect(analyser);analyser.connect(audioCtx.destination);audioSource.start();audioPlaying=true;audioPlayPause.textContent="⏸";audioActive=true;}
+    L774: audioPlayPause.addEventListener("click",()=>{if(audioPlaying){try{audioSource.stop();}catch(e){}audioPlaying=false;audioActive=false;audioPlayPause.textContent="▶";}else{_playBuffer();}});
+
+  BUTTON: mic
+  id: btnMic
+  wired/referenced at:
+    L359: <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    L768: const btnMic=document.getElementById("btnMic");
+    L781: btnMic.addEventListener("click",async()=>{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}});
+
+## metafluid/noixzy_metafluid.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L291: <button id="btnPin" type="button">★ pin</button>
+    L827: const b=document.getElementById("btnPin");
+    L954: document.getElementById("btnPin").addEventListener("click",_pinFav);
+    L1360: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1739: const pin   = document.getElementById("btnPin");
+
+  BUTTON: export ★
+  id: exportFavs
+  wired/referenced at:
+    L292: <button id="exportFavs" type="button">export ★</button>
+    L955: document.getElementById("exportFavs").addEventListener("click",()=>{const txt=JSON.stringify(_favs);if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>{},()=>prompt("favorites:",txt));else prompt("favorites:",txt);});
+    L1360: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1740: const exp   = makeBtn("exportFavs", "export ★");
+    L1771: // Fallback export if this module did not already wire exportFavs natively.
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L293: <button id="btnCopy" type="button">copy</button>
+    L1020: try{ await navigator.clipboard.writeText(payload); _flashBtn("btnCopy","copied ✓"); }
+    L1125: document.getElementById("btnCopy")?.addEventListener("click",_copyMfState);
+    L1360: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1741: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L294: <button id="btnPaste" type="button">paste</button>
+    L1027: _flashBtn("btnPaste","pasted ✓");
+    L1028: }catch(e){ _flashBtn("btnPaste","paste ✗",1200); }
+    L1126: document.getElementById("btnPaste")?.addEventListener("click",_pasteMfState);
+    L1360: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1742: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L297: <button id="btnAudio" type="button">audio</button>
+    L918: const btnAudio=document.getElementById("btnAudio");
+    L942: btnAudio.addEventListener("click",()=>{const open=audioPanel.style.display==="none";audioPanel.style.display=open?"block":"none";btnAudio.style.color=open?"var(--accent)":"";});
+    L1361: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1744: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L298: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L1165: const btn=document.getElementById("btnTransparentBg");
+    L1361: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1745: const bgAlpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: clear ★
+  id: clearFavs
+  wired/referenced at:
+    L301: <button id="clearFavs" type="button">clear ★</button>
+    L956: document.getElementById("clearFavs").addEventListener("click",()=>{if(confirm("clear all favorites?")){_favs=[];_saveFavs();_renderFavs();}});
+    L1361: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1746: const clear = makeBtn("clearFavs", "clear ★");
+    L1806: // Fallback clear if this module did not already wire clearFavs natively.
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L304: <button id="btnThumb" type="button">→ thumb</button>
+    L620: const btn=document.getElementById("btnThumb");
+    L1256: document.getElementById("btnThumb").addEventListener("click", saveThumb);
+    L1362: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1748: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L305: <button id="btnRec" type="button">video</button>
+    L1053: const btn=document.getElementById("btnRec");
+    L1128: document.getElementById("btnRec")?.addEventListener("click",_recMf);
+    L1362: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1749: const video = document.getElementById("btnRec");
+    L1750: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L312: <button id="btnSave" type="button">save png</button>
+    L313: <button id="btnSave2x" type="button">save 2x</button>
+    L1038: if(!src) return _flashBtn("btnSave2x","no canvas",1200);
+    L1049: _flashBtn("btnSave2x","saved ✓");
+    L1127: document.getElementById("btnSave2x")?.addEventListener("click",_saveMf2x);
+    L1255: document.getElementById("btnSave").addEventListener("click", ()=>{ saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`, "png"); });
+    L1270: if(e.key==="s") document.getElementById("btnSave").click();
+    L1362: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1751: const save  = document.getElementById("btnSave");
+    L1752: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L313: <button id="btnSave2x" type="button">save 2x</button>
+    L1038: if(!src) return _flashBtn("btnSave2x","no canvas",1200);
+    L1049: _flashBtn("btnSave2x","saved ✓");
+    L1127: document.getElementById("btnSave2x")?.addEventListener("click",_saveMf2x);
+    L1362: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1752: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L319: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1889: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L321: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1890: const down=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L330: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L1204: document.getElementById("themePrev").addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L332: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L1205: document.getElementById("themeNext").addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: randomize unlocked
+  id: randomUnlocked
+  wired/referenced at:
+    L338: <button id="randomUnlocked" type="button">randomize unlocked</button>
+    L1130: document.getElementById("randomUnlocked")?.addEventListener("click",_randomizeUnlocked);
+    L1596: document.getElementById("randomUnlocked");
+
+  BUTTON: randomize form
+  id: randomForm
+  wired/referenced at:
+    L339: <button id="randomForm" type="button">randomize form</button>
+    L1131: document.getElementById("randomForm")?.addEventListener("click",_randomizeForm);
+    L1600: document.getElementById("randomForm");
+
+  BUTTON: randomize color
+  id: randomColor
+  wired/referenced at:
+    L340: <button id="randomColor" type="button">randomize color</button>
+    L1132: document.getElementById("randomColor")?.addEventListener("click",_randomizeColor);
+    L1604: document.getElementById("randomColor");
+
+  BUTTON: new seed —
+  id: btnNewSeed
+  wired/referenced at:
+    L341: <button id="btnNewSeed" type="button"><span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span></button>
+    L1123: document.getElementById("btnNewSeed")?.addEventListener("click",_newMfSeed);
+    L1606: const existingSeed = document.getElementById("btnNewSeed");
+    L1624: const bSeed   = existingSeed   || makeBtn("btnNewSeed", '<span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span>');
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L342: <button id="btnReset" type="button">reset</button>
+    L1122: document.getElementById("btnReset")?.addEventListener("click",_resetMf);
+    L1607: const existingReset = document.getElementById("btnReset");
+    L1625: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L343: <button id="btnPause" type="button">pause</button>
+    L1258: document.getElementById("btnPause").addEventListener("click", ()=>{
+    L1262: document.getElementById("btnPause").textContent = paused ? "play" : "pause";
+    L1267: if(e.key===" "){ e.preventDefault(); document.getElementById("btnPause").click(); }
+    L1608: const existingPause = document.getElementById("btnPause");
+    L1626: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L346: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L1250: document.getElementById("starterPrev").addEventListener("click",()=>cycleStarter(-1));
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L348: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L1251: document.getElementById("starterNext").addEventListener("click",()=>cycleStarter(1));
+
+  BUTTON: save preset
+  id: savePreset
+  wired/referenced at:
+    L352: <button id="savePreset" type="button">save preset</button>
+    L1134: document.getElementById("savePreset")?.addEventListener("click",()=>{
+
+  BUTTON: load
+  id: loadPreset
+  wired/referenced at:
+    L356: <button id="loadPreset" type="button">load</button>
+    L1144: document.getElementById("loadPreset")?.addEventListener("click",()=>{
+
+  BUTTON: delete
+  id: deletePreset
+  wired/referenced at:
+    L357: <button id="deletePreset" type="button">delete</button>
+    L1151: document.getElementById("deletePreset")?.addEventListener("click",()=>{
+
+  BUTTON: ▶
+  id: audioPlayPause
+  wired/referenced at:
+    L403: <button id="audioPlayPause" style="font-size:13px;padding:2px 8px;">▶</button>
+    L923: const audioPlayPause=document.getElementById("audioPlayPause");
+    L930: function _playBuffer(){ if(!audioBuffer) return; if(audioSource){try{audioSource.stop();}catch(e){}} audioSource=audioCtx.createBufferSource(); audioSource.buffer=audioBuffer; audioSource.loop=true; audioSource.connect(analyser); analyser.connect(audioCtx.destination); audioSource.start(); audioPlaying=true; audioPlayPause.textContent="⏸"; audioActive=true; }
+    L931: audioPlayPause.addEventListener("click",()=>{ if(audioPlaying){try{audioSource.stop();}catch(e){} audioPlaying=false; audioActive=false; audioPlayPause.textContent="▶";} else{ _playBuffer(); } });
+
+  BUTTON: mic
+  id: btnMic
+  wired/referenced at:
+    L405: <button id="btnMic" style="font-size:10px;padding:2px 6px;opacity:.6;">mic</button>
+    L925: const btnMic=document.getElementById("btnMic");
+    L938: btnMic.addEventListener("click",async()=>{
+    L939: if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;btnMic.textContent="mic";btnMic.style.opacity=".6";if(!audioPlaying)audioActive=false;return;}
+    L940: try{_ensureCtx();micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx.createMediaStreamSource(micStream).connect(analyser);audioActive=true;btnMic.textContent="mic ●";btnMic.style.opacity="1";}catch(e){alert("mic access denied");}
+
+## hex_grid/noixzy_hex_grid.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L262: <button id="btnPin" type="button">★ pin</button>
+    L476: _flash("btnPin","pinned ✓");
+    L542: bind("btnPin",pinFav);
+    L826: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1205: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L263: <button id="btnCopy" type="button">copy</button>
+    L513: navigator.clipboard.writeText(txt).then(()=>_flash("btnCopy","copied ✓"),()=>prompt("state JSON:",txt));
+    L544: bind("btnCopy",copyState);
+    L645: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L826: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1207: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L264: <button id="btnPaste" type="button">paste</button>
+    L517: const fail=()=>_flash("btnPaste","invalid");
+    L520: try{applyState(JSON.parse(txt));_flash("btnPaste","pasted ✓");}
+    L545: bind("btnPaste",pasteState);
+    L649: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L826: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1208: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L267: <button id="btnAudio" type="button">audio</button>
+    L827: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1210: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L268: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L552: const btn=document.getElementById("btnTransparentBg");
+    L827: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1211: const alpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: export ★
+  id: btnExportFavs
+  wired/referenced at:
+    L269: <button id="btnExportFavs" type="button">export ★</button>
+    L547: bind("btnExportFavs",exportFavs);
+
+  BUTTON: clear ★
+  id: btnClearFavs
+  wired/referenced at:
+    L270: <button id="btnClearFavs" type="button">clear ★</button>
+    L499: function clearFavs(){saveFavs([]);renderFavs();_flash("btnClearFavs","cleared");}
+    L548: bind("btnClearFavs",clearFavs);
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L273: <button id="btnThumb" type="button">→ thumb</button>
+    L572: const btn=document.getElementById("btnThumb");
+    L624: document.getElementById("btnThumb").addEventListener("click",saveThumb);
+    L828: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1214: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L274: <button id="btnRec" type="button">video</button>
+    L669: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L670: const btn=document.getElementById("btnRec");
+    L828: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1215: const video = document.getElementById("btnRec");
+    L1216: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L281: <button id="btnSave" type="button">save png</button>
+    L282: <button id="btnSave2x" type="button">save 2x</button>
+    L538: _flash("btnSave2x","saved ✓");
+    L546: bind("btnSave2x",save2xPNG);
+    L619: document.getElementById("btnSave").addEventListener("click",()=>saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`,"png"));
+    L633: if(e.key==="s")document.getElementById("btnSave").click();
+    L658: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L828: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1217: const save  = document.getElementById("btnSave");
+    L1218: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L282: <button id="btnSave2x" type="button">save 2x</button>
+    L538: _flash("btnSave2x","saved ✓");
+    L546: bind("btnSave2x",save2xPNG);
+    L658: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L828: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1218: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L287: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1354: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L289: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1355: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L296: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L640: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L298: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L641: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L301: <button id="btnReset" type="button">reset</button>
+    L508: _flash("btnReset","reset ✓");
+    L543: bind("btnReset",resetState);
+    L643: document.getElementById("btnReset")?.addEventListener("click",()=>location.reload());
+    L1073: const existingReset = document.getElementById("btnReset");
+    L1091: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L302: <button id="btnPause" type="button">pause</button>
+    L620: document.getElementById("btnPause").addEventListener("click",()=>{
+    L622: document.getElementById("btnPause").textContent=paused?"play":"pause";
+    L631: if(e.key===" "){e.preventDefault();document.getElementById("btnPause").click();}
+    L1074: const existingPause = document.getElementById("btnPause");
+    L1092: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L340: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L700: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L342: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L705: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+## rose_curve/noixzy_rose_curve.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L262: <button id="btnPin" type="button">★ pin</button>
+    L488: _flash("btnPin","pinned ✓");
+    L554: bind("btnPin",pinFav);
+    L812: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1191: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L263: <button id="btnCopy" type="button">copy</button>
+    L525: navigator.clipboard.writeText(txt).then(()=>_flash("btnCopy","copied ✓"),()=>prompt("state JSON:",txt));
+    L556: bind("btnCopy",copyState);
+    L659: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L812: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1193: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L264: <button id="btnPaste" type="button">paste</button>
+    L529: const fail=()=>_flash("btnPaste","invalid");
+    L532: try{applyState(JSON.parse(txt));_flash("btnPaste","pasted ✓");}
+    L557: bind("btnPaste",pasteState);
+    L663: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L812: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1194: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L267: <button id="btnAudio" type="button">audio</button>
+    L813: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1196: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L268: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L564: const btn=document.getElementById("btnTransparentBg");
+    L813: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1197: const alpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: export ★
+  id: btnExportFavs
+  wired/referenced at:
+    L269: <button id="btnExportFavs" type="button">export ★</button>
+    L559: bind("btnExportFavs",exportFavs);
+
+  BUTTON: clear ★
+  id: btnClearFavs
+  wired/referenced at:
+    L270: <button id="btnClearFavs" type="button">clear ★</button>
+    L511: function clearFavs(){saveFavs([]);renderFavs();_flash("btnClearFavs","cleared");}
+    L560: bind("btnClearFavs",clearFavs);
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L273: <button id="btnThumb" type="button">→ thumb</button>
+    L587: const btn=document.getElementById("btnThumb");
+    L647: document.getElementById("btnThumb").addEventListener("click",saveThumb);
+    L814: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1200: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L274: <button id="btnRec" type="button">video</button>
+    L683: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L684: const btn=document.getElementById("btnRec");
+    L814: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1201: const video = document.getElementById("btnRec");
+    L1202: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L281: <button id="btnSave" type="button">save png</button>
+    L282: <button id="btnSave2x" type="button">save 2x</button>
+    L550: _flash("btnSave2x","saved ✓");
+    L558: bind("btnSave2x",save2xPNG);
+    L623: document.getElementById("btnSave").addEventListener("click",()=>saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`,"png"));
+    L632: if(e.key==="s")document.getElementById("btnSave").click();
+    L672: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L814: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1203: const save  = document.getElementById("btnSave");
+    L1204: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L282: <button id="btnSave2x" type="button">save 2x</button>
+    L550: _flash("btnSave2x","saved ✓");
+    L558: bind("btnSave2x",save2xPNG);
+    L672: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L814: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1204: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L287: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1340: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L289: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1341: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L296: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L654: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L298: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L655: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L301: <button id="btnReset" type="button">reset</button>
+    L520: _flash("btnReset","reset ✓");
+    L555: bind("btnReset",resetState);
+    L657: document.getElementById("btnReset")?.addEventListener("click",()=>location.reload());
+    L1059: const existingReset = document.getElementById("btnReset");
+    L1077: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L302: <button id="btnPause" type="button">pause</button>
+    L624: document.getElementById("btnPause").addEventListener("click",()=>{
+    L626: document.getElementById("btnPause").textContent=paused?"play":"pause";
+    L630: if(e.key===" "){e.preventDefault();document.getElementById("btnPause").click();}
+    L1060: const existingPause = document.getElementById("btnPause");
+    L1078: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L340: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L714: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L342: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L719: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+## lissajous_mesh/noixzy_lissajous_mesh.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L262: <button id="btnPin" type="button">★ pin</button>
+    L486: _flash("btnPin","pinned ✓");
+    L552: bind("btnPin",pinFav);
+    L809: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1188: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L263: <button id="btnCopy" type="button">copy</button>
+    L523: navigator.clipboard.writeText(txt).then(()=>_flash("btnCopy","copied ✓"),()=>prompt("state JSON:",txt));
+    L554: bind("btnCopy",copyState);
+    L657: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L809: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1190: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L264: <button id="btnPaste" type="button">paste</button>
+    L527: const fail=()=>_flash("btnPaste","invalid");
+    L530: try{applyState(JSON.parse(txt));_flash("btnPaste","pasted ✓");}
+    L555: bind("btnPaste",pasteState);
+    L661: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L809: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1191: const paste = document.getElementById("btnPaste");
+
+  BUTTON: audio
+  id: btnAudio
+  wired/referenced at:
+    L267: <button id="btnAudio" type="button">audio</button>
+    L810: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1193: const audio = document.getElementById("btnAudio");
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L268: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L562: const btn=document.getElementById("btnTransparentBg");
+    L810: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1194: const alpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: export ★
+  id: btnExportFavs
+  wired/referenced at:
+    L269: <button id="btnExportFavs" type="button">export ★</button>
+    L557: bind("btnExportFavs",exportFavs);
+
+  BUTTON: clear ★
+  id: btnClearFavs
+  wired/referenced at:
+    L270: <button id="btnClearFavs" type="button">clear ★</button>
+    L509: function clearFavs(){saveFavs([]);renderFavs();_flash("btnClearFavs","cleared");}
+    L558: bind("btnClearFavs",clearFavs);
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L273: <button id="btnThumb" type="button">→ thumb</button>
+    L585: const btn=document.getElementById("btnThumb");
+    L645: document.getElementById("btnThumb").addEventListener("click",saveThumb);
+    L811: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1197: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L274: <button id="btnRec" type="button">video</button>
+    L681: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L682: const btn=document.getElementById("btnRec");
+    L811: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1198: const video = document.getElementById("btnRec");
+    L1199: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L281: <button id="btnSave" type="button">save png</button>
+    L282: <button id="btnSave2x" type="button">save 2x</button>
+    L548: _flash("btnSave2x","saved ✓");
+    L556: bind("btnSave2x",save2xPNG);
+    L621: document.getElementById("btnSave").addEventListener("click",()=>saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`,"png"));
+    L630: if(e.key==="s")document.getElementById("btnSave").click();
+    L670: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L811: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1200: const save  = document.getElementById("btnSave");
+    L1201: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L282: <button id="btnSave2x" type="button">save 2x</button>
+    L548: _flash("btnSave2x","saved ✓");
+    L556: bind("btnSave2x",save2xPNG);
+    L670: document.getElementById("btnSave2x")?.addEventListener("click",()=>{
+    L811: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1201: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L287: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1337: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L289: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1338: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L296: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L652: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L298: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L653: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L301: <button id="btnReset" type="button">reset</button>
+    L518: _flash("btnReset","reset ✓");
+    L553: bind("btnReset",resetState);
+    L655: document.getElementById("btnReset")?.addEventListener("click",()=>location.reload());
+    L1056: const existingReset = document.getElementById("btnReset");
+    L1074: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L302: <button id="btnPause" type="button">pause</button>
+    L622: document.getElementById("btnPause").addEventListener("click",()=>{
+    L624: document.getElementById("btnPause").textContent=paused?"play":"pause";
+    L628: if(e.key===" "){e.preventDefault();document.getElementById("btnPause").click();}
+    L1057: const existingPause = document.getElementById("btnPause");
+    L1075: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L340: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L712: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L342: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L717: document.getElementById("starterNext")?.addEventListener("click",()=>{
+
+## torus_knot/noixzy_torus_knot.html
+
+  BUTTON: ★ pin
+  id: btnPin
+  wired/referenced at:
+    L261: <button id="btnPin" type="button">★ pin</button>
+    L606: _flash("btnPin","pinned ✓");
+    L672: bind("btnPin",pinFav);
+    L872: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1251: const pin   = document.getElementById("btnPin");
+
+  BUTTON: copy
+  id: btnCopy
+  wired/referenced at:
+    L262: <button id="btnCopy" type="button">copy</button>
+    L643: navigator.clipboard.writeText(txt).then(()=>_flash("btnCopy","copied ✓"),()=>prompt("state JSON:",txt));
+    L674: bind("btnCopy",copyState);
+    L779: document.getElementById("btnCopy")?.addEventListener("click",()=>{
+    L872: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1253: const copy  = document.getElementById("btnCopy");
+
+  BUTTON: paste
+  id: btnPaste
+  wired/referenced at:
+    L263: <button id="btnPaste" type="button">paste</button>
+    L647: const fail=()=>_flash("btnPaste","invalid");
+    L650: try{applyState(JSON.parse(txt));_flash("btnPaste","pasted ✓");}
+    L675: bind("btnPaste",pasteState);
+    L783: document.getElementById("btnPaste")?.addEventListener("click",async()=>{
+    L872: ["btnPin","exportFavs","btnCopy","btnPaste"],
+    L1254: const paste = document.getElementById("btnPaste");
+
+  BUTTON: export ★
+  id: btnExportFavs
+  wired/referenced at:
+    L266: <button id="btnExportFavs" type="button">export ★</button>
+    L677: bind("btnExportFavs",exportFavs);
+
+  BUTTON: bg alpha
+  id: btnTransparentBg
+  wired/referenced at:
+    L267: <button id="btnTransparentBg" type="button">bg alpha</button>
+    L682: const btn=document.getElementById("btnTransparentBg");
+    L873: ["btnAudio","btnTransparentBg","clearFavs"],
+    L1257: const alpha = makeBtn("btnTransparentBg", "bg alpha");
+
+  BUTTON: clear ★
+  id: btnClearFavs
+  wired/referenced at:
+    L268: <button id="btnClearFavs" type="button">clear ★</button>
+    L629: function clearFavs(){saveFavs([]);renderFavs();_flash("btnClearFavs","cleared");}
+    L678: bind("btnClearFavs",clearFavs);
+
+  BUTTON: → thumb
+  id: btnThumb
+  wired/referenced at:
+    L271: <button id="btnThumb" type="button">→ thumb</button>
+    L702: const btn=document.getElementById("btnThumb");
+    L803: document.getElementById("btnThumb").addEventListener("click",saveThumb);
+    L874: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1260: const thumb = document.getElementById("btnThumb");
+
+  BUTTON: video
+  id: btnRec
+  wired/referenced at:
+    L272: <button id="btnRec" type="button">video</button>
+    L788: document.getElementById("btnRec")?.addEventListener("click",()=>{
+    L789: const btn=document.getElementById("btnRec");
+    L874: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1261: const video = document.getElementById("btnRec");
+    L1262: const dur   = document.getElementById("recDur") || document.getElementById("btnRecDur");
+
+  BUTTON: save png
+  id: btnSave
+  wired/referenced at:
+    L274: <button id="btnSave" type="button">save png</button>
+    L275: <button id="btnSave2x" type="button">save 2x</button>
+    L668: _flash("btnSave2x","saved ✓");
+    L676: bind("btnSave2x",save2xPNG);
+    L752: document.getElementById("btnSave").addEventListener("click",()=>saveCanvas(`noixzy_${PIECE}_${Math.floor(millis())}`,"png"));
+    L761: if(e.key==="s")document.getElementById("btnSave").click();
+    L874: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1263: const save  = document.getElementById("btnSave");
+    L1264: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: save 2x
+  id: btnSave2x
+  wired/referenced at:
+    L275: <button id="btnSave2x" type="button">save 2x</button>
+    L668: _flash("btnSave2x","saved ✓");
+    L676: bind("btnSave2x",save2xPNG);
+    L874: ["btnThumb","btnRec","recDur","btnSave","btnSave2x"]
+    L1264: const save2 = document.getElementById("btnSave2x");
+
+  BUTTON: ▲
+  id: thumbUp
+  class: thumbScrollBtn
+  wired/referenced at:
+    L280: <button id="thumbUp" class="thumbScrollBtn" type="button">▲</button>
+    L1400: const up=document.getElementById("thumbUp");
+
+  BUTTON: ▼
+  id: thumbDown
+  class: thumbScrollBtn
+  wired/referenced at:
+    L282: <button id="thumbDown" class="thumbScrollBtn" type="button">▼</button>
+    L1401: const dn=document.getElementById("thumbDown");
+
+  BUTTON: ‹
+  id: themePrev
+  class: cycleBtn
+  wired/referenced at:
+    L288: <button id="themePrev" class="cycleBtn" type="button">‹</button>
+    L777: document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
+
+  BUTTON: ›
+  id: themeNext
+  class: cycleBtn
+  wired/referenced at:
+    L290: <button id="themeNext" class="cycleBtn" type="button">›</button>
+    L778: document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
+
+  BUTTON: reset
+  id: btnReset
+  wired/referenced at:
+    L293: <button id="btnReset" type="button">reset</button>
+    L638: _flash("btnReset","reset ✓");
+    L673: bind("btnReset",resetState);
+    L1119: const existingReset = document.getElementById("btnReset");
+    L1137: const bReset  = existingReset  || makeBtn("btnReset", "reset");
+
+  BUTTON: pause
+  id: btnPause
+  wired/referenced at:
+    L294: <button id="btnPause" type="button">pause</button>
+    L753: document.getElementById("btnPause").addEventListener("click",()=>{
+    L755: document.getElementById("btnPause").textContent=paused?"play":"pause";
+    L759: if(e.key===" "){e.preventDefault();document.getElementById("btnPause").click();}
+    L1120: const existingPause = document.getElementById("btnPause");
+    L1138: const bPause  = existingPause  || makeBtn("btnPause", "pause");
+
+  BUTTON: ‹
+  id: starterPrev
+  class: cycleBtn
+  wired/referenced at:
+    L331: <button id="starterPrev" class="cycleBtn" type="button">‹</button>
+    L744: document.getElementById("starterPrev")?.addEventListener("click",()=>{
+
+  BUTTON: ›
+  id: starterNext
+  class: cycleBtn
+  wired/referenced at:
+    L333: <button id="starterNext" class="cycleBtn" type="button">›</button>
+    L748: document.getElementById("starterNext")?.addEventListener("click",()=>{
