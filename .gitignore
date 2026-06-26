@@ -1,2 +1,8 @@
 .DS_Store
 planning_dashboard/dashboard_preview.png
+
+# macOS / Python / Blender run junk
+.DS_Store
+__pycache__/
+*.pyc
+*.log

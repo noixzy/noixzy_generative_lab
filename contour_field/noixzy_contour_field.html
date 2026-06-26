@@ -13,7 +13,43 @@ body { display:flex; flex-direction:column; }
 /* App layout: stage (flexible) + panel (fixed-width side panel). */
 .app { display:flex; flex-direction:row; align-items:stretch; flex:1; min-height:0; }
 .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
+.stage.transparentPreview { background:#fff; }
 .stage canvas { display:block; width:100%; height:100%; }
+.previewHistory {
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:42;
+  display:flex;
+  gap:5px;
+  padding:4px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;
+  background:rgba(0,0,0,.42);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+  opacity:.74;
+  transition:opacity .16s ease,border-color .16s ease;
+}
+.previewHistory:hover { opacity:1; border-color:rgba(255,255,255,.30); }
+.previewHistory button {
+  width:30px;
+  height:24px;
+  padding:0;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:6px;
+  background:rgba(255,255,255,.055);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1;
+}
+.previewHistory button:hover { border-color:var(--accent); color:var(--accent); }
+.previewHistory button:disabled {
+  opacity:.28;
+  cursor:default;
+  color:var(--dim);
+  border-color:rgba(255,255,255,.08);
+}
 .panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
          border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
@@ -92,6 +128,11 @@ select:hover { border-color:var(--accent); }
 .consoleRule { height:1px; background:color-mix(in srgb, var(--accent) 36%, transparent); margin:16px 0 14px; opacity:.72; }
 .consoleBtns { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
 .consoleBtns button { flex:1 1 calc(33.333% - 8px); min-width:82px; }
+.consoleBtns button.active {
+  border-color:var(--accent);
+  color:var(--accent);
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 44%, transparent);
+}
 .presetStatus { margin-top:8px; min-height:16px; color:var(--dim); font-size:11px; letter-spacing:.04em; }
 .presetLine { display:grid; grid-template-columns:minmax(0,1fr) 96px; gap:8px; margin-top:8px; }
 .presetLine.triple { grid-template-columns:minmax(0,1fr) 72px 82px; }
@@ -112,6 +153,10 @@ select:hover { border-color:var(--accent); }
 </div>
 <div class="app">
   <div class="stage" id="stage">
+    <div class="previewHistory" id="previewHistory" aria-label="preview history controls">
+      <button id="btnUndo" type="button" title="undo slider change">↶</button>
+      <button id="btnRedo" type="button" title="redo slider change">↷</button>
+    </div>
     <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
@@ -122,6 +167,7 @@ select:hover { border-color:var(--accent); }
       </div>
       <div class="stageToolGroup">
         <button id="btnAudio">audio</button>
+        <button id="btnTransparentBg" type="button">bg alpha</button>
         <button id="clearFavs">clear ★</button>
       </div>
       <div class="stageToolGroup">
@@ -162,9 +208,10 @@ select:hover { border-color:var(--accent); }
     </div>
     <div class="consoleRule"></div>
     <div class="consoleBtns">
-      <button id="randomAll" type="button">randomize<br>unlocked</button>
-      <button id="randomForm" type="button">randomize<br>form</button>
-      <button id="randomColor" type="button">randomize<br>color</button>
+      <button id="randomAll" type="button">random<br>all</button>
+      <button id="randomForm" type="button">random<br>form</button>
+      <button id="randomColor" type="button">random<br>color</button>
+      <button id="extrudeOff" type="button">extrude<br>off</button>
       <button id="newSeed" type="button"><span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span></button>
       <button id="reset" type="button">reset</button>
       <button id="pause" type="button">pause</button>
@@ -208,13 +255,37 @@ select:hover { border-color:var(--accent); }
 <script>
 let W=820,H=820; const PIECE="contour_field", FAVKEY="noixzy_"+PIECE+"_favs";
 let seed=1, running=true, t0, pauseT=0, dirty=true;
+let transparentBg=false;
 let raw, scene, glowBuf, vigTex, specTex;
 let animT=0;
 let audioCtx,analyser,audioData,audioActive=false;
 const ABANDS={bass:0,mid:0,high:0,presence:0};
 const AMAP={bass:null,mid:null,high:null,presence:null};
-const ADEPTH={bass:0.5,mid:0.5,high:0.5,presence:0.5};
+const AUDIO_GAIN=2.0;
+const AUDIO_ATTACK=0.55, AUDIO_RELEASE=0.16;
+const ADEPTH={bass:0.8,mid:0.55,high:0.65,presence:0.45};
 let _audioSaved={};
+let _audioBassFloor=0;
+function _audioClamp(v){ return Math.max(0,Math.min(1,v)); }
+function _audioShape(v){
+  v=_audioClamp(v);
+  return _audioClamp(Math.pow(v,0.65)*AUDIO_GAIN);
+}
+function _audioBandHz(lo,hi){
+  if(!audioCtx||!analyser||!audioData) return 0;
+  const hzPerBin=audioCtx.sampleRate/analyser.fftSize;
+  let s=Math.max(0,Math.floor(lo/hzPerBin));
+  let e=Math.min(audioData.length,Math.ceil(hi/hzPerBin));
+  if(e<=s) e=Math.min(audioData.length,s+1);
+  let v=0;
+  for(let i=s;i<e;i++) v+=audioData[i];
+  return e>s ? v/((e-s)*255) : 0;
+}
+function _audioSmoothBand(band,target){
+  const cur=ABANDS[band]||0;
+  const rate=target>cur?AUDIO_ATTACK:AUDIO_RELEASE;
+  ABANDS[band]=cur+(target-cur)*rate;
+}
 
 // piece-specific SYSTEM params
 const SYSTEM=[{"k":"scale","label":"scale","min":0,"max":1,"step":0.01,"v":0.4},{"k":"levels","label":"levels","min":0,"max":1,"step":0.01,"v":0.5},{"k":"turbulence","label":"turbulence","min":0,"max":1,"step":0.01,"v":0.4},{"k":"depth","label":"depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":4},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.6,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.5,"rr":true}];
@@ -238,6 +309,108 @@ const SHARED=[
 SYSTEM.forEach(p=>{ p.g=p.g||"system"; if(!p.rr) p.sys=true; });
 const PARAMS=SYSTEM.concat(SHARED);
 const P={}; PARAMS.forEach(p=>P[p.k]=p.v);
+let _histUndo=[], _histRedo=[], _histBeforeSnap=null, _histApplying=false;
+let extrudeOff=false;
+function _syncExtrudeOffButton(){
+  const b=document.getElementById("extrudeOff");
+  if(!b) return;
+  b.innerHTML=extrudeOff ? "extrude<br>off ✓" : "extrude<br>off";
+  b.classList.toggle("active",extrudeOff);
+}
+function _applyExtrudeOff(){
+  if(!extrudeOff) return;
+  if(P.height!==undefined) P.height=0;
+  const h=document.getElementById("p_height");
+  if(h) h.value=0;
+  const hv=document.getElementById("v_height");
+  if(hv) hv.textContent="0.00";
+  dirty=true;
+}
+function _toggleExtrudeOff(){
+  const before=_histSnapshot();
+  extrudeOff=!extrudeOff;
+  _applyExtrudeOff();
+  _histSyncControls();
+  _syncExtrudeOffButton();
+  buildSystem();
+  _histPush(before);
+}
+function _histSnapshot(){
+  const snap={__extrudeOff:extrudeOff};
+  for(const k in P) snap[k]=P[k];
+  return snap;
+}
+function _histSame(a,b){
+  if(!a||!b) return false;
+  const ak=Object.keys(a), bk=Object.keys(b);
+  if(ak.length!==bk.length) return false;
+  for(const k of ak){ if(a[k]!==b[k]) return false; }
+  return true;
+}
+function _histSyncControls(){
+  PARAMS.forEach(p=>{
+    const el=document.getElementById("p_"+p.k);
+    if(el) el.value=P[p.k];
+    const sp=document.getElementById("v_"+p.k);
+    if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
+  });
+  if(P.pal!==undefined){ initColorState(P.pal); syncColorUI(); }
+}
+function _histPush(before){
+  if(_histApplying) return;
+  const after=_histSnapshot();
+  if(!before || _histSame(before,after)) return;
+  _histUndo.push(before);
+  if(_histUndo.length>80) _histUndo.shift();
+  _histRedo=[];
+  _updateHistoryButtons();
+}
+function _histStart(){ if(!_histBeforeSnap) _histBeforeSnap=_histSnapshot(); }
+function _histEnd(){ const b=_histBeforeSnap; _histBeforeSnap=null; _histPush(b); }
+function _histApply(snap){
+  if(!snap) return;
+  _histApplying=true;
+  if(snap.__extrudeOff!==undefined) extrudeOff=!!snap.__extrudeOff;
+  for(const k in P){ if(snap[k]!==undefined) P[k]=snap[k]; }
+  _applyExtrudeOff();
+  _histSyncControls();
+  _syncExtrudeOffButton();
+  buildSystem();
+  dirty=true;
+  _histApplying=false;
+  _updateHistoryButtons();
+}
+function _histUndoStep(){
+  if(!_histUndo.length) return;
+  const cur=_histSnapshot();
+  const prev=_histUndo.pop();
+  _histRedo.push(cur);
+  _histApply(prev);
+}
+function _histRedoStep(){
+  if(!_histRedo.length) return;
+  const cur=_histSnapshot();
+  const next=_histRedo.pop();
+  _histUndo.push(cur);
+  _histApply(next);
+}
+function _updateHistoryButtons(){
+  const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+  if(u) u.disabled=!_histUndo.length;
+  if(r) r.disabled=!_histRedo.length;
+}
+function _bindPreviewHistory(){
+  const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+  if(u && u.dataset.boundHistory!=="1"){
+    u.dataset.boundHistory="1";
+    u.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); _histUndoStep(); });
+  }
+  if(r && r.dataset.boundHistory!=="1"){
+    r.dataset.boundHistory="1";
+    r.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); _histRedoStep(); });
+  }
+  _updateHistoryButtons();
+}
 const GROUPS=["system","extrude","material","frame","look","motion"];
 
 const PALETTES=[
@@ -695,6 +868,21 @@ function mouseWheel(event){
 }
 
 function buildSystem(){ randomSeed(seed); noiseSeed(seed); build(); dirty=true; }
+function _runWithoutGraphicBackground(fn){
+  const targets=[raw,scene,glowBuf];
+  const saved=[];
+  try{
+    for(const g of targets){
+      if(g && typeof g.background==="function"){
+        saved.push([g,g.background]);
+        g.background=function(){};
+      }
+    }
+    return fn();
+  } finally {
+    for(const pair of saved) pair[0].background=pair[1];
+  }
+}
 function renderScene(){
   randomSeed(seed); noiseSeed(seed);
   raw.clear();
@@ -703,9 +891,9 @@ function renderScene(){
     const palLocal = getPal();
     if(typeof heightField === 'function' && (Math.abs(P.extrude||0)>0.01||(P.height||0)>0.01)){ const G=220; const heights = heightField(G);
       if(heights && heights.length===G*G){ renderHeightfield(raw,heights,G,palLocal,{}); }
-      else { render(raw,palLocal); }
-    }else{ render(raw,palLocal); }
-  }catch(e){ console.warn('heightfield render failed, falling back to flat render',e); render(raw, getPal()); }
+      else { if(transparentBg) _runWithoutGraphicBackground(()=>render(raw,palLocal)); else render(raw,palLocal); }
+    }else{ if(transparentBg) _runWithoutGraphicBackground(()=>render(raw,palLocal)); else render(raw,palLocal); }
+  }catch(e){ console.warn('heightfield render failed, falling back to flat render',e); if(transparentBg) _runWithoutGraphicBackground(()=>render(raw, getPal())); else render(raw, getPal()); }
   // MATERIAL sheen — applied to forms only via source-atop (no bleed onto background)
   const sheenV=Math.min(1,P.metallic*(1-P.rough)+P.sheen);
   if(sheenV>0.01){ const dc=raw.drawingContext; dc.save(); dc.globalCompositeOperation='source-atop'; dc.globalAlpha=Math.min(1,0.6*sheenV); dc.drawImage(specTex.elt,0,0,raw.width,raw.height); dc.restore(); }
@@ -739,7 +927,7 @@ function draw(){
   if(dirty || animate){ renderScene(); dirty=false; }
   _audioRestore();
   const pal=getPal();
-  background(pal[0][0],pal[0][1],pal[0][2]);
+  if(transparentBg) clear(); else background(pal[0][0],pal[0][1],pal[0][2]);
   // FRAME + MOTION transform applied to the baked scene
   const frameDrift=(PIECE=="reaction_diffusion")?0:P.drift;
   const dz=1+(frameDrift>0?Math.sin(time*0.6)*0.045*frameDrift:0);
@@ -816,9 +1004,13 @@ function _audioApply(){
   _audioSaved={};
   if(!audioActive||!analyser) return;
   analyser.getByteFrequencyData(audioData);
-  const N=audioData.length;
-  const avg=(s,e)=>{let v=0;for(let i=s;i<e;i++)v+=audioData[i];return v/((e-s)*255);};
-  ABANDS.bass=avg(0,4); ABANDS.mid=avg(4,20); ABANDS.high=avg(20,60); ABANDS.presence=avg(0,N);
+  const bassLevel=_audioShape(_audioBandHz(45,140));
+  _audioBassFloor += (bassLevel-_audioBassFloor)*0.08;
+  const bassKick=_audioClamp((bassLevel-_audioBassFloor)*3.5);
+  _audioSmoothBand('bass',_audioClamp(bassLevel*0.72+bassKick*0.65));
+  _audioSmoothBand('mid',_audioShape(_audioBandHz(180,1400)));
+  _audioSmoothBand('high',_audioShape(_audioBandHz(1800,5200)));
+  _audioSmoothBand('presence',_audioShape(_audioBandHz(5200,12000)));
   for(const band of ['bass','mid','high','presence']){
     const k=AMAP[band]; if(!k||P[k]===undefined) continue;
     _audioSaved[k]=P[k];
@@ -828,6 +1020,22 @@ function _audioApply(){
   }
 }
 function _audioRestore(){ for(const k of Object.keys(_audioSaved)) P[k]=_audioSaved[k]; _audioSaved={}; }
+function bindTransparentBgToggle(){
+  const btn=document.getElementById("btnTransparentBg");
+  const stage=document.getElementById("stage");
+  if(!btn) return;
+  const sync=()=>{
+    btn.textContent=transparentBg ? "bg alpha ✓" : "bg alpha";
+    btn.style.color=transparentBg ? "var(--accent)" : "";
+    if(stage) stage.classList.toggle("transparentPreview", transparentBg);
+    dirty=true;
+  };
+  btn.addEventListener("click",()=>{
+    transparentBg=!transparentBg;
+    sync();
+  });
+  sync();
+}
 function buildUI(){
   const host=document.getElementById("groups");
 
@@ -842,18 +1050,23 @@ function buildUI(){
       lab.append(p.label+" ",span);
       const inp=document.createElement("input"); inp.type="range"; inp.min=p.min; inp.max=p.max; inp.step=p.step; inp.value=p.v; inp.id="p_"+p.k;
       const fmt=()=> span.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
+      inp.addEventListener("pointerdown",_histStart);
+      inp.addEventListener("focus",_histStart);
       inp.addEventListener("input",()=>{ P[p.k]=parseFloat(inp.value); fmt();
+        if(extrudeOff && p.g==="extrude") _applyExtrudeOff();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
         if(p.sys) buildSystem(); else dirty=true; });
-      inp.addEventListener("dblclick",()=>{ P[p.k]=p.v; inp.value=p.v; fmt();
+      inp.addEventListener("change",_histEnd);
+      inp.addEventListener("pointerup",_histEnd);
+      inp.addEventListener("dblclick",()=>{ const before=_histSnapshot(); P[p.k]=p.v; inp.value=p.v; fmt();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
-        if(p.sys) buildSystem(); else dirty=true; });
+        if(p.sys) buildSystem(); else dirty=true; _histPush(before); });
       fmt(); row.append(lab,inp); det.appendChild(row); });
     host.appendChild(det); });
   document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();});
-  document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();_flashConsole("seed "+seed);});
+  document.getElementById("newSeed").addEventListener("click",()=>{const before=_histSnapshot();seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();_histPush(before);_flashConsole("seed "+seed);});
   document.getElementById("pause").addEventListener("click",togglePause);
-  document.getElementById("reset").addEventListener("click",()=>{const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});_flashConsole("reset");});
+  document.getElementById("reset").addEventListener("click",()=>{const before=_histSnapshot();const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});_histPush(before);_flashConsole("reset");});
   document.getElementById("save").addEventListener("click",triggerSavePNG);
   document.getElementById("save2x").addEventListener("click",save2xPNG);
   document.getElementById("savePBR").addEventListener("click",makePBRMaps);
@@ -864,6 +1077,8 @@ function buildUI(){
   document.getElementById("randomAll").addEventListener("click",_randomizeAll);
   document.getElementById("randomForm").addEventListener("click",_randomizeForm);
   document.getElementById("randomColor").addEventListener("click",_randomizeColor);
+  document.getElementById("extrudeOff").addEventListener("click",_toggleExtrudeOff);
+  _syncExtrudeOffButton();
   document.getElementById("themePrev").addEventListener("click",()=>cycleTheme(-1));
   document.getElementById("themeNext").addEventListener("click",()=>cycleTheme(1));
   if(typeof renderSVG === 'function'){
@@ -941,7 +1156,7 @@ function buildUI(){
     const none=document.createElement("option"); none.value=""; none.textContent="— off —"; sel.appendChild(none);
     mappableParams.forEach(p=>{ const o=document.createElement("option"); o.value=p.k; o.textContent=p.label||p.k; sel.appendChild(o); });
     sel.addEventListener("change",()=>{ AMAP[band]=sel.value||null; });
-    const dep=document.createElement("input"); dep.type="range"; dep.min=0; dep.max=1; dep.step=.01; dep.value=0.5;
+    const dep=document.createElement("input"); dep.type="range"; dep.min=0; dep.max=1; dep.step=.01; dep.value=ADEPTH[band];
     dep.style.cssText="width:55px;";
     dep.addEventListener("input",()=>{ ADEPTH[band]=parseFloat(dep.value); });
     row.append(lbl,sel,dep); audioBands.appendChild(row);
@@ -968,6 +1183,7 @@ function buildUI(){
   if(accEl) accEl.addEventListener("input",e=>{colorState.acc=e.target.value;dirty=true;});
   if(inkEl) inkEl.addEventListener("input",e=>{colorState.ink=e.target.value;dirty=true;});
   initColorState(P.pal); syncColorUI();
+  bindTransparentBgToggle();
   const tSel=document.getElementById('themeSelect');
   if(tSel){
     tSel.addEventListener('change',e=>applyTheme(e.target.value));
@@ -979,19 +1195,24 @@ function buildUI(){
     tSel.value=startTheme;
     requestAnimationFrame(()=>{ tSel.value=startTheme; });
   }
+  _bindPreviewHistory();
 }
 function _randomizeAll(){
+  const before=_histSnapshot();
   SYSTEM.forEach(p=>{
+    if(extrudeOff && p.g==="extrude") return;
     if(p.k==='pal'){ P.pal=Math.floor(Math.random()*PALETTES.length); initColorState(P.pal); }
     else { const v=p.min+Math.random()*(p.max-p.min); P[p.k]=p.step>=1?Math.round(v):+(v.toFixed(3)); }
     const el=document.getElementById("p_"+p.k); if(el) el.value=P[p.k];
     const sp=document.getElementById("v_"+p.k); if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
   });
-  syncColorUI(); buildSystem(); _flashConsole("randomized");
+  _applyExtrudeOff(); syncColorUI(); buildSystem(); _histPush(before); _flashConsole("random all");
 }
 function _randomizeForm(){
+  const before=_histSnapshot();
   for(const spec of PARAMS){
     if(spec.k==="pal" || spec.g==="color") continue;
+    if(extrudeOff && spec.g==="extrude") continue;
     if(spec.rr===false) continue;
     const min=spec.min??0, max=spec.max??1, step=spec.step??.01;
     let v=min+Math.random()*(max-min);
@@ -1002,12 +1223,12 @@ function _randomizeForm(){
     const el=document.getElementById("p_"+spec.k); if(el) el.value=P[spec.k];
     const sp=document.getElementById("v_"+spec.k); if(sp) sp.textContent=(step>=1)?P[spec.k]:(+P[spec.k]).toFixed(2);
   }
-  buildSystem(); _flashConsole("form randomized");
+  _applyExtrudeOff(); buildSystem(); _histPush(before); _flashConsole("random form");
 }
 function _randomizeColor(){
   const idx=Math.floor(Math.random()*Math.min(PALETTES.length,THEMES.length));
   applyTheme(THEMES[idx].name);
-  dirty=true; _flashConsole("color randomized");
+  dirty=true; _flashConsole("random color");
 }
 let favs=[];
 function loadFavs(){ try{favs=JSON.parse(localStorage.getItem(FAVKEY)||"[]");}catch(e){favs=[];} renderFavs(); }
