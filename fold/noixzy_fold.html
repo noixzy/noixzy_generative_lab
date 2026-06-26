@@ -315,6 +315,80 @@
     filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) !important;
   }
 
+
+  /* NOIXZY_HIDE_MODULE_NAV_CHROME */
+  .navBar,
+  .galleryMark,
+  .navCurrent {
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  /* NOIXZY_GEOMETRY_ONLY_MODE */
+  /* Geometry-only viewport: lock viewport to canvas, hide UI chrome. */
+  html, body {
+    margin:0 !important;
+    padding:0 !important;
+    width:100% !important;
+    height:100% !important;
+    overflow:hidden !important;
+    background:#000 !important;
+  }
+  body {
+    position:fixed !important;
+    inset:0 !important;
+    width:100% !important;
+    height:100% !important;
+  }
+  .navBar,
+  .galleryMark,
+  .navCurrent,
+  .stageThumbs,
+  #stageThumbs,
+  .panel,
+  .controls,
+  .ctrls,
+  .toolbar,
+  .toolBar,
+  .console,
+  .consolePanel,
+  .consoleRule,
+  .side,
+  .sidebar,
+  .leftPanel,
+  .rightPanel,
+  .params,
+  .paramPanel,
+  .favPanel,
+  .btns,
+  .seed,
+  button,
+  select,
+  input,
+  textarea,
+  label,
+  footer,
+  header,
+  .stageTools,
+  #stageTools,
+  .previewHistory,
+  #previewHistory,
+  .favs,
+  #favs,
+  .stageFavs,
+  #stageFavs {
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  .stage, #stage {
+    position:fixed !important;
+    inset:0 !important;
+    width:100vw !important;
+    height:100vh !important;
+    overflow:hidden !important;
+  }
+  canvas, #cnv, #defaultCanvas0 { display:block !important; width:100% !important; height:100% !important; visibility:visible !important; pointer-events:auto !important; }
 </style>
 </head>
 <body>

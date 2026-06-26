@@ -99,11 +99,6 @@ select:hover { border-color:var(--accent); }
 .pbrHint { grid-column:1/-1; text-align:center; font-size:11px; opacity:.4; margin-top:4px; }
 /* Responsive: stack panel below preview on narrow screens */
 @media (max-width:900px){ .app{flex-direction:column;} .panel{width:100%; margin:0; max-height:40vh;} .stage{height:calc(100vh - 40vh);} }
-/* Module nav bar */
-.navBar { flex:0 0 28px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:#0a0a0c; border-bottom:1px solid #1c1c1f; z-index:10; }
-.navBar a { color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:.07em; padding:4px 6px; border-radius:3px; }
-.navBar a:hover { color:var(--accent); }
-.navCurrent { color:var(--accent) !important; }
 /* Stage overlay — bottom toolbar */
 .stageFavs { position:absolute; left:50%; bottom:64px; transform:translateX(-50%); z-index:22; display:flex; justify-content:center; flex-wrap:wrap; gap:6px; max-width:min(72vw,720px); pointer-events:auto; }
 .stageFavs .chip { margin:0; }
@@ -148,14 +143,84 @@ select:hover { border-color:var(--accent); }
 .presetLine input::placeholder { color:var(--dim); opacity:1; }
 .seedLabel { display:block; line-height:1.12; }
 .seedRead { display:block; margin-top:4px; color:var(--dim); font-size:10px; line-height:1; letter-spacing:.08em; }
+  /* NOIXZY_GEOMETRY_ONLY_MODE */
+  /* Geometry-only viewport: lock viewport to canvas, hide UI chrome. */
+  html, body {
+    margin:0 !important;
+    padding:0 !important;
+    width:100% !important;
+    height:100% !important;
+    overflow:hidden !important;
+    background:#000 !important;
+  }
+  body {
+    position:fixed !important;
+    inset:0 !important;
+    width:100% !important;
+    height:100% !important;
+  }
+  /* Hide all UI elements by display:none so they don't reserve layout space */
+  .navBar,
+  .galleryMark,
+  .navCurrent,
+  .stageThumbs,
+  #stageThumbs,
+  .panel,
+  .controls,
+  .ctrls,
+  .toolbar,
+  .toolBar,
+  .console,
+  .consolePanel,
+  .consoleRule,
+  .side,
+  .sidebar,
+  .leftPanel,
+  .rightPanel,
+  .params,
+  .paramPanel,
+  .favPanel,
+  .btns,
+  .seed,
+  button,
+  select,
+  input,
+  textarea,
+  label,
+  footer,
+  header,
+  .stageTools,
+  #stageTools,
+  .previewHistory,
+  #previewHistory,
+  .favs,
+  #favs,
+  .stageFavs,
+  #stageFavs {
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  /* Ensure stage fills the locked viewport and canvas does not create scrollbars */
+  .stage, #stage {
+    position:fixed !important;
+    inset:0 !important;
+    width:100vw !important;
+    height:100vh !important;
+    overflow:hidden !important;
+    background:#000 !important;
+  }
+  .stage canvas {
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+    padding:0 !important;
+  }
 </style>
 </head>
 <body>
-<div class="navBar">
-  <a id="navPrev" href="#">← prev</a>
-  <a href="../gallery/index.html" class="navCurrent">⊞ gallery</a>
-  <a id="navNext" href="#">next →</a>
-</div>
 <div class="app">
   <div class="stage" id="stage">
     <div class="previewHistory" id="previewHistory" aria-label="preview history controls">
