@@ -69,6 +69,41 @@
   .stageToolGroup { display:flex; align-items:center; gap:6px; }
   .stageTools button,.stageTools select { min-height:30px; background:rgba(0,0,0,0.50); border-color:rgba(255,255,255,0.16); padding:4px 8px; margin:0; white-space:nowrap; }
   .stageTools select { width:auto; min-width:52px; }
+  .previewHistory {
+    position:absolute;
+    top:12px;
+    right:12px;
+    z-index:42;
+    display:flex;
+    gap:5px;
+    padding:4px;
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:9px;
+    background:rgba(0,0,0,.42);
+    -webkit-backdrop-filter:blur(10px);
+    backdrop-filter:blur(10px);
+    opacity:.74;
+    transition:opacity .16s ease,border-color .16s ease;
+  }
+  .previewHistory:hover { opacity:1; border-color:rgba(255,255,255,.30); }
+  .previewHistory button {
+    width:30px;
+    height:24px;
+    padding:0;
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:6px;
+    background:rgba(255,255,255,.055);
+    color:var(--ink);
+    font-size:14px;
+    line-height:1;
+  }
+  .previewHistory button:hover { border-color:var(--accent); color:var(--accent); }
+  .previewHistory button:disabled {
+    opacity:.28;
+    cursor:default;
+    color:var(--dim);
+    border-color:rgba(255,255,255,.08);
+  }
   .stageThumbs { pointer-events:auto; position:absolute; left:14px; top:50%; transform:translateY(-50%); z-index:20; width:70px; max-height:min(640px,74vh); padding:8px; border-radius:12px; background:rgba(0,0,0,0.50); border:1px solid rgba(72,223,255,0.18); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); opacity:.42; transition:opacity .22s ease; display:flex; flex-direction:column; gap:6px; }
   .stageThumbs:hover { opacity:1; }
   .stageThumbs .label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:2px; }
@@ -88,6 +123,11 @@
   .consoleRule { height:1px; background:color-mix(in srgb, var(--accent) 36%, transparent); margin:16px 0 14px; opacity:.72; }
   .consoleBtns { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
   .consoleBtns button { flex:1 1 calc(33.333% - 8px); min-width:82px; }
+  .consoleBtns button.active {
+    border-color:var(--accent);
+    color:var(--accent);
+    box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 44%, transparent);
+  }
   .presetStatus { margin-top:8px; min-height:16px; color:var(--dim); font-size:11px; letter-spacing:.04em; }
   .presetLine { display:grid; grid-template-columns:minmax(0,1fr) 96px; gap:8px; margin-top:8px; }
   .presetLine.triple { grid-template-columns:minmax(0,1fr) 72px 82px; }
@@ -110,6 +150,10 @@
 </div>
 <div class="app">
   <div id="stage" class="stage">
+    <div class="previewHistory" id="previewHistory" aria-label="preview history controls">
+      <button id="btnUndo" type="button" title="undo parameter change">↶</button>
+      <button id="btnRedo" type="button" title="redo parameter change">↷</button>
+    </div>
     <div id="stageFavs" class="stageFavs"></div>
       <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
@@ -154,9 +198,10 @@
       </div>
       <div class="consoleRule"></div>
       <div class="consoleBtns">
-        <button id="btnRandom" type="button">randomize<br>unlocked</button>
-        <button id="btnRandomForm" type="button">randomize<br>form</button>
-        <button id="btnRndColor" type="button">randomize<br>color</button>
+        <button id="btnRandom" type="button">random<br>all</button>
+        <button id="btnRandomForm" type="button">random<br>form</button>
+        <button id="btnRndColor" type="button">random<br>color</button>
+        <button id="extrudeOff" type="button">extrude<br>off</button>
         <button id="btnNewSeed" type="button"><span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span></button>
         <button id="btnReset" type="button">reset</button>
         <button id="btnPause" type="button">pause</button>
@@ -286,6 +331,101 @@ const PARAMS=[
   {k:"drift",  g:"motion", label:"drift",     min:0,max:1,step:.01,v:.3},
 ];
 const P={}; PARAMS.forEach(p=>P[p.k]=p.v);
+let _histUndo=[], _histRedo=[], _histBeforeSnap=null, _histApplying=false;
+let extrudeOff=false;
+function _histSnapshot(){
+  const snap={__extrudeOff:extrudeOff};
+  for(const k in P) snap[k]=P[k];
+  return snap;
+}
+function _histSame(a,b){
+  if(!a||!b) return false;
+  const ak=Object.keys(a), bk=Object.keys(b);
+  if(ak.length!==bk.length) return false;
+  for(const k of ak){ if(a[k]!==b[k]) return false; }
+  return true;
+}
+function _histPush(before){
+  if(_histApplying) return;
+  const after=_histSnapshot();
+  if(!before || _histSame(before,after)) return;
+  _histUndo.push(before);
+  if(_histUndo.length>80) _histUndo.shift();
+  _histRedo=[];
+  _updateHistoryButtons();
+}
+function _histStart(){ if(!_histBeforeSnap) _histBeforeSnap=_histSnapshot(); }
+function _histEnd(){ const b=_histBeforeSnap; _histBeforeSnap=null; _histPush(b); }
+function _updateHistoryButtons(){
+  const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+  if(u) u.disabled=!_histUndo.length;
+  if(r) r.disabled=!_histRedo.length;
+}
+function _syncExtrudeOffButton(){
+  const b=document.getElementById("extrudeOff");
+  if(!b) return;
+  b.innerHTML=extrudeOff ? "extrude<br>off ✓" : "extrude<br>off";
+  b.classList.toggle("active",extrudeOff);
+}
+function _applyExtrudeOff(){
+  if(!extrudeOff) return;
+  if(P.height!==undefined) P.height=0;
+  const h=document.getElementById("p_height");
+  if(h) h.value=0;
+  const hv=document.getElementById("v_height");
+  if(hv) hv.textContent=formatParamValue(PARAMS.find(p=>p.k==="height"));
+  dirty=true;
+}
+function _histApply(snap){
+  if(!snap) return;
+  _histApplying=true;
+  if(snap.__extrudeOff!==undefined) extrudeOff=!!snap.__extrudeOff;
+  for(const k in P){ if(snap[k]!==undefined) P[k]=snap[k]; }
+  _applyExtrudeOff();
+  syncParamControls();
+  syncAccentFromPalette();
+  _syncExtrudeOffButton();
+  buildLeaves();
+  dirty=true;
+  _histApplying=false;
+  _updateHistoryButtons();
+}
+function _histUndoStep(){
+  if(!_histUndo.length) return;
+  const cur=_histSnapshot();
+  const prev=_histUndo.pop();
+  _histRedo.push(cur);
+  _histApply(prev);
+}
+function _histRedoStep(){
+  if(!_histRedo.length) return;
+  const cur=_histSnapshot();
+  const next=_histRedo.pop();
+  _histUndo.push(cur);
+  _histApply(next);
+}
+function _toggleExtrudeOff(){
+  const before=_histSnapshot();
+  extrudeOff=!extrudeOff;
+  _applyExtrudeOff();
+  syncParamControls();
+  _syncExtrudeOffButton();
+  buildLeaves();
+  dirty=true;
+  _histPush(before);
+}
+function _bindPreviewHistory(){
+  const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+  if(u && u.dataset.boundHistory!=="1"){
+    u.dataset.boundHistory="1";
+    u.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();_histUndoStep();});
+  }
+  if(r && r.dataset.boundHistory!=="1"){
+    r.dataset.boundHistory="1";
+    r.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();_histRedoStep();});
+  }
+  _updateHistoryButtons();
+}
 const GROUPS=["system","extrude","material","frame","look","motion"];
 
 const PALETTES=[
@@ -387,12 +527,15 @@ function setup(){
   document.getElementById("themePrev")?.addEventListener("click",()=>cycleTheme(-1));
   document.getElementById("themeNext")?.addEventListener("click",()=>cycleTheme(1));
   // reset / pause / random console controls
-  document.getElementById("btnReset")?.addEventListener("click",resetFromConsole);
+  document.getElementById("btnReset")?.addEventListener("click",()=>{const before=_histSnapshot();resetFromConsole();_histPush(before);});
   document.getElementById("btnPause")?.addEventListener("click",pauseFromConsole);
-  document.getElementById("btnRandom")?.addEventListener("click",randomizeParams);
-  document.getElementById("btnRandomForm")?.addEventListener("click",randomizeParams);
+  document.getElementById("btnRandom")?.addEventListener("click",()=>randomizeParams("all"));
+  document.getElementById("btnRandomForm")?.addEventListener("click",()=>randomizeParams("form"));
   document.getElementById("btnRndColor")?.addEventListener("click",randomizeColor);
-  document.getElementById("btnNewSeed")?.addEventListener("click",newSeedFromConsole);
+  document.getElementById("extrudeOff")?.addEventListener("click",_toggleExtrudeOff);
+  document.getElementById("btnNewSeed")?.addEventListener("click",()=>{const before=_histSnapshot();newSeedFromConsole();_histPush(before);});
+  _bindPreviewHistory();
+  _syncExtrudeOffButton();
   // stage toolbar proxies for existing panel buttons
   document.getElementById("btnPin")?.addEventListener("click",()=>{ const b=document.getElementById("pin"); if(b) b.click(); });
   document.getElementById("btnCopy")?.addEventListener("click",()=>{ const b=document.getElementById("copyP"); if(b) b.click(); });
@@ -706,8 +849,14 @@ function syncParamControls(){
   });
 }
 
-function randomizeParams(){
+function randomizeParams(mode="all"){
+  const before=_histSnapshot();
   PARAMS.forEach(p=>{
+    if(mode==="form" && p.g==="material") return;
+    if(mode==="form" && p.g==="look") return;
+    if(mode==="form" && p.g==="motion") return;
+    if(mode==="form" && p.g==="frame") return;
+    if(extrudeOff && p.g==="extrude") return;
     if(p.options){
       const opts=p.options.map(o=>o.v);
       P[p.k]=opts[Math.floor(Math.random()*opts.length)];
@@ -718,19 +867,23 @@ function randomizeParams(){
       P[p.k]=normalizeParamValue(p, Math.round(raw/step)*step);
     }
   });
+  _applyExtrudeOff();
   syncParamControls();
   syncAccentFromPalette();
   buildLeaves();
   dirty=true;
-  _flashConsole("randomized");
+  _histPush(before);
+  _flashConsole(mode==="form" ? "random form" : "random all");
 }
 
 function randomizeColor(){
+  const before=_histSnapshot();
   P.pal=Math.floor(Math.random()*PALETTES.length);
   syncParamControls();
   syncAccentFromPalette();
   buildLeaves();
   dirty=true;
+  _histPush(before);
   _flashConsole("random color");
 }
 
