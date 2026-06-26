@@ -15,6 +15,41 @@ body { display:flex; flex-direction:column; }
 .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
 .stage.transparentPreview { background:#fff; }
 .stage canvas { display:block; width:100%; height:100%; }
+.previewHistory {
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:42;
+  display:flex;
+  gap:5px;
+  padding:4px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;
+  background:rgba(0,0,0,.42);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+  opacity:.74;
+  transition:opacity .16s ease,border-color .16s ease;
+}
+.previewHistory:hover { opacity:1; border-color:rgba(255,255,255,.30); }
+.previewHistory button {
+  width:30px;
+  height:24px;
+  padding:0;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:6px;
+  background:rgba(255,255,255,.055);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1;
+}
+.previewHistory button:hover { border-color:var(--accent); color:var(--accent); }
+.previewHistory button:disabled {
+  opacity:.28;
+  cursor:default;
+  color:var(--dim);
+  border-color:rgba(255,255,255,.08);
+}
 .panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
          border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
@@ -113,6 +148,10 @@ select:hover { border-color:var(--accent); }
 </div>
 <div class="app">
   <div class="stage" id="stage">
+    <div class="previewHistory" id="previewHistory" aria-label="preview history controls">
+      <button id="btnUndo" type="button" title="undo slider change">↶</button>
+      <button id="btnRedo" type="button" title="redo slider change">↷</button>
+    </div>
     <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
@@ -243,7 +282,7 @@ function _audioSmoothBand(band,target){
 }
 
 // piece-specific SYSTEM params
-const SYSTEM=[{"k":"nodes","label":"nodes","min":0,"max":1,"step":0.01,"v":0.5,"sys":true},{"k":"links","label":"near range","min":0,"max":1,"step":0.01,"v":0.46,"rr":true},{"k":"longRange","label":"long range","min":0,"max":1,"step":0.01,"v":0.52,"rr":true},{"k":"longDensity","label":"long density","min":0,"max":1,"step":0.01,"v":0.32,"rr":true},{"k":"longStrength","label":"long strength","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"pulse","label":"pulse","min":0,"max":1,"step":0.01,"v":0.56,"rr":true},{"k":"drift","label":"drift","min":0,"max":1,"step":0.01,"v":0.32,"rr":true},{"k":"cluster","label":"cluster","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.24},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":5},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.62,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
+const SYSTEM=[{"k":"nodes","label":"nodes","min":0,"max":1,"step":0.01,"v":0.5,"sys":true},{"k":"links","label":"links","min":0,"max":1,"step":0.01,"v":0.46,"rr":true},{"k":"pulse","label":"pulse","min":0,"max":1,"step":0.01,"v":0.56,"rr":true},{"k":"drift","label":"drift","min":0,"max":1,"step":0.01,"v":0.32,"rr":true},{"k":"cluster","label":"cluster","min":0,"max":1,"step":0.01,"v":0.42,"rr":true},{"k":"zdepth","label":"z depth","min":-1.5,"max":1.5,"step":0.01,"v":0},{"k":"speed","label":"speed","min":0,"max":1,"step":0.01,"v":0.24},{"k":"pal","label":"palette","min":0,"max":9,"step":1,"v":5},{"k":"height","g":"extrude","label":"height","min":0,"max":1,"step":0.01,"v":0,"rr":true},{"k":"hvar","g":"extrude","label":"variation","min":0,"max":1,"step":0.01,"v":0.62,"rr":true},{"k":"light","g":"extrude","label":"light","min":0,"max":1,"step":0.01,"v":0.6,"rr":true}];
 // shared layers (identical across all pieces)
 const SHARED=[
   {k:"metallic",g:"material",label:"metallic", min:0,max:1,step:.01,v:0},
@@ -264,6 +303,80 @@ const SHARED=[
 SYSTEM.forEach(p=>{ p.g=p.g||"system"; if(!p.rr) p.sys=true; });
 const PARAMS=SYSTEM.concat(SHARED);
 const P={}; PARAMS.forEach(p=>P[p.k]=p.v);
+let _histUndo=[], _histRedo=[], _histBeforeSnap=null, _histApplying=false;
+function _histSnapshot(){
+  const snap={};
+  for(const k in P) snap[k]=P[k];
+  return snap;
+}
+function _histSame(a,b){
+  if(!a||!b) return false;
+  const ak=Object.keys(a), bk=Object.keys(b);
+  if(ak.length!==bk.length) return false;
+  for(const k of ak){ if(a[k]!==b[k]) return false; }
+  return true;
+}
+function _histSyncControls(){
+  PARAMS.forEach(p=>{
+    const el=document.getElementById("p_"+p.k);
+    if(el) el.value=P[p.k];
+    const sp=document.getElementById("v_"+p.k);
+    if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
+  });
+  if(P.pal!==undefined){ initColorState(P.pal); syncColorUI(); }
+}
+function _histPush(before){
+  if(_histApplying) return;
+  const after=_histSnapshot();
+  if(!before || _histSame(before,after)) return;
+  _histUndo.push(before);
+  if(_histUndo.length>80) _histUndo.shift();
+  _histRedo=[];
+  _updateHistoryButtons();
+}
+function _histStart(){ if(!_histBeforeSnap) _histBeforeSnap=_histSnapshot(); }
+function _histEnd(){ const b=_histBeforeSnap; _histBeforeSnap=null; _histPush(b); }
+function _histApply(snap){
+  if(!snap) return;
+  _histApplying=true;
+  for(const k in P){ if(snap[k]!==undefined) P[k]=snap[k]; }
+  _histSyncControls();
+  buildSystem();
+  dirty=true;
+  _histApplying=false;
+  _updateHistoryButtons();
+}
+function _histUndoStep(){
+  if(!_histUndo.length) return;
+  const cur=_histSnapshot();
+  const prev=_histUndo.pop();
+  _histRedo.push(cur);
+  _histApply(prev);
+}
+function _histRedoStep(){
+  if(!_histRedo.length) return;
+  const cur=_histSnapshot();
+  const next=_histRedo.pop();
+  _histUndo.push(cur);
+  _histApply(next);
+}
+function _updateHistoryButtons(){
+  const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+  if(u) u.disabled=!_histUndo.length;
+  if(r) r.disabled=!_histRedo.length;
+}
+function _bindPreviewHistory(){
+  const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+  if(u && u.dataset.boundHistory!=="1"){
+    u.dataset.boundHistory="1";
+    u.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); _histUndoStep(); });
+  }
+  if(r && r.dataset.boundHistory!=="1"){
+    r.dataset.boundHistory="1";
+    r.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); _histRedoStep(); });
+  }
+  _updateHistoryButtons();
+}
 const GROUPS=["system","extrude","material","frame","look","motion"];
 
 const PALETTES=[
@@ -420,40 +533,12 @@ function renderHeightfield(g,heights,G,pal,opts={}){
 /* ================= PIECE CODE ================= */
 
 let NL=[];
-function linkHash01(i,j){
-  let h=((i+1)*73856093)^((j+1)*19349663)^((i+j+2)*83492791);
-  h=(h^(h>>>13))*1274126177;
-  return ((h^(h>>>16))>>>0)/4294967295;
-}
 function build(){ const n=Math.floor(map(P.nodes,0,1,28,180)); NL=[]; for(let i=0;i<n;i++){ const a=random(TWO_PI),r=Math.pow(random(),P.cluster*.9+1)*.45; NL.push({x:.5+Math.cos(a)*r,y:.5+Math.sin(a)*r,z:random(-1,1),p:random(TWO_PI)}); } }
 function render(g,pal){
   const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.08,1.4);
   const pts=NL.map(n=>{ const x=n.x+(noise(n.x*4,n.y*4,t)-.5)*P.drift*.12; const y=n.y+(noise(n.y*4,n.x*4,t)-.5)*P.drift*.12; const z=n.z; const scl=Math.abs(dep)>0.01?1-z*.24*dep:1; return {x:cx+(x*W-cx)*scl,y:cy+(y*H-cy)*scl+z*cy*.12*dep,z,p:n.p}; });
   g.background(pal[0][0],pal[0][1],pal[0][2]); g.blendMode(ADD);
   const maxD=map(P.links,0,1,60,190);
-  const longD=map(P.longRange,0,1,maxD*1.65,Math.hypot(W,H)*.82);
-  const longMin=maxD*1.1;
-  const longChance=map(P.longDensity,0,1,0,.28);
-  const longCap=Math.ceil(P.longDensity*5);
-  const longAlpha=map(P.longStrength,0,1,0,145);
-  const longWeight=map(P.longStrength,0,1,.12,1.25);
-  const longCounts=new Array(pts.length).fill(0);
-  if(P.longStrength>0.001&&longCap>0&&longD>longMin){
-    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
-      if(longCounts[i]>=longCap||longCounts[j]>=longCap) continue;
-      const a=pts[i],b=pts[j],d=dist(a.x,a.y,b.x,b.y);
-      if(d<=longMin||d>=longD) continue;
-      const q=1-(d-longMin)/(longD-longMin);
-      const qVis=.35+.65*q;
-      const gate=longChance*qVis;
-      if(linkHash01(i,j)>gate) continue;
-      const pulse=.5+.5*Math.sin(t*2.1+a.p+b.p);
-      g.stroke(pal[1][0],pal[1][1],pal[1][2],qVis*longAlpha*(.55+pulse*P.pulse*.45));
-      g.strokeWeight(qVis*longWeight);
-      g.line(a.x,a.y,b.x,b.y);
-      longCounts[i]++; longCounts[j]++;
-    }
-  }
   for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){ const a=pts[i],b=pts[j],d=dist(a.x,a.y,b.x,b.y); if(d<maxD){ const q=1-d/maxD,pulse=.5+.5*Math.sin(t*3+a.p+b.p); g.stroke(pal[1][0],pal[1][1],pal[1][2],q*100*(.45+pulse*P.pulse)); g.strokeWeight(q*1.7); g.line(a.x,a.y,b.x,b.y); } }
   for(const pt of pts){ const pulse=.5+.5*Math.sin(t*3+pt.p); g.noStroke(); g.fill(pal[2][0],pal[2][1],pal[2][2],90+120*pulse*P.pulse); g.circle(pt.x,pt.y,2+7*pulse); }
   g.blendMode(BLEND);
@@ -850,18 +935,22 @@ function buildUI(){
       lab.append(p.label+" ",span);
       const inp=document.createElement("input"); inp.type="range"; inp.min=p.min; inp.max=p.max; inp.step=p.step; inp.value=p.v; inp.id="p_"+p.k;
       const fmt=()=> span.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
+      inp.addEventListener("pointerdown",_histStart);
+      inp.addEventListener("focus",_histStart);
       inp.addEventListener("input",()=>{ P[p.k]=parseFloat(inp.value); fmt();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
         if(p.sys) buildSystem(); else dirty=true; });
-      inp.addEventListener("dblclick",()=>{ P[p.k]=p.v; inp.value=p.v; fmt();
+      inp.addEventListener("change",_histEnd);
+      inp.addEventListener("pointerup",_histEnd);
+      inp.addEventListener("dblclick",()=>{ const before=_histSnapshot(); P[p.k]=p.v; inp.value=p.v; fmt();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
-        if(p.sys) buildSystem(); else dirty=true; });
+        if(p.sys) buildSystem(); else dirty=true; _histPush(before); });
       fmt(); row.append(lab,inp); det.appendChild(row); });
     host.appendChild(det); });
   document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();});
-  document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();_flashConsole("seed "+seed);});
+  document.getElementById("newSeed").addEventListener("click",()=>{const before=_histSnapshot();seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();_histPush(before);_flashConsole("seed "+seed);});
   document.getElementById("pause").addEventListener("click",togglePause);
-  document.getElementById("reset").addEventListener("click",()=>{const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});_flashConsole("reset");});
+  document.getElementById("reset").addEventListener("click",()=>{const before=_histSnapshot();const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});_histPush(before);_flashConsole("reset");});
   document.getElementById("save").addEventListener("click",triggerSavePNG);
   document.getElementById("save2x").addEventListener("click",save2xPNG);
   document.getElementById("savePBR").addEventListener("click",makePBRMaps);
@@ -988,17 +1077,20 @@ function buildUI(){
     tSel.value=startTheme;
     requestAnimationFrame(()=>{ tSel.value=startTheme; });
   }
+  _bindPreviewHistory();
 }
 function _randomizeAll(){
+  const before=_histSnapshot();
   SYSTEM.forEach(p=>{
     if(p.k==='pal'){ P.pal=Math.floor(Math.random()*PALETTES.length); initColorState(P.pal); }
     else { const v=p.min+Math.random()*(p.max-p.min); P[p.k]=p.step>=1?Math.round(v):+(v.toFixed(3)); }
     const el=document.getElementById("p_"+p.k); if(el) el.value=P[p.k];
     const sp=document.getElementById("v_"+p.k); if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
   });
-  syncColorUI(); buildSystem(); _flashConsole("randomized");
+  syncColorUI(); buildSystem(); _histPush(before); _flashConsole("randomized");
 }
 function _randomizeForm(){
+  const before=_histSnapshot();
   for(const spec of PARAMS){
     if(spec.k==="pal" || spec.g==="color") continue;
     if(spec.rr===false) continue;
@@ -1011,7 +1103,7 @@ function _randomizeForm(){
     const el=document.getElementById("p_"+spec.k); if(el) el.value=P[spec.k];
     const sp=document.getElementById("v_"+spec.k); if(sp) sp.textContent=(step>=1)?P[spec.k]:(+P[spec.k]).toFixed(2);
   }
-  buildSystem(); _flashConsole("form randomized");
+  buildSystem(); _histPush(before); _flashConsole("form randomized");
 }
 function _randomizeColor(){
   const idx=Math.floor(Math.random()*Math.min(PALETTES.length,THEMES.length));

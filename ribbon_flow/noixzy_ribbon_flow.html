@@ -15,6 +15,41 @@ body { display:flex; flex-direction:column; }
 .stage { position:relative; flex:1 1 auto; min-width:0; background:#000; }
 .stage.transparentPreview { background:#fff; }
 .stage canvas { display:block; width:100%; height:100%; }
+.previewHistory {
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:42;
+  display:flex;
+  gap:5px;
+  padding:4px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;
+  background:rgba(0,0,0,.42);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+  opacity:.74;
+  transition:opacity .16s ease,border-color .16s ease;
+}
+.previewHistory:hover { opacity:1; border-color:rgba(255,255,255,.30); }
+.previewHistory button {
+  width:30px;
+  height:24px;
+  padding:0;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:6px;
+  background:rgba(255,255,255,.055);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1;
+}
+.previewHistory button:hover { border-color:var(--accent); color:var(--accent); }
+.previewHistory button:disabled {
+  opacity:.28;
+  cursor:default;
+  color:var(--dim);
+  border-color:rgba(255,255,255,.08);
+}
 .panel { position:relative; width:316px; min-width:300px; max-width:min(420px,44vw); box-sizing:border-box; margin:14px; max-height:calc(100vh - 56px); overflow-y:auto;
            background:rgba(16,16,20,0.58); -webkit-backdrop-filter:blur(13px); backdrop-filter:blur(13px);
          border:1px solid rgba(255,255,255,0.09); padding:12px 14px; border-radius:9px; box-shadow:0 10px 34px rgba(0,0,0,0.45); }
@@ -113,6 +148,10 @@ select:hover { border-color:var(--accent); }
 </div>
 <div class="app">
   <div class="stage" id="stage">
+    <div class="previewHistory" id="previewHistory" aria-label="preview history controls">
+      <button id="btnUndo" type="button" title="undo slider change">↶</button>
+      <button id="btnRedo" type="button" title="redo slider change">↷</button>
+    </div>
     <div id="stageFavs" class="stageFavs"></div>
     <div class="stageTools" id="stageTools">
       <div class="stageToolGroup">
@@ -264,6 +303,80 @@ const SHARED=[
 SYSTEM.forEach(p=>{ p.g=p.g||"system"; if(!p.rr) p.sys=true; });
 const PARAMS=SYSTEM.concat(SHARED);
 const P={}; PARAMS.forEach(p=>P[p.k]=p.v);
+let _histUndo=[], _histRedo=[], _histBeforeSnap=null, _histApplying=false;
+function _histSnapshot(){
+  const snap={};
+  for(const k in P) snap[k]=P[k];
+  return snap;
+}
+function _histSame(a,b){
+  if(!a||!b) return false;
+  const ak=Object.keys(a), bk=Object.keys(b);
+  if(ak.length!==bk.length) return false;
+  for(const k of ak){ if(a[k]!==b[k]) return false; }
+  return true;
+}
+function _histSyncControls(){
+  PARAMS.forEach(p=>{
+    const el=document.getElementById("p_"+p.k);
+    if(el) el.value=P[p.k];
+    const sp=document.getElementById("v_"+p.k);
+    if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
+  });
+  if(P.pal!==undefined){ initColorState(P.pal); syncColorUI(); }
+}
+function _histPush(before){
+  if(_histApplying) return;
+  const after=_histSnapshot();
+  if(!before || _histSame(before,after)) return;
+  _histUndo.push(before);
+  if(_histUndo.length>80) _histUndo.shift();
+  _histRedo=[];
+  _updateHistoryButtons();
+}
+function _histStart(){ if(!_histBeforeSnap) _histBeforeSnap=_histSnapshot(); }
+function _histEnd(){ const b=_histBeforeSnap; _histBeforeSnap=null; _histPush(b); }
+function _histApply(snap){
+  if(!snap) return;
+  _histApplying=true;
+  for(const k in P){ if(snap[k]!==undefined) P[k]=snap[k]; }
+  _histSyncControls();
+  buildSystem();
+  dirty=true;
+  _histApplying=false;
+  _updateHistoryButtons();
+}
+function _histUndoStep(){
+  if(!_histUndo.length) return;
+  const cur=_histSnapshot();
+  const prev=_histUndo.pop();
+  _histRedo.push(cur);
+  _histApply(prev);
+}
+function _histRedoStep(){
+  if(!_histRedo.length) return;
+  const cur=_histSnapshot();
+  const next=_histRedo.pop();
+  _histUndo.push(cur);
+  _histApply(next);
+}
+function _updateHistoryButtons(){
+  const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+  if(u) u.disabled=!_histUndo.length;
+  if(r) r.disabled=!_histRedo.length;
+}
+function _bindPreviewHistory(){
+  const u=document.getElementById("btnUndo"), r=document.getElementById("btnRedo");
+  if(u && u.dataset.boundHistory!=="1"){
+    u.dataset.boundHistory="1";
+    u.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); _histUndoStep(); });
+  }
+  if(r && r.dataset.boundHistory!=="1"){
+    r.dataset.boundHistory="1";
+    r.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); _histRedoStep(); });
+  }
+  _updateHistoryButtons();
+}
 const GROUPS=["system","extrude","material","frame","look","motion"];
 
 const PALETTES=[
@@ -876,18 +989,22 @@ function buildUI(){
       lab.append(p.label+" ",span);
       const inp=document.createElement("input"); inp.type="range"; inp.min=p.min; inp.max=p.max; inp.step=p.step; inp.value=p.v; inp.id="p_"+p.k;
       const fmt=()=> span.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
+      inp.addEventListener("pointerdown",_histStart);
+      inp.addEventListener("focus",_histStart);
       inp.addEventListener("input",()=>{ P[p.k]=parseFloat(inp.value); fmt();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
         if(p.sys) buildSystem(); else dirty=true; });
-      inp.addEventListener("dblclick",()=>{ P[p.k]=p.v; inp.value=p.v; fmt();
+      inp.addEventListener("change",_histEnd);
+      inp.addEventListener("pointerup",_histEnd);
+      inp.addEventListener("dblclick",()=>{ const before=_histSnapshot(); P[p.k]=p.v; inp.value=p.v; fmt();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
-        if(p.sys) buildSystem(); else dirty=true; });
+        if(p.sys) buildSystem(); else dirty=true; _histPush(before); });
       fmt(); row.append(lab,inp); det.appendChild(row); });
     host.appendChild(det); });
   document.getElementById("seedField").addEventListener("change",e=>{seed=parseInt(e.target.value)||0;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();});
-  document.getElementById("newSeed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();_flashConsole("seed "+seed);});
+  document.getElementById("newSeed").addEventListener("click",()=>{const before=_histSnapshot();seed=Math.floor(Math.random()*1e6);document.getElementById("seedField").value=seed;document.getElementById("seedRead").textContent=seed; const vs=document.getElementById("vSeed"); if(vs) vs.textContent=seed; buildSystem();_histPush(before);_flashConsole("seed "+seed);});
   document.getElementById("pause").addEventListener("click",togglePause);
-  document.getElementById("reset").addEventListener("click",()=>{const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});_flashConsole("reset");});
+  document.getElementById("reset").addEventListener("click",()=>{const before=_histSnapshot();const d={};PARAMS.forEach(p=>d[p.k]=p.v);applyConfig({seed:1,P:d});_histPush(before);_flashConsole("reset");});
   document.getElementById("save").addEventListener("click",triggerSavePNG);
   document.getElementById("save2x").addEventListener("click",save2xPNG);
   document.getElementById("savePBR").addEventListener("click",makePBRMaps);
@@ -1014,17 +1131,20 @@ function buildUI(){
     tSel.value=startTheme;
     requestAnimationFrame(()=>{ tSel.value=startTheme; });
   }
+  _bindPreviewHistory();
 }
 function _randomizeAll(){
+  const before=_histSnapshot();
   SYSTEM.forEach(p=>{
     if(p.k==='pal'){ P.pal=Math.floor(Math.random()*PALETTES.length); initColorState(P.pal); }
     else { const v=p.min+Math.random()*(p.max-p.min); P[p.k]=p.step>=1?Math.round(v):+(v.toFixed(3)); }
     const el=document.getElementById("p_"+p.k); if(el) el.value=P[p.k];
     const sp=document.getElementById("v_"+p.k); if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
   });
-  syncColorUI(); buildSystem(); _flashConsole("randomized");
+  syncColorUI(); buildSystem(); _histPush(before); _flashConsole("randomized");
 }
 function _randomizeForm(){
+  const before=_histSnapshot();
   for(const spec of PARAMS){
     if(spec.k==="pal" || spec.g==="color") continue;
     if(spec.rr===false) continue;
@@ -1037,7 +1157,7 @@ function _randomizeForm(){
     const el=document.getElementById("p_"+spec.k); if(el) el.value=P[spec.k];
     const sp=document.getElementById("v_"+spec.k); if(sp) sp.textContent=(step>=1)?P[spec.k]:(+P[spec.k]).toFixed(2);
   }
-  buildSystem(); _flashConsole("form randomized");
+  buildSystem(); _histPush(before); _flashConsole("form randomized");
 }
 function _randomizeColor(){
   const idx=Math.floor(Math.random()*Math.min(PALETTES.length,THEMES.length));
