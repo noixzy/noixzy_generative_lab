@@ -128,6 +128,11 @@ select:hover { border-color:var(--accent); }
 .consoleRule { height:1px; background:color-mix(in srgb, var(--accent) 36%, transparent); margin:16px 0 14px; opacity:.72; }
 .consoleBtns { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
 .consoleBtns button { flex:1 1 calc(33.333% - 8px); min-width:82px; }
+.consoleBtns button.active {
+  border-color:var(--accent);
+  color:var(--accent);
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 44%, transparent);
+}
 .presetStatus { margin-top:8px; min-height:16px; color:var(--dim); font-size:11px; letter-spacing:.04em; }
 .presetLine { display:grid; grid-template-columns:minmax(0,1fr) 96px; gap:8px; margin-top:8px; }
 .presetLine.triple { grid-template-columns:minmax(0,1fr) 72px 82px; }
@@ -203,9 +208,10 @@ select:hover { border-color:var(--accent); }
     </div>
     <div class="consoleRule"></div>
     <div class="consoleBtns">
-      <button id="randomAll" type="button">randomize<br>unlocked</button>
-      <button id="randomForm" type="button">randomize<br>form</button>
-      <button id="randomColor" type="button">randomize<br>color</button>
+      <button id="randomAll" type="button">random<br>all</button>
+      <button id="randomForm" type="button">random<br>form</button>
+      <button id="randomColor" type="button">random<br>color</button>
+      <button id="extrudeOff" type="button">extrude<br>off</button>
       <button id="newSeed" type="button"><span class="seedLabel">new<br>seed</span><span id="vSeed" class="seedRead">—</span></button>
       <button id="reset" type="button">reset</button>
       <button id="pause" type="button">pause</button>
@@ -304,8 +310,33 @@ SYSTEM.forEach(p=>{ p.g=p.g||"system"; if(!p.rr) p.sys=true; });
 const PARAMS=SYSTEM.concat(SHARED);
 const P={}; PARAMS.forEach(p=>P[p.k]=p.v);
 let _histUndo=[], _histRedo=[], _histBeforeSnap=null, _histApplying=false;
+let extrudeOff=false;
+function _syncExtrudeOffButton(){
+  const b=document.getElementById("extrudeOff");
+  if(!b) return;
+  b.innerHTML=extrudeOff ? "extrude<br>off ✓" : "extrude<br>off";
+  b.classList.toggle("active",extrudeOff);
+}
+function _applyExtrudeOff(){
+  if(!extrudeOff) return;
+  if(P.height!==undefined) P.height=0;
+  const h=document.getElementById("p_height");
+  if(h) h.value=0;
+  const hv=document.getElementById("v_height");
+  if(hv) hv.textContent="0.00";
+  dirty=true;
+}
+function _toggleExtrudeOff(){
+  const before=_histSnapshot();
+  extrudeOff=!extrudeOff;
+  _applyExtrudeOff();
+  _histSyncControls();
+  _syncExtrudeOffButton();
+  buildSystem();
+  _histPush(before);
+}
 function _histSnapshot(){
-  const snap={};
+  const snap={__extrudeOff:extrudeOff};
   for(const k in P) snap[k]=P[k];
   return snap;
 }
@@ -339,8 +370,11 @@ function _histEnd(){ const b=_histBeforeSnap; _histBeforeSnap=null; _histPush(b)
 function _histApply(snap){
   if(!snap) return;
   _histApplying=true;
+  if(snap.__extrudeOff!==undefined) extrudeOff=!!snap.__extrudeOff;
   for(const k in P){ if(snap[k]!==undefined) P[k]=snap[k]; }
+  _applyExtrudeOff();
   _histSyncControls();
+  _syncExtrudeOffButton();
   buildSystem();
   dirty=true;
   _histApplying=false;
@@ -978,6 +1012,7 @@ function buildUI(){
       inp.addEventListener("pointerdown",_histStart);
       inp.addEventListener("focus",_histStart);
       inp.addEventListener("input",()=>{ P[p.k]=parseFloat(inp.value); fmt();
+        if(extrudeOff && p.g==="extrude") _applyExtrudeOff();
         if(p.k==='pal'){ initColorState(P.pal); syncColorUI(); }
         if(p.sys) buildSystem(); else dirty=true; });
       inp.addEventListener("change",_histEnd);
@@ -1001,6 +1036,8 @@ function buildUI(){
   document.getElementById("randomAll").addEventListener("click",_randomizeAll);
   document.getElementById("randomForm").addEventListener("click",_randomizeForm);
   document.getElementById("randomColor").addEventListener("click",_randomizeColor);
+  document.getElementById("extrudeOff").addEventListener("click",_toggleExtrudeOff);
+  _syncExtrudeOffButton();
   document.getElementById("themePrev").addEventListener("click",()=>cycleTheme(-1));
   document.getElementById("themeNext").addEventListener("click",()=>cycleTheme(1));
   if(typeof renderSVG === 'function'){
@@ -1122,17 +1159,19 @@ function buildUI(){
 function _randomizeAll(){
   const before=_histSnapshot();
   SYSTEM.forEach(p=>{
+    if(extrudeOff && p.g==="extrude") return;
     if(p.k==='pal'){ P.pal=Math.floor(Math.random()*PALETTES.length); initColorState(P.pal); }
     else { const v=p.min+Math.random()*(p.max-p.min); P[p.k]=p.step>=1?Math.round(v):+(v.toFixed(3)); }
     const el=document.getElementById("p_"+p.k); if(el) el.value=P[p.k];
     const sp=document.getElementById("v_"+p.k); if(sp) sp.textContent=(p.step>=1)?P[p.k]:(+P[p.k]).toFixed(2);
   });
-  syncColorUI(); buildSystem(); _histPush(before); _flashConsole("randomized");
+  _applyExtrudeOff(); syncColorUI(); buildSystem(); _histPush(before); _flashConsole("random all");
 }
 function _randomizeForm(){
   const before=_histSnapshot();
   for(const spec of PARAMS){
     if(spec.k==="pal" || spec.g==="color") continue;
+    if(extrudeOff && spec.g==="extrude") continue;
     if(spec.rr===false) continue;
     const min=spec.min??0, max=spec.max??1, step=spec.step??.01;
     let v=min+Math.random()*(max-min);
@@ -1143,12 +1182,12 @@ function _randomizeForm(){
     const el=document.getElementById("p_"+spec.k); if(el) el.value=P[spec.k];
     const sp=document.getElementById("v_"+spec.k); if(sp) sp.textContent=(step>=1)?P[spec.k]:(+P[spec.k]).toFixed(2);
   }
-  buildSystem(); _histPush(before); _flashConsole("form randomized");
+  _applyExtrudeOff(); buildSystem(); _histPush(before); _flashConsole("random form");
 }
 function _randomizeColor(){
   const idx=Math.floor(Math.random()*Math.min(PALETTES.length,THEMES.length));
   applyTheme(THEMES[idx].name);
-  dirty=true; _flashConsole("color randomized");
+  dirty=true; _flashConsole("random color");
 }
 let favs=[];
 function loadFavs(){ try{favs=JSON.parse(localStorage.getItem(FAVKEY)||"[]");}catch(e){favs=[];} renderFavs(); }
