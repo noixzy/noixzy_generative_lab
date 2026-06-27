@@ -17,8 +17,8 @@
     --accent: #b7ff2a;
     --thumb-w: 96px;
     --thumb-h: 63px;
-    --logo-w: 132px;
-    --logo-h: 56px;
+    --logo-w: 82px;
+    --logo-h: 76px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
@@ -59,10 +59,10 @@
   .logoOverlay {
     position: absolute;
     left: 50%;
-    top: 19px;
+    top: 4px;
     z-index: 2;
-    width: 160px;
-    height: 63px;
+    width: 100px;
+    height: 100px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -82,7 +82,7 @@
     width: 100%;
     height: var(--thumb-h);
     min-width: 0;
-    transform: translateY(0px);
+    transform: translateY(2px);
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: thin;
@@ -145,8 +145,8 @@
     display: block;
     width: var(--logo-w);
     height: var(--logo-h);
-    max-width: 132px;
-    max-height: 56px;
+    max-width: 82px;
+    max-height: 76px;
     object-fit: contain;
     opacity: .96;
     pointer-events: none;
@@ -200,14 +200,14 @@
       --rail-h: 96px;
       --thumb-w: 82px;
       --thumb-h: 52px;
-      --logo-w: 132px;
-      --logo-h: 56px;
+      --logo-w: calc(var(--thumb-w) * 1.36);
+      --logo-h: calc(var(--thumb-h) * .88);
     }
 
     .logoOverlay {
-      width: 132px;
-      height: 52px;
-      top: 17px;
+      width: 82px;
+      height: 82px;
+      top: 9px;
     }
 
     .rail {
