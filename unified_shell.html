@@ -70,7 +70,9 @@
     border: 1px solid var(--line-soft);
     border-radius: 8px;
     background: #000;
-    pointer-events: none;
+    cursor: pointer;
+    text-decoration: none;
+    pointer-events: auto;
   }
 
   .thumbRail {
@@ -147,6 +149,7 @@
     max-height: 82px;
     object-fit: contain;
     opacity: .96;
+    pointer-events: none;
   }
 
   .logoOverlay .fallback {
@@ -217,9 +220,9 @@
 <div class="shell">
   <header class="rail" aria-label="module rail">
     <nav class="thumbRail" id="moduleRail" aria-label="modules"></nav>
-    <div class="logoOverlay" aria-hidden="true">
+    <a class="logoOverlay" href="gallery/index.html" aria-label="Back to gallery">
       <img src="gallery/gallery.svg" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'fallback', textContent: 'noixzy' }))">
-    </div>
+    </a>
   </header>
 
   <main class="stage">
