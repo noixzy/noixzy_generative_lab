@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noixzy brutalist massing</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050505;
+      --panel: #101010;
+      --line: #2d2d2d;
+      --text: #e7e2d8;
+      --muted: #8f8a82;
+      --accent: #c9b27c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 292px;
+      min-height: 100vh;
+    }
+
+    main {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,255,255,.055), transparent 35%),
+        linear-gradient(180deg, #0b0b0b 0%, #030303 100%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    aside {
+      border-left: 1px solid var(--line);
+      background: rgba(12, 12, 12, .96);
+      padding: 14px;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: lowercase;
+    }
+
+    .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid #383838;
+      background: #171717;
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      text-transform: lowercase;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+
+    .seed-row {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    label,
+    .seed-row span {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: lowercase;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #343434;
+      background: #080808;
+      color: var(--text);
+      padding: 8px;
+      font: inherit;
+      font-size: 11px;
+    }
+
+    .control {
+      padding: 10px 0;
+      border-top: 1px solid #222;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 7px;
+      font-size: 11px;
+    }
+
+    .value {
+      color: var(--accent);
+      text-align: right;
+      min-width: 42px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) 315px;
+      }
+
+      aside {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="view" aria-label="procedural brutalist architectural massing canvas"></canvas>
+  </main>
+  <aside>
+    <h1>noixzy brutalist massing</h1>
+    <p class="sub">stacked slabs, cores, towers, voids, bridges, hard silhouettes</p>
+    <div class="buttons">
+      <button id="play">pause</button>
+      <button id="randomize">randomize</button>
+      <button id="reset">reset</button>
+      <button id="export">export png</button>
+    </div>
+    <div class="seed-row">
+      <span>seed</span>
+      <input id="seed" type="text" value="noixzy-mass-001" spellcheck="false">
+    </div>
+    <div id="controls"></div>
+  </aside>
+
+  <script>
+    const defaults = {
+      density: 28,
+      slabWidth: 70,
+      slabDepth: 55,
+      heightVariance: 62,
+      voidChance: 24,
+      cantilever: 42,
+      perspective: 60,
+      rotation: 20,
+      shadowStrength: 68
+    };
+
+    const controlDefs = [
+      ["density", "density/count", 8, 64, 1],
+      ["slabWidth", "slab width", 25, 120, 1],
+      ["slabDepth", "slab depth", 20, 110, 1],
+      ["heightVariance", "height variance", 0, 100, 1],
+      ["voidChance", "void chance", 0, 70, 1],
+      ["cantilever", "cantilever", 0, 100, 1],
+      ["perspective", "perspective", 15, 100, 1],
+      ["rotation", "rotation", -45, 45, 1],
+      ["shadowStrength", "shadow strength", 0, 100, 1]
+    ];
+
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const controls = document.getElementById("controls");
+    const seedInput = document.getElementById("seed");
+    const playButton = document.getElementById("play");
+    const values = {};
+    let state = { ...defaults };
+    let running = true;
+    let frame = 0;
+    let width = 1;
+    let height = 1;
+    let dpr = 1;
+
+    function hashString(text) {
+      let hash = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function randomSource(seed) {
+      let t = hashString(seed) || 1;
+      return function random() {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function shade(hex, amount) {
+      const n = parseInt(hex.slice(1), 16);
+      const r = clamp((n >> 16) + amount, 0, 255);
+      const g = clamp(((n >> 8) & 255) + amount, 0, 255);
+      const b = clamp((n & 255) + amount, 0, 255);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function buildControls() {
+      controls.innerHTML = "";
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const wrap = document.createElement("div");
+        wrap.className = "control";
+        wrap.innerHTML = `
+          <div class="control-head">
+            <label for="${key}">${label}</label>
+            <span class="value" id="${key}Value">${state[key]}</span>
+          </div>
+          <input id="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${state[key]}">
+        `;
+        controls.appendChild(wrap);
+        values[key] = wrap.querySelector(".value");
+        wrap.querySelector("input").addEventListener("input", event => {
+          state[key] = Number(event.target.value);
+          values[key].textContent = state[key];
+          draw();
+        });
+      });
+    }
+
+    function resizeCanvas() {
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = canvas.getBoundingClientRect();
+      width = Math.max(320, Math.floor(rect.width));
+      height = Math.max(260, Math.floor(rect.height));
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function isoPoint(x, y, z, cfg) {
+      const angle = (Math.PI / 4) + cfg.rotationRad;
+      const ca = Math.cos(angle);
+      const sa = Math.sin(angle);
+      const rx = x * ca - y * sa;
+      const ry = x * sa + y * ca;
+      return {
+        x: cfg.cx + rx * cfg.scale,
+        y: cfg.cy + (ry * cfg.perspective - z) * cfg.scale
+      };
+    }
+
+    function polygon(points, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    function drawBox(block, cfg) {
+      const x0 = block.x;
+      const x1 = block.x + block.w;
+      const y0 = block.y;
+      const y1 = block.y + block.d;
+      const z0 = block.z;
+      const z1 = block.z + block.h;
+      const base = block.color;
+      const edge = "rgba(0,0,0,.58)";
+      const p000 = isoPoint(x0, y0, z0, cfg);
+      const p100 = isoPoint(x1, y0, z0, cfg);
+      const p110 = isoPoint(x1, y1, z0, cfg);
+      const p010 = isoPoint(x0, y1, z0, cfg);
+      const p001 = isoPoint(x0, y0, z1, cfg);
+      const p101 = isoPoint(x1, y0, z1, cfg);
+      const p111 = isoPoint(x1, y1, z1, cfg);
+      const p011 = isoPoint(x0, y1, z1, cfg);
+
+      const shadowOffset = cfg.shadow * 22;
+      polygon([
+        { x: p000.x + shadowOffset, y: p000.y + shadowOffset * .54 },
+        { x: p100.x + shadowOffset, y: p100.y + shadowOffset * .54 },
+        { x: p110.x + shadowOffset, y: p110.y + shadowOffset * .54 },
+        { x: p010.x + shadowOffset, y: p010.y + shadowOffset * .54 }
+      ], `rgba(0,0,0,${0.12 + cfg.shadow * .32})`);
+
+      polygon([p100, p110, p111, p101], shade(base, -44), edge);
+      polygon([p010, p110, p111, p011], shade(base, -72), edge);
+      polygon([p001, p101, p111, p011], shade(base, 18), edge);
+
+      if (block.voided) {
+        const insetX = block.w * .22;
+        const insetY = block.d * .18;
+        const insetZ = block.h * .18;
+        const q0 = isoPoint(x0 + insetX, y0 + insetY, z1 + .05, cfg);
+        const q1 = isoPoint(x1 - insetX, y0 + insetY, z1 + .05, cfg);
+        const q2 = isoPoint(x1 - insetX, y1 - insetY, z1 + .05, cfg);
+        const q3 = isoPoint(x0 + insetX, y1 - insetY, z1 + .05, cfg);
+        polygon([q0, q1, q2, q3], "rgba(2,2,2,.78)", "rgba(235,226,205,.12)");
+        const slotH = Math.max(.25, block.h * .24);
+        const s0 = isoPoint(x1 + .01, y0 + insetY, z0 + insetZ, cfg);
+        const s1 = isoPoint(x1 + .01, y1 - insetY, z0 + insetZ, cfg);
+        const s2 = isoPoint(x1 + .01, y1 - insetY, z0 + insetZ + slotH, cfg);
+        const s3 = isoPoint(x1 + .01, y0 + insetY, z0 + insetZ + slotH, cfg);
+        polygon([s0, s1, s2, s3], "rgba(3,3,3,.62)", "rgba(255,255,255,.08)");
+      }
+    }
+
+    function generateBlocks() {
+      const random = randomSource(`${seedInput.value}|massing`);
+      const blocks = [];
+      const palette = ["#8c887f", "#aaa394", "#6f726d", "#b9b1a1", "#565957"];
+      const count = state.density;
+      const widthBase = state.slabWidth / 10;
+      const depthBase = state.slabDepth / 10;
+      const heightRange = state.heightVariance / 18;
+      const cantilever = state.cantilever / 100;
+      const voidChance = state.voidChance / 100;
+
+      for (let i = 0; i < count; i++) {
+        const tier = Math.floor(i / 5);
+        const towerBias = random() > .68;
+        const span = towerBias ? .44 : 1;
+        const w = lerp(1.4, widthBase, random()) * span;
+        const d = lerp(1.4, depthBase, random()) * (towerBias ? .62 : 1);
+        const h = lerp(.45, 1.1 + heightRange, random()) * (towerBias ? 2.2 : 1);
+        const radius = Math.max(.8, 5.8 - tier * .38);
+        const x = (random() - .5) * radius * cantilever * 2 + (random() - .5) * 2.8 - w * .5;
+        const y = (random() - .5) * radius + (random() - .5) * 1.2 - d * .5;
+        const z = tier * .55 + random() * .22;
+        blocks.push({
+          x, y, z, w, d, h,
+          voided: random() < voidChance,
+          color: palette[Math.floor(random() * palette.length)]
+        });
+      }
+
+      const bridgeCount = Math.max(2, Math.floor(count / 11));
+      for (let i = 0; i < bridgeCount; i++) {
+        const z = lerp(1.5, 5.8, random());
+        blocks.push({
+          x: lerp(-5, 2, random()),
+          y: lerp(-2.5, 2.2, random()),
+          z,
+          w: lerp(4, 9, random()),
+          d: lerp(.35, .9, random()),
+          h: lerp(.25, .65, random()),
+          voided: false,
+          color: palette[Math.floor(random() * palette.length)]
+        });
+      }
+
+      blocks.push({ x: -1.1, y: -1.15, z: 0, w: 2.2, d: 2.3, h: 5.5 + heightRange, voided: false, color: "#73766f" });
+      return blocks.sort((a, b) => (a.x + a.y + a.z) - (b.x + b.y + b.z));
+    }
+
+    function drawGround(cfg) {
+      const random = randomSource(`${seedInput.value}|ground`);
+      ctx.save();
+      ctx.globalAlpha = .34;
+      for (let i = 0; i < 28; i++) {
+        const a = isoPoint(-9 + random() * 18, -7 + random() * 14, -.02, cfg);
+        const b = isoPoint(-9 + random() * 18, -7 + random() * 14, -.02, cfg);
+        ctx.strokeStyle = "rgba(220,214,200,.12)";
+        ctx.lineWidth = random() > .7 ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, "#101010");
+      gradient.addColorStop(1, "#020202");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+
+      const cfg = {
+        cx: width * .5,
+        cy: height * .72,
+        scale: Math.min(width, height) / 28,
+        perspective: state.perspective / 100,
+        rotationRad: (state.rotation + Math.sin(frame * .012) * (running ? 1.5 : 0)) * Math.PI / 180,
+        shadow: state.shadowStrength / 100
+      };
+
+      drawGround(cfg);
+      generateBlocks().forEach(block => drawBox(block, cfg));
+
+      ctx.fillStyle = "rgba(231,226,216,.72)";
+      ctx.font = "11px ui-monospace, monospace";
+      ctx.fillText(seedInput.value || "seed", 16, height - 18);
+    }
+
+    function tick() {
+      if (running) {
+        frame++;
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function randomSeed() {
+      return `noixzy-mass-${Math.floor(Math.random() * 999999).toString(36)}`;
+    }
+
+    function resetAll() {
+      state = { ...defaults };
+      seedInput.value = "noixzy-mass-001";
+      controlDefs.forEach(([key]) => {
+        const input = document.getElementById(key);
+        input.value = state[key];
+        values[key].textContent = state[key];
+      });
+      frame = 0;
+      draw();
+    }
+
+    function exportPng() {
+      draw();
+      const link = document.createElement("a");
+      link.download = `noixzy_brutalist_massing_${seedInput.value || "seed"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    seedInput.addEventListener("input", draw);
+    playButton.addEventListener("click", () => {
+      running = !running;
+      playButton.textContent = running ? "pause" : "play";
+      draw();
+    });
+    document.getElementById("randomize").addEventListener("click", () => {
+      seedInput.value = randomSeed();
+      draw();
+    });
+    document.getElementById("reset").addEventListener("click", resetAll);
+    document.getElementById("export").addEventListener("click", exportPng);
+    window.addEventListener("resize", resizeCanvas);
+
+    buildControls();
+    resizeCanvas();
+    tick();
+  </script>
+</body>
+</html>

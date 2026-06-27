@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noixzy modernist facade</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #040404;
+      --panel: #101010;
+      --line: #303030;
+      --text: #eee9dd;
+      --muted: #969189;
+      --accent: #8ab3aa;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 286px;
+      min-height: 100vh;
+    }
+
+    main {
+      min-width: 0;
+      min-height: 0;
+      background: linear-gradient(160deg, #0f0f0f, #020202 72%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    aside {
+      border-left: 1px solid var(--line);
+      background: #0e0e0e;
+      padding: 14px;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      letter-spacing: 0;
+      text-transform: lowercase;
+    }
+
+    .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid #383838;
+      background: #171717;
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      text-transform: lowercase;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+
+    .seed-row {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    label,
+    .seed-row span {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: lowercase;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #343434;
+      background: #080808;
+      color: var(--text);
+      padding: 8px;
+      font: inherit;
+      font-size: 11px;
+    }
+
+    .control {
+      padding: 10px 0;
+      border-top: 1px solid #222;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 7px;
+      font-size: 11px;
+    }
+
+    .value {
+      color: var(--accent);
+      min-width: 42px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) 315px;
+      }
+
+      aside {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="view" aria-label="procedural modernist facade grid canvas"></canvas>
+  </main>
+  <aside>
+    <h1>noixzy modernist facade</h1>
+    <p class="sub">windows, mullions, fins, setbacks, balconies, negative blocks</p>
+    <div class="buttons">
+      <button id="play">pause</button>
+      <button id="randomize">randomize</button>
+      <button id="reset">reset</button>
+      <button id="export">export png</button>
+    </div>
+    <div class="seed-row">
+      <span>seed</span>
+      <input id="seed" type="text" value="noixzy-facade-001" spellcheck="false">
+    </div>
+    <div id="controls"></div>
+  </aside>
+
+  <script>
+    const defaults = {
+      rows: 18,
+      columns: 14,
+      panelRhythm: 45,
+      windowProbability: 76,
+      insetDepth: 45,
+      finDensity: 36,
+      lineWeight: 2,
+      variation: 42,
+      margin: 46
+    };
+
+    const controlDefs = [
+      ["rows", "rows", 6, 36, 1],
+      ["columns", "columns", 5, 30, 1],
+      ["panelRhythm", "panel rhythm", 0, 100, 1],
+      ["windowProbability", "window probability", 0, 100, 1],
+      ["insetDepth", "inset depth", 0, 100, 1],
+      ["finDensity", "fin density", 0, 100, 1],
+      ["lineWeight", "line weight", 1, 8, 1],
+      ["variation", "variation", 0, 100, 1],
+      ["margin", "margin", 12, 120, 1]
+    ];
+
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const controls = document.getElementById("controls");
+    const seedInput = document.getElementById("seed");
+    const playButton = document.getElementById("play");
+    const values = {};
+    let state = { ...defaults };
+    let running = true;
+    let frame = 0;
+    let width = 1;
+    let height = 1;
+    let dpr = 1;
+
+    function hashString(text) {
+      let hash = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function randomSource(seed) {
+      let t = hashString(seed) || 1;
+      return function random() {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function buildControls() {
+      controls.innerHTML = "";
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const wrap = document.createElement("div");
+        wrap.className = "control";
+        wrap.innerHTML = `
+          <div class="control-head">
+            <label for="${key}">${label}</label>
+            <span class="value" id="${key}Value">${state[key]}</span>
+          </div>
+          <input id="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${state[key]}">
+        `;
+        controls.appendChild(wrap);
+        values[key] = wrap.querySelector(".value");
+        wrap.querySelector("input").addEventListener("input", event => {
+          state[key] = Number(event.target.value);
+          values[key].textContent = state[key];
+          draw();
+        });
+      });
+    }
+
+    function resizeCanvas() {
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = canvas.getBoundingClientRect();
+      width = Math.max(320, Math.floor(rect.width));
+      height = Math.max(260, Math.floor(rect.height));
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function drawRect(x, y, w, h, fill, stroke, lineWidth = 1) {
+      ctx.fillStyle = fill;
+      ctx.fillRect(x, y, w, h);
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.strokeRect(x, y, w, h);
+      }
+    }
+
+    function drawWindow(x, y, w, h, random, inset) {
+      const lit = random() > .72;
+      const glass = lit ? "rgba(219,209,167,.72)" : "rgba(27,35,37,.92)";
+      drawRect(x + inset, y + inset, w - inset * 2, h - inset * 2, glass, "rgba(232,228,212,.18)", 1);
+      const sheen = ctx.createLinearGradient(x, y, x + w, y + h);
+      sheen.addColorStop(0, "rgba(255,255,255,.14)");
+      sheen.addColorStop(.45, "rgba(255,255,255,.02)");
+      sheen.addColorStop(1, "rgba(0,0,0,.18)");
+      ctx.fillStyle = sheen;
+      ctx.fillRect(x + inset, y + inset, w - inset * 2, h - inset * 2);
+    }
+
+    function drawBalcony(x, y, w, h, depth) {
+      const by = y + h * .68;
+      drawRect(x + w * .08, by, w * .84, Math.max(2, depth), "rgba(210,205,190,.34)", "rgba(0,0,0,.45)", 1);
+      ctx.strokeStyle = "rgba(235,235,220,.26)";
+      ctx.lineWidth = 1;
+      const rails = 3;
+      for (let i = 0; i < rails; i++) {
+        const yy = by + depth * (i / rails);
+        ctx.beginPath();
+        ctx.moveTo(x + w * .12, yy);
+        ctx.lineTo(x + w * .88, yy);
+        ctx.stroke();
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      const bg = ctx.createLinearGradient(0, 0, 0, height);
+      bg.addColorStop(0, "#0e0e0e");
+      bg.addColorStop(1, "#020202");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+
+      const random = randomSource(`${seedInput.value}|facade`);
+      const pulse = running ? Math.sin(frame * .018) : 0;
+      const margin = Math.min(state.margin, Math.min(width, height) * .22);
+      const facadeW = Math.max(120, width - margin * 2);
+      const facadeH = Math.max(120, height - margin * 2);
+      const x0 = (width - facadeW) / 2;
+      const y0 = (height - facadeH) / 2;
+      const rows = state.rows;
+      const cols = state.columns;
+      const cellW = facadeW / cols;
+      const cellH = facadeH / rows;
+      const line = state.lineWeight;
+      const inset = Math.min(cellW, cellH) * lerp(.04, .28, state.insetDepth / 100);
+      const variation = state.variation / 100;
+      const windowProbability = state.windowProbability / 100;
+      const rhythm = state.panelRhythm / 100;
+      const finDensity = state.finDensity / 100;
+
+      ctx.shadowColor = "rgba(0,0,0,.58)";
+      ctx.shadowBlur = 24;
+      ctx.shadowOffsetX = 14;
+      ctx.shadowOffsetY = 18;
+      drawRect(x0, y0, facadeW, facadeH, "#77766d", "rgba(238,234,220,.24)", 1);
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = x0 + c * cellW;
+          const y = y0 + r * cellH;
+          const blockNoise = random();
+          const rhythmic = ((c + Math.floor(r * rhythm * 3)) % Math.max(2, Math.round(5 - rhythm * 3))) === 0;
+          const setback = blockNoise < variation * .18;
+          const negative = blockNoise > .96 - variation * .18;
+          const panelTone = rhythmic ? "#9b998d" : "#85847b";
+          const panelFill = setback ? "#595a55" : panelTone;
+          const jitter = (random() - .5) * variation * Math.min(cellW, cellH) * .08;
+
+          if (negative) {
+            drawRect(x + line, y + line, cellW - line * 2, cellH - line * 2, "#050505", "rgba(255,255,255,.08)", 1);
+            continue;
+          }
+
+          drawRect(x, y, cellW + .5, cellH + .5, panelFill, "rgba(28,28,28,.72)", line);
+
+          if (random() < windowProbability || rhythmic) {
+            drawWindow(x + Math.abs(jitter), y + Math.abs(jitter), cellW - Math.abs(jitter) * 2, cellH - Math.abs(jitter) * 2, random, inset);
+          } else {
+            drawRect(x + inset, y + inset, cellW - inset * 2, cellH - inset * 2, "rgba(58,58,54,.72)", "rgba(230,226,210,.1)", 1);
+          }
+
+          if (random() < finDensity * .18) {
+            const finW = clamp(line * 1.4 + finDensity * 5, 2, cellW * .2);
+            drawRect(x + cellW - finW * .5, y - line, finW, cellH + line * 2, "rgba(222,217,198,.46)", "rgba(0,0,0,.32)", 1);
+          }
+
+          if (random() < variation * .1 && r > rows * .28) {
+            drawBalcony(x, y, cellW, cellH, clamp(cellH * .12 + pulse * 1.2, 2, 12));
+          }
+        }
+      }
+
+      ctx.strokeStyle = "rgba(235,230,210,.3)";
+      ctx.lineWidth = line;
+      for (let c = 0; c <= cols; c++) {
+        const x = x0 + c * cellW;
+        ctx.beginPath();
+        ctx.moveTo(x, y0);
+        ctx.lineTo(x, y0 + facadeH);
+        ctx.stroke();
+      }
+      for (let r = 0; r <= rows; r++) {
+        const y = y0 + r * cellH;
+        ctx.beginPath();
+        ctx.moveTo(x0, y);
+        ctx.lineTo(x0 + facadeW, y);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "rgba(238,233,221,.7)";
+      ctx.font = "11px ui-monospace, monospace";
+      ctx.fillText(seedInput.value || "seed", 16, height - 18);
+    }
+
+    function tick() {
+      if (running) {
+        frame++;
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function randomSeed() {
+      return `noixzy-facade-${Math.floor(Math.random() * 999999).toString(36)}`;
+    }
+
+    function resetAll() {
+      state = { ...defaults };
+      seedInput.value = "noixzy-facade-001";
+      controlDefs.forEach(([key]) => {
+        const input = document.getElementById(key);
+        input.value = state[key];
+        values[key].textContent = state[key];
+      });
+      frame = 0;
+      draw();
+    }
+
+    function exportPng() {
+      draw();
+      const link = document.createElement("a");
+      link.download = `noixzy_modernist_facade_${seedInput.value || "seed"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    seedInput.addEventListener("input", draw);
+    playButton.addEventListener("click", () => {
+      running = !running;
+      playButton.textContent = running ? "pause" : "play";
+      draw();
+    });
+    document.getElementById("randomize").addEventListener("click", () => {
+      seedInput.value = randomSeed();
+      draw();
+    });
+    document.getElementById("reset").addEventListener("click", resetAll);
+    document.getElementById("export").addEventListener("click", exportPng);
+    window.addEventListener("resize", resizeCanvas);
+
+    buildControls();
+    resizeCanvas();
+    tick();
+  </script>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noixzy concrete relief</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050505;
+      --panel: #101010;
+      --line: #303030;
+      --text: #e9e4d9;
+      --muted: #928d85;
+      --accent: #d0d0ca;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 286px;
+      min-height: 100vh;
+    }
+
+    main {
+      min-width: 0;
+      min-height: 0;
+      background: radial-gradient(circle at 30% 20%, #161616, #030303 60%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    aside {
+      border-left: 1px solid var(--line);
+      background: rgba(14,14,14,.98);
+      padding: 14px;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      letter-spacing: 0;
+      text-transform: lowercase;
+    }
+
+    .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid #383838;
+      background: #171717;
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      text-transform: lowercase;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+
+    .seed-row {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    label,
+    .seed-row span {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: lowercase;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #343434;
+      background: #080808;
+      color: var(--text);
+      padding: 8px;
+      font: inherit;
+      font-size: 11px;
+    }
+
+    .control {
+      padding: 10px 0;
+      border-top: 1px solid #222;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 7px;
+      font-size: 11px;
+    }
+
+    .value {
+      color: var(--accent);
+      min-width: 42px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) 315px;
+      }
+
+      aside {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="view" aria-label="procedural concrete relief displacement reference canvas"></canvas>
+  </main>
+  <aside>
+    <h1>noixzy concrete relief</h1>
+    <p class="sub">raised blocks, recessed cuts, grooves, pits, seams, cast shadows</p>
+    <div class="buttons">
+      <button id="play">pause</button>
+      <button id="randomize">randomize</button>
+      <button id="reset">reset</button>
+      <button id="export">export png</button>
+    </div>
+    <div class="seed-row">
+      <span>seed</span>
+      <input id="seed" type="text" value="noixzy-relief-001" spellcheck="false">
+    </div>
+    <div id="controls"></div>
+  </aside>
+
+  <script>
+    const defaults = {
+      cellScale: 46,
+      reliefDepth: 64,
+      grooveWidth: 36,
+      erosion: 34,
+      pitting: 45,
+      bevelIllusion: 68,
+      contrast: 58,
+      noiseScale: 42
+    };
+
+    const controlDefs = [
+      ["cellScale", "cell scale", 18, 90, 1],
+      ["reliefDepth", "relief depth", 0, 100, 1],
+      ["grooveWidth", "groove width", 0, 100, 1],
+      ["erosion", "erosion", 0, 100, 1],
+      ["pitting", "pitting", 0, 100, 1],
+      ["bevelIllusion", "bevel illusion", 0, 100, 1],
+      ["contrast", "contrast", 0, 100, 1],
+      ["noiseScale", "noise scale", 0, 100, 1]
+    ];
+
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const controls = document.getElementById("controls");
+    const seedInput = document.getElementById("seed");
+    const playButton = document.getElementById("play");
+    const values = {};
+    let state = { ...defaults };
+    let running = true;
+    let frame = 0;
+    let width = 1;
+    let height = 1;
+    let dpr = 1;
+
+    function hashString(text) {
+      let hash = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function randomSource(seed) {
+      let t = hashString(seed) || 1;
+      return function random() {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function buildControls() {
+      controls.innerHTML = "";
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const wrap = document.createElement("div");
+        wrap.className = "control";
+        wrap.innerHTML = `
+          <div class="control-head">
+            <label for="${key}">${label}</label>
+            <span class="value" id="${key}Value">${state[key]}</span>
+          </div>
+          <input id="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${state[key]}">
+        `;
+        controls.appendChild(wrap);
+        values[key] = wrap.querySelector(".value");
+        wrap.querySelector("input").addEventListener("input", event => {
+          state[key] = Number(event.target.value);
+          values[key].textContent = state[key];
+          draw();
+        });
+      });
+    }
+
+    function resizeCanvas() {
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = canvas.getBoundingClientRect();
+      width = Math.max(320, Math.floor(rect.width));
+      height = Math.max(260, Math.floor(rect.height));
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function drawRect(x, y, w, h, fill) {
+      ctx.fillStyle = fill;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function concreteColor(base, delta, alpha = 1) {
+      const v = clamp(Math.round(base + delta), 0, 255);
+      return `rgba(${v}, ${v - 2}, ${v - 7}, ${alpha})`;
+    }
+
+    function drawBeveledCell(x, y, w, h, level, random, cfg) {
+      const raised = level > 0;
+      const depth = Math.abs(level) * cfg.depth;
+      const base = cfg.base + level * cfg.contrast;
+      const shadow = cfg.bevel * depth;
+      const groove = cfg.groove;
+
+      if (raised) {
+        ctx.shadowColor = `rgba(0,0,0,${.16 + cfg.bevel * .35})`;
+        ctx.shadowBlur = shadow * .7;
+        ctx.shadowOffsetX = shadow;
+        ctx.shadowOffsetY = shadow;
+      } else {
+        ctx.shadowColor = "transparent";
+      }
+
+      drawRect(x + groove, y + groove, w - groove * 2, h - groove * 2, concreteColor(base, random() * 10 - 5));
+      ctx.shadowColor = "transparent";
+
+      const inset = groove + 1;
+      ctx.lineWidth = Math.max(1, cfg.bevel * 3);
+      ctx.strokeStyle = raised ? "rgba(255,255,245,.22)" : "rgba(0,0,0,.38)";
+      ctx.beginPath();
+      ctx.moveTo(x + inset, y + h - inset);
+      ctx.lineTo(x + inset, y + inset);
+      ctx.lineTo(x + w - inset, y + inset);
+      ctx.stroke();
+
+      ctx.strokeStyle = raised ? "rgba(0,0,0,.42)" : "rgba(255,255,245,.16)";
+      ctx.beginPath();
+      ctx.moveTo(x + w - inset, y + inset);
+      ctx.lineTo(x + w - inset, y + h - inset);
+      ctx.lineTo(x + inset, y + h - inset);
+      ctx.stroke();
+
+      if (!raised) {
+        drawRect(x + groove * 1.3, y + groove * 1.3, w - groove * 2.6, h - groove * 2.6, `rgba(0,0,0,${.06 + depth * .008})`);
+      }
+    }
+
+    function drawPits(area, random, cfg) {
+      const count = Math.floor((area.w * area.h / 1600) * cfg.pitting);
+      ctx.save();
+      for (let i = 0; i < count; i++) {
+        const r = lerp(.45, 2.8, random()) * (1 + cfg.erosion);
+        const x = area.x + random() * area.w;
+        const y = area.y + random() * area.h;
+        ctx.fillStyle = random() > .28 ? "rgba(0,0,0,.22)" : "rgba(255,255,245,.08)";
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawSeams(area, random, cfg) {
+      const seams = Math.floor(10 + cfg.erosion * 24);
+      ctx.save();
+      ctx.lineWidth = 1;
+      for (let i = 0; i < seams; i++) {
+        const vertical = random() > .45;
+        ctx.strokeStyle = random() > .5 ? "rgba(0,0,0,.24)" : "rgba(255,255,245,.08)";
+        ctx.beginPath();
+        if (vertical) {
+          const x = area.x + random() * area.w;
+          ctx.moveTo(x, area.y + random() * area.h);
+          ctx.lineTo(x + (random() - .5) * 24, area.y + random() * area.h);
+        } else {
+          const y = area.y + random() * area.h;
+          ctx.moveTo(area.x + random() * area.w, y);
+          ctx.lineTo(area.x + random() * area.w, y + (random() - .5) * 24);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      const random = randomSource(`${seedInput.value}|relief`);
+      const bg = ctx.createLinearGradient(0, 0, width, height);
+      bg.addColorStop(0, "#111");
+      bg.addColorStop(1, "#020202");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+
+      const margin = Math.max(26, Math.min(width, height) * .08);
+      const area = {
+        x: margin,
+        y: margin,
+        w: width - margin * 2,
+        h: height - margin * 2
+      };
+      const cell = state.cellScale;
+      const cols = Math.max(4, Math.floor(area.w / cell));
+      const rows = Math.max(4, Math.floor(area.h / cell));
+      const cellW = area.w / cols;
+      const cellH = area.h / rows;
+      const cfg = {
+        depth: state.reliefDepth / 9,
+        groove: lerp(1, Math.min(cellW, cellH) * .18, state.grooveWidth / 100),
+        erosion: state.erosion / 100,
+        pitting: state.pitting / 5,
+        bevel: state.bevelIllusion / 100,
+        contrast: lerp(8, 48, state.contrast / 100),
+        base: 116,
+        noise: state.noiseScale / 100
+      };
+      const slowShift = running ? Math.sin(frame * .01) * .08 : 0;
+
+      ctx.shadowColor = "rgba(0,0,0,.5)";
+      ctx.shadowBlur = 30;
+      ctx.shadowOffsetX = 12;
+      ctx.shadowOffsetY = 16;
+      drawRect(area.x, area.y, area.w, area.h, "#77756e");
+      ctx.shadowColor = "transparent";
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const n = random();
+          const wave = Math.sin((c * .7 + r * .45) * cfg.noise + slowShift);
+          const stepped = n + wave * .18;
+          let level = 0;
+          if (stepped > .66) level = lerp(.25, 1, random());
+          if (stepped < .27) level = -lerp(.25, 1, random());
+          if ((c + r) % 7 === 0 && random() < cfg.noise) level *= 1.45;
+          drawBeveledCell(area.x + c * cellW, area.y + r * cellH, cellW, cellH, level, random, cfg);
+        }
+      }
+
+      ctx.strokeStyle = `rgba(0,0,0,${.18 + state.grooveWidth / 250})`;
+      ctx.lineWidth = Math.max(1, cfg.groove * .42);
+      for (let c = 0; c <= cols; c++) {
+        const x = area.x + c * cellW;
+        ctx.beginPath();
+        ctx.moveTo(x, area.y);
+        ctx.lineTo(x, area.y + area.h);
+        ctx.stroke();
+      }
+      for (let r = 0; r <= rows; r++) {
+        const y = area.y + r * cellH;
+        ctx.beginPath();
+        ctx.moveTo(area.x, y);
+        ctx.lineTo(area.x + area.w, y);
+        ctx.stroke();
+      }
+
+      drawPits(area, random, cfg);
+      drawSeams(area, random, cfg);
+
+      ctx.fillStyle = "rgba(233,228,217,.7)";
+      ctx.font = "11px ui-monospace, monospace";
+      ctx.fillText(seedInput.value || "seed", 16, height - 18);
+    }
+
+    function tick() {
+      if (running) {
+        frame++;
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function randomSeed() {
+      return `noixzy-relief-${Math.floor(Math.random() * 999999).toString(36)}`;
+    }
+
+    function resetAll() {
+      state = { ...defaults };
+      seedInput.value = "noixzy-relief-001";
+      controlDefs.forEach(([key]) => {
+        const input = document.getElementById(key);
+        input.value = state[key];
+        values[key].textContent = state[key];
+      });
+      frame = 0;
+      draw();
+    }
+
+    function exportPng() {
+      draw();
+      const link = document.createElement("a");
+      link.download = `noixzy_concrete_relief_${seedInput.value || "seed"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    seedInput.addEventListener("input", draw);
+    playButton.addEventListener("click", () => {
+      running = !running;
+      playButton.textContent = running ? "pause" : "play";
+      draw();
+    });
+    document.getElementById("randomize").addEventListener("click", () => {
+      seedInput.value = randomSeed();
+      draw();
+    });
+    document.getElementById("reset").addEventListener("click", resetAll);
+    document.getElementById("export").addEventListener("click", exportPng);
+    window.addEventListener("resize", resizeCanvas);
+
+    buildControls();
+    resizeCanvas();
+    tick();
+  </script>
+</body>
+</html>
