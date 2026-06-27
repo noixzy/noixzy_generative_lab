@@ -17,8 +17,8 @@
     --accent: #b7ff2a;
     --thumb-w: 96px;
     --thumb-h: 63px;
-    --logo-w: 144px;
-    --logo-h: 82px;
+    --logo-w: 132px;
+    --logo-h: 56px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
@@ -59,15 +59,15 @@
   .logoOverlay {
     position: absolute;
     left: 50%;
-    top: 12px;
+    top: 19px;
     z-index: 2;
     width: 160px;
-    height: 90px;
+    height: 63px;
     display: flex;
     align-items: center;
     justify-content: center;
     transform: translateX(-50%);
-    border: 1px solid var(--line-soft);
+    border: none;
     border-radius: 8px;
     background: #000;
     cursor: pointer;
@@ -82,7 +82,7 @@
     width: 100%;
     height: var(--thumb-h);
     min-width: 0;
-    transform: translateY(10px);
+    transform: translateY(0px);
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: thin;
@@ -145,8 +145,8 @@
     display: block;
     width: var(--logo-w);
     height: var(--logo-h);
-    max-width: 144px;
-    max-height: 82px;
+    max-width: 132px;
+    max-height: 56px;
     object-fit: contain;
     opacity: .96;
     pointer-events: none;
@@ -200,23 +200,51 @@
       --rail-h: 96px;
       --thumb-w: 82px;
       --thumb-h: 52px;
-      --logo-w: 144px;
-      --logo-h: 82px;
+      --logo-w: 132px;
+      --logo-h: 56px;
     }
 
     .logoOverlay {
-      width: 160px;
-      height: 90px;
-      top: 10px;
+      width: 132px;
+      height: 52px;
+      top: 17px;
     }
 
     .rail {
       padding: 10px;
     }
   }
+
+  /* NOIXZY_DEBUG_GRID_100X4 */
+  body.debugGrid::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 2147483646;
+    pointer-events: none;
+    opacity: .38;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,.12) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.12) 1px, transparent 1px),
+      linear-gradient(to right, rgba(255,255,255,.32) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.32) 1px, transparent 1px);
+    background-size:
+      25px 25px,
+      25px 25px,
+      100px 100px,
+      100px 100px;
+    background-position:
+      calc(50vw - 50px) calc(50vh - 50px),
+      calc(50vw - 50px) calc(50vh - 50px),
+      calc(50vw - 50px) calc(50vh - 50px),
+      calc(50vw - 50px) calc(50vh - 50px);
+  }
+
+
+
 </style>
 </head>
-<body>
+<body class="debugGrid">
 <div class="shell">
   <header class="rail" aria-label="module rail">
     <nav class="thumbRail" id="moduleRail" aria-label="modules"></nav>
