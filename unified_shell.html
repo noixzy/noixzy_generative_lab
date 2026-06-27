@@ -74,15 +74,15 @@
     left: 50%;
     top: 14px;
     z-index: 10;
-    width: 66px;
-    height: 66px;
+    width: 88px;
+    height: 88px;
     display: flex;
     align-items: center;
     justify-content: center;
     transform: translateX(-50%);
     border: none;
     border-radius: 8px;
-    background: #000;
+    background: radial-gradient(ellipse at center, #000 0%, #000 85%, rgba(0,0,0,0) 100%);
     cursor: pointer;
     text-decoration: none;
     pointer-events: auto;
@@ -126,7 +126,7 @@
     padding: 0;
     border: 1px solid transparent;
     border-radius: 7px;
-    overflow: hidden;
+    overflow: visible;
     background: rgba(0, 0, 0, .18);
     cursor: pointer;
     opacity: .50;
@@ -160,11 +160,13 @@
     display: block;
     width: var(--logo-w);
     height: var(--logo-h);
-    max-width: 66px;
-    max-height: 57px;
+    max-width: 88px;
+    max-height: 88px;
     object-fit: contain;
     opacity: .96;
     pointer-events: none;
+    transform: translateY(-16px) scale(1.42);
+    transform-origin: center;
   }
 
   .logoOverlay .fallback {
@@ -172,7 +174,7 @@
     font-size: 10px;
     font-weight: 700;
     letter-spacing: .12em;
-    text-transform: lowercase;
+    text-transform: translateY(-18px) scale(1.42);
   }
 
   body.logoBadgeHidden .logoOverlay {
@@ -180,7 +182,7 @@
   }
 
   .settingsShell {
-    position: fixed;
+    position: relative;
     top: -2px;
     right: 0;
     z-index: 2147483647;
@@ -360,8 +362,8 @@
     }
 
     .logoOverlay {
-      width: 82px;
-      height: 82px;
+      width: 88px;
+      height: 88px;
       top: 15px;
     }
 
@@ -425,6 +427,29 @@
         transparent 1px,
         transparent 1.6px
       );
+  }
+
+
+  /* NOIXZY_BADGE_EDGE_FADE */
+  .logoOverlay::before,
+  .logoOverlay::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 15px;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .logoOverlay::before {
+    right: 100%;
+    background: linear-gradient(to left, #000 0%, rgba(0,0,0,0) 100%);
+  }
+
+  .logoOverlay::after {
+    left: 100%;
+    background: linear-gradient(to right, #000 0%, rgba(0,0,0,0) 100%);
   }
 
 </style>
