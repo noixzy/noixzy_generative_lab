@@ -6,7 +6,7 @@
 <title>noixzy // unified shell</title>
 <style>
   :root {
-    --rail-h: 104px;
+    --rail-h: 78px;
     --bg: #000;
     --rail: #000;
     --rail-2: #000;
@@ -14,11 +14,11 @@
     --line-soft: rgba(255, 255, 255, .08);
     --ink: #f1f0ec;
     --dim: #888a91;
-    --accent: #b7ff2a;
-    --thumb-w: 96px;
-    --thumb-h: 63px;
+    --accent: #d8d8d8;
+    --thumb-w: 76px;
+    --thumb-h: 48px;
     --logo-w: 82px;
-    --logo-h: 76px;
+    --logo-h: 57px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
@@ -31,6 +31,7 @@
     width: 100%;
     height: 100%;
     margin: 0;
+    background: #000;
   }
 
   body {
@@ -52,17 +53,39 @@
     display: flex;
     align-items: center;
     padding: 12px 14px;
+    overflow: hidden;
     background: #000;
-    border-bottom: 1px solid var(--line);
+    border-bottom: none;
+    box-shadow: none;
+    isolation: isolate;
+  }
+
+  .rail::before,
+
+  .rail::before {
+    content: none !important;
+    display: none !important;
+    animation: none;
+    background: none !important;
+  }
+
+  @keyframes shellRailHolo {
+    from { background-position: initial; }
+    to { background-position: 0 0, 0 21px; }
+  }
+
+  @keyframes shellRailGlint {
+    0%, 38% { background-position: 130% 0, 0 0; }
+    72%, 100% { background-position: -80% 0, 0 0; }
   }
 
   .logoOverlay {
     position: absolute;
     left: 50%;
-    top: 4px;
-    z-index: 2;
-    width: 100px;
-    height: 100px;
+    top: 14px;
+    z-index: 10;
+    width: 66px;
+    height: 66px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -76,6 +99,8 @@
   }
 
   .thumbRail {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -109,23 +134,22 @@
     display: block;
     margin: 0;
     padding: 0;
-    border: 1px solid rgba(255, 255, 255, .16);
+    border: 1px solid transparent;
     border-radius: 7px;
     overflow: hidden;
-    background: #000;
+    background: rgba(0, 0, 0, .18);
     cursor: pointer;
-    opacity: .72;
-    transition: border-color .14s ease, opacity .14s ease, transform .14s ease;
+    opacity: .50;
+    box-shadow: none;
+    transition: opacity .14s ease, transform .14s ease;
   }
 
   .moduleButton:hover {
-    opacity: .96;
-    border-color: rgba(255, 255, 255, .72);
+    opacity: .58;
   }
 
   .moduleButton[aria-selected="true"] {
-    opacity: 1;
-    border-color: rgba(255, 255, 255, .42);
+    opacity: .64;
   }
 
   .moduleButton:focus-visible {
@@ -145,8 +169,8 @@
     display: block;
     width: var(--logo-w);
     height: var(--logo-h);
-    max-width: 82px;
-    max-height: 76px;
+    max-width: 66px;
+    max-height: 57px;
     object-fit: contain;
     opacity: .96;
     pointer-events: none;
@@ -160,6 +184,135 @@
     text-transform: lowercase;
   }
 
+  body.logoBadgeHidden .logoOverlay {
+    display: none !important;
+  }
+
+  .settingsShell {
+    position: fixed;
+    top: -2px;
+    right: 0;
+    z-index: 2147483647;
+  }
+
+  .settingsButton {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(0, 0, 0, .88);
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .settingsButton:hover,
+  .settingsButton[aria-expanded="true"] {
+    border-color: rgba(255, 255, 255, .52);
+  }
+
+  .settingsButton:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .settingsButtonIcon,
+  .settingsButtonIcon::before,
+  .settingsButtonIcon::after {
+    width: 7px;
+    height: 1px;
+    display: block;
+    background: currentColor;
+    opacity: .5;
+  }
+
+  .settingsButtonIcon {
+    position: relative;
+  }
+
+  .settingsButtonIcon::before,
+  .settingsButtonIcon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+  }
+
+  .settingsButtonIcon::before {
+    top: -3px;
+  }
+
+  .settingsButtonIcon::after {
+    top: 3px;
+  }
+
+  .settingsMenu {
+    position: absolute;
+    top: 10px;
+    right: 0;
+    min-width: 98px;
+    padding: 7px;
+    border: 0;
+    border-radius: 7px;
+    background: rgba(0, 0, 0, .94);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .46);
+  }
+
+  .settingsMenu[hidden] {
+    display: none;
+  }
+
+  .settingsToggle {
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 6px;
+    color: var(--ink);
+    font-size: 9px;
+    line-height: 1;
+    letter-spacing: .04em;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .settingsToggle input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 8px;
+    height: 8px;
+    margin: 0;
+    display: grid;
+    place-content: center;
+    border: 1px solid rgba(255, 255, 255, .38);
+    border-radius: 1px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .settingsToggle span {
+    opacity: .62;
+  }
+
+  .settingsToggle input:checked::after {
+    content: "";
+    width: 3px;
+    height: 5px;
+    margin-top: -1px;
+    border: solid rgba(255, 255, 255, .88);
+    border-width: 0 1px 1px 0;
+    transform: rotate(45deg);
+  }
+
+  .settingsToggle input:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   .stage {
     position: fixed;
     inset: var(--rail-h) 0 0;
@@ -170,15 +323,26 @@
     display: block;
     width: 100%;
     height: calc(100vh - var(--rail-h));
-    border: none;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    appearance: none;
+    -webkit-appearance: none;
     background: #000;
+    background-color: #000;
+  }
+
+  #moduleFrame:focus,
+  #moduleFrame:focus-visible {
+    outline: 0 !important;
+    box-shadow: none !important;
   }
 
   .status {
     position: fixed;
     left: 50%;
     top: calc(var(--rail-h) + 16px);
-    z-index: 2;
+    z-index: 13;
     transform: translateX(-50%);
     max-width: min(620px, calc(100vw - 32px));
     padding: 9px 12px;
@@ -207,11 +371,16 @@
     .logoOverlay {
       width: 82px;
       height: 82px;
-      top: 9px;
+      top: 15px;
     }
 
     .rail {
       padding: 10px;
+    }
+
+    .settingsShell {
+      top: -2px;
+      right: 0;
     }
   }
 
@@ -222,7 +391,7 @@
     inset: 0;
     z-index: 2147483646;
     pointer-events: none;
-    opacity: .38;
+    opacity: .54;
     background-image:
       linear-gradient(to right, rgba(255,255,255,.12) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255,255,255,.12) 1px, transparent 1px),
@@ -240,7 +409,32 @@
       calc(50vw - 50px) calc(50vh - 50px);
   }
 
+  /* NOIXZY_RAIL_CRT_VHS_OVERLAY */
 
+
+
+
+  /* NOIXZY_RAIL_CRT_VHS_OVERLAY */
+  .rail::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 24px;
+    height: 49px;
+    z-index: 5;
+    pointer-events: none;
+    opacity: .54;
+    mix-blend-mode: screen;
+    background-image:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.07) 0px,
+        rgba(255,255,255,.07) 1px,
+        transparent 1px,
+        transparent 1.6px
+      );
+  }
 
 </style>
 </head>
@@ -251,6 +445,21 @@
     <a class="logoOverlay" href="gallery/index.html" aria-label="Back to gallery">
       <img src="gallery/gallery.svg" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'fallback', textContent: 'noixzy' }))">
     </a>
+    <div class="settingsShell">
+      <button class="settingsButton" id="settingsButton" type="button" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="settingsMenu" title="Settings">
+        <span class="settingsButtonIcon" aria-hidden="true"></span>
+      </button>
+      <div class="settingsMenu" id="settingsMenu" role="group" aria-label="Shell settings" hidden>
+        <label class="settingsToggle">
+          <span>Grid</span>
+          <input id="gridToggle" type="checkbox" aria-label="Grid">
+        </label>
+        <label class="settingsToggle">
+          <span>Logo Badge</span>
+          <input id="logoBadgeToggle" type="checkbox" aria-label="Logo Badge">
+        </label>
+      </div>
+    </div>
   </header>
 
   <main class="stage">
@@ -265,6 +474,14 @@
   const frame = document.getElementById("moduleFrame");
   const moduleRail = document.getElementById("moduleRail");
   const status = document.getElementById("status");
+  const settingsButton = document.getElementById("settingsButton");
+  const settingsMenu = document.getElementById("settingsMenu");
+  const gridToggle = document.getElementById("gridToggle");
+  const logoBadgeToggle = document.getElementById("logoBadgeToggle");
+  const settingsStorageKeys = {
+    grid: "noixzyShell.grid",
+    logoBadge: "noixzyShell.logoBadge"
+  };
   let enabledModules = [];
   let activeId = "";
   const galleryOrder = [
@@ -321,6 +538,75 @@
   const setStatus = (message) => {
     status.textContent = message;
     status.hidden = !message;
+  };
+
+  const readStoredBool = (key, fallback) => {
+    try {
+      const value = localStorage.getItem(key);
+      return value === null ? fallback : value === "true";
+    } catch (error) {
+      return fallback;
+    }
+  };
+
+  const writeStoredBool = (key, value) => {
+    try {
+      localStorage.setItem(key, String(value));
+    } catch (error) {
+      // Storage can be unavailable in private or restricted contexts.
+    }
+  };
+
+  const applyGridState = (enabled) => {
+    document.body.classList.toggle("debugGrid", enabled);
+    gridToggle.checked = enabled;
+    writeStoredBool(settingsStorageKeys.grid, enabled);
+  };
+
+  const applyLogoBadgeState = (enabled) => {
+    document.body.classList.toggle("logoBadgeHidden", !enabled);
+    logoBadgeToggle.checked = enabled;
+    writeStoredBool(settingsStorageKeys.logoBadge, enabled);
+  };
+
+  const closeSettingsMenu = () => {
+    settingsMenu.hidden = true;
+    settingsButton.setAttribute("aria-expanded", "false");
+  };
+
+  const toggleSettingsMenu = () => {
+    const shouldOpen = settingsMenu.hidden;
+    settingsMenu.hidden = !shouldOpen;
+    settingsButton.setAttribute("aria-expanded", String(shouldOpen));
+  };
+
+  const initSettings = () => {
+    applyGridState(readStoredBool(settingsStorageKeys.grid, true));
+    applyLogoBadgeState(readStoredBool(settingsStorageKeys.logoBadge, true));
+
+    settingsButton.addEventListener("click", () => {
+      toggleSettingsMenu();
+    });
+
+    gridToggle.addEventListener("change", () => {
+      applyGridState(gridToggle.checked);
+    });
+
+    logoBadgeToggle.addEventListener("change", () => {
+      applyLogoBadgeState(logoBadgeToggle.checked);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeSettingsMenu();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!settingsMenu.hidden && !event.target.closest(".settingsShell")) {
+        closeSettingsMenu();
+      }
+    });
   };
 
   const moduleFromUrl = () => {
@@ -436,6 +722,7 @@
     selectModule(moduleFromUrl());
   });
 
+  initSettings();
   init();
 })();
 </script>
