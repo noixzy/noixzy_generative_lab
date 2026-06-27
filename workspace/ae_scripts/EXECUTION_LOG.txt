@@ -1,0 +1,10 @@
+=== NGL AFTER EFFECTS SCRIPTS EXECUTION LOG ===
+Log Start: June 27, 2026
+Scripts Suite: Leading Animation Utilities
+
+Format:
+[TIMESTAMP] | SCRIPT | COMPOSITION | LAYERS_AFFECTED | STATUS | NOTES
+
+---
+
+Execution records will appear below:

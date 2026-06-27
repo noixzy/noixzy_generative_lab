@@ -1,0 +1,169 @@
+# NGL AE Leading Animation Suite — Summary
+
+**Status:** ✓ Complete  
+**Date:** June 27, 2026  
+**Location:** `/workspace/ae_scripts/`
+
+---
+
+## What Was Created
+
+### 4 Scripts
+1. **noixzy_animate_leading.jsx** (57 lines)
+   - Basic leading animation
+   - Single text layer, new animator
+
+2. **noixzy_animate_leading_enhanced.jsx** (69 lines)
+   - Configurable parameters
+   - Duration, easing, start/peak/end values
+
+3. **noixzy_add_leading_companion.jsx** (65 lines)
+   - Adds leading to existing animator
+   - Works with pre-existing animation layers
+
+4. **noixzy_animate_leading_batch.jsx** (67 lines)
+   - Applies to all text layers
+   - No selection required
+   - Unique naming per layer
+
+### Documentation
+- **README.md** — Full instructions, troubleshooting, workflow guide
+- **EXECUTION_LOG.txt** — Timestamped execution records
+- **SUMMARY.txt** — This file
+
+---
+
+## Quick Start
+
+### Single Layer (Fastest)
+```
+1. Open composition
+2. Select text layer
+3. File → Scripts → Run Script File
+4. Select: noixzy_animate_leading.jsx
+```
+
+### Multiple Layers
+```
+1. Open composition
+2. File → Scripts → Run Script File
+3. Select: noixzy_animate_leading_batch.jsx
+4. Done (all text layers animated)
+```
+
+### Enhance Existing Animator
+```
+1. Select text layer with animator
+2. Run: noixzy_add_leading_companion.jsx
+```
+
+### Customize Animation (Advanced)
+```
+1. Edit: noixzy_animate_leading_enhanced.jsx
+2. Modify config object (lines 18-23)
+3. Run script
+```
+
+---
+
+## Animation Details
+
+**Default Values:**
+- Start: 6px line spacing
+- Peak: 48px (at 1 second)
+- End: 6px (at 2 seconds)
+- Total Duration: 2 seconds
+- Easing: Bezier (smooth)
+
+**Timing:** Keyframes start at current playhead position
+
+---
+
+## File Structure
+
+```
+workspace/ae_scripts/
+├── noixzy_animate_leading.jsx           (basic)
+├── noixzy_animate_leading_enhanced.jsx  (configurable)
+├── noixzy_add_leading_companion.jsx     (companion)
+├── noixzy_animate_leading_batch.jsx     (batch)
+├── README.md                             (full docs)
+├── EXECUTION_LOG.txt                     (records)
+└── SUMMARY.txt                           (this file)
+```
+
+---
+
+## Console Output Examples
+
+**Single Layer Success:**
+```
+✓ Leading animation added to: My Text Layer
+  Duration: 2.0s | Peak: 48px
+```
+
+**Batch Success:**
+```
+✓ Batch leading animation complete
+  Applied to 5 text layer(s)
+```
+
+---
+
+## Customization
+
+### In Enhanced Version
+Edit lines 18-23 in `noixzy_animate_leading_enhanced.jsx`:
+
+```javascript
+var config = {
+    startLeading: 6,      // Change this
+    peakLeading: 48,      // Change this
+    endLeading: 6,        // Change this
+    duration: 2.0,        // Change this
+    easeStrength: 60      // Change this
+};
+```
+
+### Values to Try
+- **Fast animation:** duration = 0.5
+- **Slow animation:** duration = 3.0
+- **Higher peak:** peakLeading = 72
+- **Tighter easing:** easeStrength = 30
+- **Looser easing:** easeStrength = 100
+
+---
+
+## Next Steps
+
+1. **Review README.md** for complete documentation
+2. **Test one script** on a sample composition
+3. **Monitor EXECUTION_LOG.txt** for usage records
+4. **Customize enhanced version** for your workflow
+5. **Batch apply** to multi-layer projects
+
+---
+
+## Support
+
+| Error | Fix |
+|-------|-----|
+| "Open a comp..." | Make sure AE project is active |
+| "Select exactly one..." | Only select one text layer |
+| Script doesn't appear in menu | Restart After Effects |
+| Keyframes in wrong place | Check playhead position before running |
+
+---
+
+## Version History
+
+- v1.0 (June 27, 2026): Initial release
+  - 4 scripts + documentation
+  - Basic, enhanced, companion, batch modes
+  - Ready for production
+
+---
+
+## Created By
+NGL Generative Lab  
+After Effects 2026 Compatible
