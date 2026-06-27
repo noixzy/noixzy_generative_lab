@@ -56,27 +56,17 @@
     overflow: hidden;
     background: #000;
     border-bottom: none;
-    box-shadow: none;
+    box-shadow:
+      0 0 18px rgba(255,255,255,.10),
+      0 10px 28px rgba(255,255,255,.055),
+      inset 0 -1px 0 rgba(255,255,255,.08);
     isolation: isolate;
   }
-
-  .rail::before,
-
   .rail::before {
     content: none !important;
     display: none !important;
     animation: none;
     background: none !important;
-  }
-
-  @keyframes shellRailHolo {
-    from { background-position: initial; }
-    to { background-position: 0 0, 0 21px; }
-  }
-
-  @keyframes shellRailGlint {
-    0%, 38% { background-position: 130% 0, 0 0; }
-    72%, 100% { background-position: -80% 0, 0 0; }
   }
 
   .logoOverlay {
@@ -161,6 +151,7 @@
     display: block;
     width: 100%;
     height: 100%;
+    filter: grayscale(1) contrast(1.08) brightness(.82) drop-shadow(0 0 8px rgba(255,255,255,.12));
     object-fit: cover;
     pointer-events: none;
   }
