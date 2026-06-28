@@ -139,7 +139,9 @@ select:hover { border-color:var(--accent); }
 .seedLabel { display:block; line-height:1.12; }
 .seedRead { display:block; margin-top:4px; color:var(--dim); font-size:10px; line-height:1; letter-spacing:.08em; }
   /* NOIXZY_GEOMETRY_ONLY_MODE */
-  /* Add class="geoOnly" to <body> to activate canvas-only mode (thumbnail capture, export). */
+  /* Add class="geoOnly" to <body>
+
+ to activate canvas-only mode (thumbnail capture, export). */
   body.geoOnly {
     position:fixed !important;
     inset:0 !important;
@@ -206,6 +208,158 @@ select:hover { border-color:var(--accent); }
     margin:0 !important;
     padding:0 !important;
   }
+
+/* NOIXZY_GENERATED_PREVIEW_ONLY */
+.panel,
+.controls,
+.controlPanel,
+.params,
+.paramPanel,
+.sidebar,
+.sidePanel,
+.rightPanel,
+.uiPanel,
+.drawer,
+.toolbar,
+.options,
+[data-zone="right-panel"],
+[data-zone="right-panel-controls"],
+[data-zone="right-panel-presets"],
+[data-zone="theme-controls"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.app,
+.shell,
+.wrap,
+.layout,
+main {
+  grid-template-columns: 1fr !important;
+}
+
+canvas {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+/* END NOIXZY_GENERATED_PREVIEW_ONLY */
+
+
+/* NOIXZY_HIDE_GENERATED_LEFT_THUMBS */
+#stageThumbs,
+.stageThumbs,
+.thumbRail,
+.previewRail,
+.previewHistory,
+.leftRail,
+.leftPanel,
+.moduleRail,
+.railPanel,
+[data-zone="preview-overlay"],
+[data-zone="left-panel"],
+[data-zone="thumb-panel"],
+[data-zone="stage-thumbs"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.app,
+.shell,
+.wrap,
+.layout,
+main {
+  grid-template-columns: 1fr !important;
+}
+
+canvas {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+/* END NOIXZY_HIDE_GENERATED_LEFT_THUMBS */
+
+
+
+
+/* NOIXZY_HIDE_RIGHT_PANEL_ONLY */
+.panel,
+.rightPanel,
+.sidePanel,
+.sidebar,
+.controlPanel,
+.controls,
+.params,
+.paramPanel,
+.uiPanel,
+.drawer,
+.options,
+[data-zone="right-panel"],
+[data-zone="right-panel-controls"],
+[data-zone="right-panel-presets"],
+[data-zone="theme-controls"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.app,
+.shell,
+.wrap,
+.layout,
+main {
+  grid-template-columns: 1fr !important;
+}
+
+.stage,
+#stage,
+canvas {
+  max-width: 100% !important;
+}
+/* END NOIXZY_HIDE_RIGHT_PANEL_ONLY */
+
+
+/* NOIXZY_MODULE_PREVIEW_VIEWPORT_FIX */
+html,
+body {
+  margin: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.app,
+.stage,
+#stage {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100vh !important;
+}
+/* END NOIXZY_MODULE_PREVIEW_VIEWPORT_FIX */
+
+
+/* NOIXZY_HIDE_BOTTOM_BUTTON_PANEL */
+.stageTools,
+#stageTools,
+.bottomTools,
+.bottomPanel,
+.buttonPanel,
+.exportPanel,
+.actionPanel,
+.toolbarBottom,
+.controlsBottom,
+[data-zone="bottom-panel"],
+[data-zone="bottom-controls"],
+[data-zone="stage-tools"],
+[data-zone="export-controls"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+/* END NOIXZY_HIDE_BOTTOM_BUTTON_PANEL */
+
 </style>
 </head>
 <body>

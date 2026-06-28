@@ -14,6 +14,22 @@
   },
   "modules": [
     {
+      "id": "agent_swarm_relief",
+      "title": "agent swarm relief",
+      "file": "agent_swarm_relief/noixzy_agent_swarm_relief.html",
+      "thumb": "gallery/thumbs/agent_swarm_relief.png",
+      "authorship": "generated",
+      "enabledInShell": true
+    },
+    {
+      "id": "catenary_web",
+      "title": "catenary web",
+      "file": "catenary_web/noixzy_catenary_web.html",
+      "thumb": "gallery/thumbs/catenary_web.png",
+      "authorship": "generated",
+      "enabledInShell": true
+    },
+    {
       "id": "cellular_bloom",
       "title": "cellular bloom",
       "file": "cellular_bloom/noixzy_cellular_bloom.html",
@@ -64,24 +80,26 @@
       "status": "listed"
     },
     {
-      "id": "displacement",
-      "title": "displacement sphere",
-      "file": "displacement/noixzy_displacement.html",
-      "thumb": "gallery/thumbs/displacement.png",
-      "authorship": "hand-authored",
-      "listedInGallery": true,
-      "enabledInShell": true,
-      "status": "listed"
-    },
-    {
       "id": "displacement_primitives",
       "title": "displacement primitives",
       "file": "displacement_primitives/noixzy_displacement_primitives.html",
       "thumb": "gallery/thumbs/displacement_primitives.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
+    },
+    {
+      "id": "displacement",
+      "title": "displacement sphere",
+      "file": "displacement/noixzy_displacement.html",
+      "thumb": "gallery/thumbs/displacement.png",
+      "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "echo_contours",
@@ -99,16 +117,6 @@
       "file": "flow_field/noixzy_flow_field.html",
       "thumb": "gallery/thumbs/flow_field.png",
       "authorship": "generated",
-      "listedInGallery": true,
-      "enabledInShell": true,
-      "status": "listed"
-    },
-    {
-      "id": "fold",
-      "title": "fold",
-      "file": "fold/noixzy_fold.html",
-      "thumb": "gallery/thumbs/fold.png",
-      "authorship": "hand-authored",
       "listedInGallery": true,
       "enabledInShell": true,
       "status": "listed"
@@ -138,30 +146,41 @@
       "title": "grid extrude",
       "file": "grid_extrude/noixzy_grid_extrude.html",
       "thumb": "gallery/thumbs/grid_extrude.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "gyroid",
       "title": "gyroid",
       "file": "gyroid/noixzy_gyroid.html",
       "thumb": "gallery/thumbs/gyroid.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "hex_grid",
       "title": "hex grid",
       "file": "hex_grid/noixzy_hex_grid.html",
       "thumb": "gallery/thumbs/hex_grid.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
+    },
+    {
+      "id": "hyperbolic_tiling",
+      "title": "hyperbolic tiling",
+      "file": "hyperbolic_tiling/noixzy_hyperbolic_tiling.html",
+      "thumb": "gallery/thumbs/hyperbolic_tiling.png",
+      "authorship": "generated",
+      "enabledInShell": true
     },
     {
       "id": "interference_grid",
@@ -198,10 +217,11 @@
       "title": "lissajous mesh",
       "file": "lissajous_mesh/noixzy_lissajous_mesh.html",
       "thumb": "gallery/thumbs/lissajous_mesh.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "magnetic_dust",
@@ -218,20 +238,22 @@
       "title": "mandelbulb",
       "file": "mandelbulb/noixzy_mandelbulb.html",
       "thumb": "gallery/thumbs/mandelbulb.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "metafluid",
       "title": "metafluid",
       "file": "metafluid/noixzy_metafluid.html",
       "thumb": "gallery/thumbs/metafluid.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "moire_field",
@@ -254,6 +276,14 @@
       "status": "listed"
     },
     {
+      "id": "origami_fold_field",
+      "title": "origami fold field",
+      "file": "origami_fold_field/noixzy_origami_fold_field.html",
+      "thumb": "gallery/thumbs/origami_fold_field.png",
+      "authorship": "generated",
+      "enabledInShell": true
+    },
+    {
       "id": "particle_orbitals",
       "title": "particle orbitals",
       "file": "particle_orbitals/noixzy_particle_orbitals.html",
@@ -262,6 +292,14 @@
       "listedInGallery": true,
       "enabledInShell": true,
       "status": "listed"
+    },
+    {
+      "id": "phyllotaxis_stack",
+      "title": "phyllotaxis stack",
+      "file": "phyllotaxis_stack/noixzy_phyllotaxis_stack.html",
+      "thumb": "gallery/thumbs/phyllotaxis_stack.png",
+      "authorship": "generated",
+      "enabledInShell": true
     },
     {
       "id": "plasma_membrane",
@@ -284,6 +322,14 @@
       "status": "listed"
     },
     {
+      "id": "quasicrystal_relief",
+      "title": "quasicrystal relief",
+      "file": "quasicrystal_relief/noixzy_quasicrystal_relief.html",
+      "thumb": "gallery/thumbs/quasicrystal_relief.png",
+      "authorship": "generated",
+      "enabledInShell": true
+    },
+    {
       "id": "radial_noise",
       "title": "radial noise",
       "file": "radial_noise/noixzy_radial_noise.html",
@@ -302,6 +348,14 @@
       "listedInGallery": true,
       "enabledInShell": true,
       "status": "listed"
+    },
+    {
+      "id": "reaction_terraces",
+      "title": "reaction terraces",
+      "file": "reaction_terraces/noixzy_reaction_terraces.html",
+      "thumb": "gallery/thumbs/reaction_terraces.png",
+      "authorship": "generated",
+      "enabledInShell": true
     },
     {
       "id": "recursive_grid",
@@ -328,10 +382,11 @@
       "title": "rose curve",
       "file": "rose_curve/noixzy_rose_curve.html",
       "thumb": "gallery/thumbs/rose_curve.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "sdf",
@@ -340,7 +395,7 @@
       "thumb": "gallery/thumbs/sdf.png",
       "authorship": "generated",
       "listedInGallery": false,
-      "enabledInShell": false,
+      "enabledInShell": true,
       "status": "unlisted",
       "reason": "live generated module exists but is not listed in gallery/index.html"
     },
@@ -349,10 +404,11 @@
       "title": "sdf raymarch",
       "file": "sdf_raymarch/noixzy_sdf_raymarch.html",
       "thumb": "gallery/thumbs/sdf_raymarch.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "signal_rain",
@@ -395,6 +451,14 @@
       "status": "listed"
     },
     {
+      "id": "tensegrity_nodes",
+      "title": "tensegrity nodes",
+      "file": "tensegrity_nodes/noixzy_tensegrity_nodes.html",
+      "thumb": "gallery/thumbs/tensegrity_nodes.png",
+      "authorship": "generated",
+      "enabledInShell": true
+    },
+    {
       "id": "terrain_slice",
       "title": "terrain slice",
       "file": "terrain_slice/noixzy_terrain_slice.html",
@@ -419,10 +483,11 @@
       "title": "torus knot",
       "file": "torus_knot/noixzy_torus_knot.html",
       "thumb": "gallery/thumbs/torus_knot.png",
-      "authorship": "hand-authored",
+      "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
-      "status": "listed"
+      "status": "listed",
+      "previousAuthorship": "hand-authored"
     },
     {
       "id": "truchet",
@@ -465,6 +530,14 @@
       "status": "listed"
     },
     {
+      "id": "voronoi_tower_field",
+      "title": "voronoi tower field",
+      "file": "voronoi_tower_field/noixzy_voronoi_tower_field.html",
+      "thumb": "gallery/thumbs/voronoi_tower_field.png",
+      "authorship": "generated",
+      "enabledInShell": true
+    },
+    {
       "id": "vortex_sheet",
       "title": "vortex sheet",
       "file": "vortex_sheet/noixzy_vortex_sheet.html",
@@ -493,6 +566,14 @@
       "listedInGallery": true,
       "enabledInShell": true,
       "status": "listed"
+    },
+    {
+      "id": "woven_lattice_relief",
+      "title": "woven lattice relief",
+      "file": "woven_lattice_relief/noixzy_woven_lattice_relief.html",
+      "thumb": "gallery/thumbs/woven_lattice_relief.png",
+      "authorship": "generated",
+      "enabledInShell": true
     }
   ]
 }
