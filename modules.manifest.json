@@ -1,18 +1,39 @@
 {
   "schemaVersion": "1.0.0",
   "summary": {
-    "listedCount": 47,
-    "liveCount": 48,
-    "unlistedLiveCount": 1,
-    "listedMissingCount": 0
+    "moduleCount": 58,
+    "enabledInShellCount": 57,
+    "listedInGalleryCount": 57,
+    "missingFileCount": 1,
+    "missingThumbCount": 0
   },
   "discrepancies": {
-    "unlistedLive": [
-      "sdf"
+    "missingFiles": [
+      "fold"
     ],
-    "listedMissingFiles": []
+    "missingThumbs": []
   },
   "modules": [
+    {
+      "id": "agent_swarm_relief",
+      "title": "agent swarm relief",
+      "file": "agent_swarm_relief/noixzy_agent_swarm_relief.html",
+      "thumb": "gallery/thumbs/agent_swarm_relief.png",
+      "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
+      "id": "catenary_web",
+      "title": "catenary web",
+      "file": "catenary_web/noixzy_catenary_web.html",
+      "thumb": "gallery/thumbs/catenary_web.png",
+      "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
     {
       "id": "cellular_bloom",
       "title": "cellular bloom",
@@ -164,6 +185,16 @@
       "status": "listed"
     },
     {
+      "id": "hyperbolic_tiling",
+      "title": "hyperbolic tiling",
+      "file": "hyperbolic_tiling/noixzy_hyperbolic_tiling.html",
+      "thumb": "gallery/thumbs/hyperbolic_tiling.png",
+      "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
       "id": "interference_grid",
       "title": "interference grid",
       "file": "interference_grid/noixzy_interference_grid.html",
@@ -254,11 +285,35 @@
       "status": "listed"
     },
     {
+      "id": "origami_fold_field",
+      "title": "origami fold field",
+      "description": "creased planar facets, ridge-valley folds, and skewed paper-like heightfields",
+      "category": "loop / fold / facets",
+      "authorship": "generated",
+      "file": "origami_fold_field/noixzy_origami_fold_field.html",
+      "thumb": "gallery/thumbs/origami_fold_field.png",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
       "id": "particle_orbitals",
       "title": "particle orbitals",
       "file": "particle_orbitals/noixzy_particle_orbitals.html",
       "thumb": "gallery/thumbs/particle_orbitals.png",
       "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
+      "id": "phyllotaxis_stack",
+      "title": "phyllotaxis stack",
+      "description": "botanical spiral seed arrays stacked into twisting procedural relief",
+      "category": "loop / growth / stack",
+      "authorship": "generated",
+      "file": "phyllotaxis_stack/noixzy_phyllotaxis_stack.html",
+      "thumb": "gallery/thumbs/phyllotaxis_stack.png",
       "listedInGallery": true,
       "enabledInShell": true,
       "status": "listed"
@@ -284,6 +339,16 @@
       "status": "listed"
     },
     {
+      "id": "quasicrystal_relief",
+      "title": "quasicrystal relief",
+      "file": "quasicrystal_relief/noixzy_quasicrystal_relief.html",
+      "thumb": "gallery/thumbs/quasicrystal_relief.png",
+      "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
       "id": "radial_noise",
       "title": "radial noise",
       "file": "radial_noise/noixzy_radial_noise.html",
@@ -298,6 +363,16 @@
       "title": "reaction diffusion",
       "file": "reaction_diffusion/noixzy_reaction_diffusion.html",
       "thumb": "gallery/thumbs/reaction_diffusion.png",
+      "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
+      "id": "reaction_terraces",
+      "title": "reaction terraces",
+      "file": "reaction_terraces/noixzy_reaction_terraces.html",
+      "thumb": "gallery/thumbs/reaction_terraces.png",
       "authorship": "generated",
       "listedInGallery": true,
       "enabledInShell": true,
@@ -395,6 +470,18 @@
       "status": "listed"
     },
     {
+      "id": "tensegrity_nodes",
+      "title": "tensegrity nodes",
+      "description": "floating strut-and-cable node systems with force-balanced depth and mass",
+      "category": "loop / structure / tensegrity",
+      "authorship": "generated",
+      "file": "tensegrity_nodes/noixzy_tensegrity_nodes.html",
+      "thumb": "gallery/thumbs/tensegrity_nodes.png",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
       "id": "terrain_slice",
       "title": "terrain slice",
       "file": "terrain_slice/noixzy_terrain_slice.html",
@@ -465,6 +552,16 @@
       "status": "listed"
     },
     {
+      "id": "voronoi_tower_field",
+      "title": "voronoi tower field",
+      "file": "voronoi_tower_field/noixzy_voronoi_tower_field.html",
+      "thumb": "gallery/thumbs/voronoi_tower_field.png",
+      "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
       "id": "vortex_sheet",
       "title": "vortex sheet",
       "file": "vortex_sheet/noixzy_vortex_sheet.html",
@@ -490,6 +587,18 @@
       "file": "wave_lattice/noixzy_wave_lattice.html",
       "thumb": "gallery/thumbs/wave_lattice.png",
       "authorship": "generated",
+      "listedInGallery": true,
+      "enabledInShell": true,
+      "status": "listed"
+    },
+    {
+      "id": "woven_lattice_relief",
+      "title": "woven lattice relief",
+      "description": "over-under procedural threads with bend, depth, and woven relief topology",
+      "category": "loop / weave / relief",
+      "authorship": "generated",
+      "file": "woven_lattice_relief/noixzy_woven_lattice_relief.html",
+      "thumb": "gallery/thumbs/woven_lattice_relief.png",
       "listedInGallery": true,
       "enabledInShell": true,
       "status": "listed"

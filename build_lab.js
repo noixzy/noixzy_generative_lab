@@ -752,6 +752,11 @@ const ALL_MODULES=[
   {id:"spiral_lattice",title:"spiral lattice"},
   {id:"signal_rain",title:"signal rain"},{id:"echo_contours",title:"echo contours"},
   {id:"magnetic_dust",title:"magnetic dust"},{id:"neural_lattice",title:"neural lattice"},
+  {id:"hyperbolic_tiling",title:"hyperbolic tiling"},{id:"voronoi_tower_field",title:"voronoi tower field"},
+  {id:"catenary_web",title:"catenary web"},{id:"reaction_terraces",title:"reaction terraces"},
+  {id:"quasicrystal_relief",title:"quasicrystal relief"},{id:"agent_swarm_relief",title:"agent swarm relief"},
+  {id:"tensegrity_nodes",title:"tensegrity nodes"},{id:"phyllotaxis_stack",title:"phyllotaxis stack"},
+  {id:"origami_fold_field",title:"origami fold field"},{id:"woven_lattice_relief",title:"woven lattice relief"},
   {id:"flow_field",title:"flow field"},{id:"reaction_diffusion",title:"reaction diffusion"},
   {id:"voronoi",title:"voronoi"},{id:"contour_field",title:"contour field"},
   {id:"truchet",title:"truchet"},{id:"truchet_b",title:"truchet // color"},
@@ -4179,6 +4184,108 @@ function heightField(G){
   }
   _edgeMask(out,G); return out;
 }` },
+
+{ id:"hyperbolic_tiling", title:"hyperbolic tiling",
+  system:[
+    {k:"rings",label:"rings",min:0,max:1,step:.01,v:.58,sys:true},{k:"geodesics",label:"geodesics",min:0,max:1,step:.01,v:.62,rr:true},{k:"curvature",label:"curvature",min:0,max:1,step:.01,v:.66,rr:true},{k:"cells",label:"cell density",min:0,max:1,step:.01,v:.52,rr:true},{k:"thickness",label:"thickness",min:0,max:1,step:.01,v:.36,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.32,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.22},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.18,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.62,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.64,rr:true}
+  ],
+  code:`
+function build(){}
+function _htVal(x,y,t){const dx=x-.5,dy=y-.5,r=Math.sqrt(dx*dx+dy*dy),a=Math.atan2(dy,dx);if(r>.49)return 0;const rings=Math.sin(Math.log(1/(.505-r))*map(P.rings,0,1,4,18)+t*.4);const spokes=Math.sin(a*map(P.geodesics,0,1,6,32)+r*map(P.curvature,0,1,8,42)-t*.2);const cells=Math.sin((rings+spokes)*map(P.cells,0,1,2,8));return Math.max(0,Math.min(1,(Math.max(rings,spokes)*.42+cells*.18+.5)));}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.06,1.1);g.background(pal[0][0],pal[0][1],pal[0][2]);g.noFill();g.blendMode(ADD);g.strokeWeight(map(P.thickness,0,1,.4,3.2));for(let pass=0;pass<2;pass++){const col=pass?pal[2]:pal[1];g.stroke(col[0],col[1],col[2],pass?96:150);const n=pass?Math.floor(map(P.geodesics,0,1,8,42)):Math.floor(map(P.rings,0,1,6,28));for(let i=0;i<n;i++){g.beginShape();for(let k=0;k<=160;k++){const u=k/160,a=(pass?i/n*TWO_PI:u*TWO_PI)+t*.08,rr=pass?u*.48:(i+1)/(n+1)*.48,bend=Math.sin(u*TWO_PI*2+i)*P.curvature*.08,x=.5+Math.cos(a+bend)*rr,y=.5+Math.sin(a-bend)*rr,v=_htVal(x,y,t),z=(v-.5)*2,scl=Math.abs(dep)>0.01?1-z*.20*dep:1;g.curveVertex(cx+(x*W-cx)*scl,cy+(y*H-cy)*scl+z*cy*.11*dep);}g.endShape();}}g.blendMode(BLEND);}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.06,1.1);for(let j=0;j<G;j++)for(let i=0;i<G;i++)out[i+j*G]=_htVal(i/(G-1),j/(G-1),t);_edgeMask(out,G);return out;}` },
+
+{ id:"voronoi_tower_field", title:"voronoi tower field",
+  system:[
+    {k:"sites",label:"sites",min:0,max:1,step:.01,v:.50,sys:true},{k:"heightBias",label:"height bias",min:0,max:1,step:.01,v:.62,rr:true},{k:"terraces",label:"terraces",min:0,max:1,step:.01,v:.48,rr:true},{k:"edge",label:"edge weight",min:0,max:1,step:.01,v:.42,rr:true},{k:"jitter",label:"jitter",min:0,max:1,step:.01,v:.30,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.44,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.16},{k:"pal",label:"palette",min:0,max:9,step:1,v:9},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.28,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.66,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+let VTF=[];function build(){const n=Math.floor(map(P.sites,0,1,16,120));VTF=[];for(let i=0;i<n;i++)VTF.push({x:random(.05,.95),y:random(.05,.95),h:random(),p:random(TWO_PI)});}
+function _vtfNearest(x,y,t){let b0=1e9,b1=1e9,idx=0;for(let i=0;i<VTF.length;i++){const p=VTF[i],px=p.x+Math.sin(t*.11+p.p)*P.jitter*.025,py=p.y+Math.cos(t*.13+p.p)*P.jitter*.025,d=(x-px)*(x-px)+(y-py)*(y-py);if(d<b0){b1=b0;b0=d;idx=i;}else if(d<b1)b1=d;}return {d0:Math.sqrt(b0),d1:Math.sqrt(b1),p:VTF[idx]};}
+function _vtfVal(x,y,t){const n=_vtfNearest(x,y,t),edge=Math.max(0,1-(n.d1-n.d0)*map(P.edge,0,1,80,260));let h=Math.pow(n.p.h,map(P.heightBias,0,1,1.8,.35));const steps=Math.floor(map(P.terraces,0,1,2,12));h=Math.floor(h*steps)/steps;return Math.max(edge*.75,h);}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.04,.8),res=Math.floor(map(P.sites,0,1,28,78));g.background(pal[0][0],pal[0][1],pal[0][2]);g.noStroke();for(let j=0;j<res;j++)for(let i=0;i<res;i++){const x=i/res,y=j/res,v=_vtfVal(x,y,t),z=(v-.5)*2,scl=Math.abs(dep)>0.01?1-z*.22*dep:1,px=cx+(x*W-cx)*scl,py=cy+(y*H-cy)*scl+z*cy*.12*dep,sz=Math.max(W,H)/res*1.2,col=v>.55?pal[2]:pal[1];g.fill(col[0],col[1],col[2],80+v*150);g.rect(px,py,sz,sz);}}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.04,.8);for(let j=0;j<G;j++)for(let i=0;i<G;i++)out[i+j*G]=_vtfVal(i/(G-1),j/(G-1),t);_edgeMask(out,G);return out;}` },
+
+{ id:"catenary_web", title:"catenary web",
+  system:[
+    {k:"arches",label:"arches",min:0,max:1,step:.01,v:.55,sys:true},{k:"sag",label:"sag",min:0,max:1,step:.01,v:.58,rr:true},{k:"span",label:"span",min:0,max:1,step:.01,v:.52,rr:true},{k:"ribs",label:"ribs",min:0,max:1,step:.01,v:.48,rr:true},{k:"thickness",label:"thickness",min:0,max:1,step:.01,v:.34,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.38,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.20},{k:"pal",label:"palette",min:0,max:9,step:1,v:0},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.22,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.58,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _cwVal(x,y,t){let v=0,n=Math.floor(map(P.arches,0,1,4,22));for(let a=0;a<n;a++){const yy=(a+.5)/n,curve=yy+Math.cosh((x-.5)*map(P.span,0,1,2,6))/Math.cosh(map(P.span,0,1,1,3))*P.sag*.22-.12*P.sag,d=Math.abs(y-curve);v=Math.max(v,Math.exp(-d*d*map(P.thickness,0,1,600,5200)));}return Math.min(1,v);}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.05,1),n=Math.floor(map(P.arches,0,1,4,22));g.background(pal[0][0],pal[0][1],pal[0][2]);g.noFill();for(let a=0;a<n;a++){const yy=(a+.5)/n;g.stroke(a%2?pal[1][0]:pal[2][0],a%2?pal[1][1]:pal[2][1],a%2?pal[1][2]:pal[2][2],150);g.strokeWeight(map(P.thickness,0,1,.6,4));g.beginShape();for(let i=0;i<=120;i++){const x=i/120,y=yy+Math.cosh((x-.5)*map(P.span,0,1,2,6))/Math.cosh(map(P.span,0,1,1,3))*P.sag*.22-.12*P.sag+Math.sin(t+a)*.01,z=(a/n-.5)*2,scl=Math.abs(dep)>0.01?1-z*.20*dep:1;g.curveVertex(cx+(x*W-cx)*scl,cy+(y*H-cy)*scl+z*cy*.10*dep);}g.endShape();}g.stroke(pal[2][0],pal[2][1],pal[2][2],80);for(let r=0;r<Math.floor(map(P.ribs,0,1,4,40));r++){const x=(r+.5)/map(P.ribs,0,1,4,40);g.line(x*W,H*.12,x*W,H*.88);}}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.05,1);for(let j=0;j<G;j++)for(let i=0;i<G;i++)out[i+j*G]=_cwVal(i/(G-1),j/(G-1),t);_edgeMask(out,G);return out;}` },
+
+{ id:"reaction_terraces", title:"reaction terraces",
+  system:[
+    {k:"scale",label:"scale",min:0,max:1,step:.01,v:.46,sys:true},{k:"terraces",label:"terraces",min:0,max:1,step:.01,v:.64,rr:true},{k:"islands",label:"islands",min:0,max:1,step:.01,v:.52,rr:true},{k:"flow",label:"flow",min:0,max:1,step:.01,v:.42,rr:true},{k:"edge",label:"edge",min:0,max:1,step:.01,v:.50,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.46,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.24},{k:"pal",label:"palette",min:0,max:9,step:1,v:3},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.32,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.70,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.64,rr:true}
+  ],
+  code:`
+function build(){}
+function _rtVal(x,y,t){let v=0,amp=1,fr=1;for(let o=0;o<5;o++){v+=noise(x*map(P.scale,0,1,2,10)*fr+seed*.01+t*.08,y*map(P.scale,0,1,2,10)*fr+o*9)*amp;amp*=.52;fr*=2.03;}const waves=Math.sin((x+y+v*.2)*map(P.flow,0,1,4,24)+t);v=v*.62+waves*.18+P.islands*.18;const steps=Math.floor(map(P.terraces,0,1,3,18));return Math.floor(Math.max(0,Math.min(1,v))*steps)/steps;}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.05,1.2),res=96;g.background(pal[0][0],pal[0][1],pal[0][2]);g.noStroke();for(let j=0;j<res;j++)for(let i=0;i<res;i++){const x=i/res,y=j/res,v=_rtVal(x,y,t),z=(v-.5)*2,scl=Math.abs(dep)>0.01?1-z*.22*dep:1,col=v>.5?pal[2]:pal[1];g.fill(col[0],col[1],col[2],45+v*180);g.rect(cx+(x*W-cx)*scl,cy+(y*H-cy)*scl+z*cy*.10*dep,W/res*1.2,H/res*1.2);}}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.05,1.2);for(let j=0;j<G;j++)for(let i=0;i<G;i++)out[i+j*G]=_rtVal(i/(G-1),j/(G-1),t);_edgeMask(out,G);return out;}` },
+
+{ id:"quasicrystal_relief", title:"quasicrystal relief",
+  system:[
+    {k:"symmetry",label:"symmetry",min:0,max:1,step:.01,v:.55,sys:true},{k:"waves",label:"waves",min:0,max:1,step:.01,v:.58,rr:true},{k:"threshold",label:"threshold",min:0,max:1,step:.01,v:.52,rr:true},{k:"pins",label:"pins",min:0,max:1,step:.01,v:.46,rr:true},{k:"line",label:"line weight",min:0,max:1,step:.01,v:.32,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.28,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.20},{k:"pal",label:"palette",min:0,max:9,step:1,v:4},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.22,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.64,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _qrVal(x,y,t){const sym=Math.floor(map(P.symmetry,0,1,5,13)),wc=Math.floor(map(P.waves,0,1,3,12));let v=0;for(let k=0;k<wc;k++){const a=k*TWO_PI/sym+t*.05;v+=Math.cos(((x-.5)*Math.cos(a)+(y-.5)*Math.sin(a))*map(P.waves,0,1,20,70));}return Math.max(0,Math.min(1,v/wc*.5+.5));}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.04,1),step=Math.floor(map(P.pins,0,1,16,5));g.background(pal[0][0],pal[0][1],pal[0][2]);g.noStroke();for(let y=0;y<H;y+=step)for(let x=0;x<W;x+=step){const nx=x/W,ny=y/H,v=_qrVal(nx,ny,t);if(v>P.threshold*.75){const z=(v-.5)*2,scl=Math.abs(dep)>0.01?1-z*.18*dep:1,col=v>.7?pal[2]:pal[1];g.fill(col[0],col[1],col[2],70+v*150);g.circle(cx+(x-cx)*scl,cy+(y-cy)*scl+z*cy*.1*dep,map(P.line,0,1,1,7)*v);}}}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.04,1);for(let j=0;j<G;j++)for(let i=0;i<G;i++){const v=_qrVal(i/(G-1),j/(G-1),t);out[i+j*G]=v>P.threshold*.75?v:0;}_edgeMask(out,G);return out;}` },
+
+{ id:"agent_swarm_relief", title:"agent swarm relief",
+  system:[
+    {k:"agents",label:"agents",min:0,max:1,step:.01,v:.50,sys:true},{k:"steps",label:"steps",min:0,max:1,step:.01,v:.55,rr:true},{k:"turn",label:"turn force",min:0,max:1,step:.01,v:.48,rr:true},{k:"trail",label:"trail width",min:0,max:1,step:.01,v:.38,rr:true},{k:"field",label:"field scale",min:0,max:1,step:.01,v:.52,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.24,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.18},{k:"pal",label:"palette",min:0,max:9,step:1,v:5},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.22,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.60,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+let AS=[];function build(){const n=Math.floor(map(P.agents,0,1,40,360));AS=[];for(let i=0;i<n;i++)AS.push({x:random(),y:random(),a:random(TWO_PI),p:random(TWO_PI),m:random(.5,1.4)});}
+function _asAngle(x,y,t){return noise(x*map(P.field,0,1,2,12)+seed*.01,y*map(P.field,0,1,2,12),t*.08)*TWO_PI*map(P.turn,0,1,1,5);}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.04,1);g.background(pal[0][0],pal[0][1],pal[0][2]);g.blendMode(ADD);g.strokeWeight(map(P.trail,0,1,.35,3.2));const steps=Math.floor(map(P.steps,0,1,18,120));for(const a of AS){let x=a.x,y=a.y,ang=a.a;const col=a.m>1?pal[2]:pal[1];g.stroke(col[0],col[1],col[2],55+90*a.m);g.beginShape();for(let i=0;i<steps;i++){ang=lerp(ang,_asAngle(x,y,t+a.p),.18);x=fract(x+Math.cos(ang)*.006*a.m);y=fract(y+Math.sin(ang)*.006*a.m);const z=(noise(x*5,y*5,t)-.5)*2,scl=Math.abs(dep)>0.01?1-z*.18*dep:1;g.curveVertex(cx+(x*W-cx)*scl,cy+(y*H-cy)*scl+z*cy*.1*dep);}g.endShape();}g.blendMode(BLEND);}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.04,1);for(let j=0;j<G;j++)for(let i=0;i<G;i++){const x=i/(G-1),y=j/(G-1),a=_asAngle(x,y,t);out[i+j*G]=Math.abs(Math.sin(a*2));}_edgeMask(out,G);return out;}` },
+
+{ id:"tensegrity_nodes", title:"tensegrity nodes",
+  system:[
+    {k:"nodes",label:"nodes",min:0,max:1,step:.01,v:.50,sys:true},{k:"struts",label:"struts",min:0,max:1,step:.01,v:.56,rr:true},{k:"tension",label:"tension",min:0,max:1,step:.01,v:.52,rr:true},{k:"orbit",label:"orbit",min:0,max:1,step:.01,v:.38,rr:true},{k:"mass",label:"mass",min:0,max:1,step:.01,v:.42,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.54,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.22},{k:"pal",label:"palette",min:0,max:9,step:1,v:6},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.26,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.64,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.66,rr:true}
+  ],
+  code:`
+let TN=[];function build(){const n=Math.floor(map(P.nodes,0,1,18,96));TN=[];for(let i=0;i<n;i++){const a=i*2.39996,r=Math.sqrt((i+.5)/n)*.43;TN.push({x:.5+Math.cos(a)*r,y:.5+Math.sin(a)*r,z:random(-1,1),m:random(.5,1.4),p:random(TWO_PI)});}}
+function _tnPos(p,t){const o=P.orbit*.035;return {x:p.x+Math.cos(t+p.p)*o*p.m,y:p.y+Math.sin(t*.8+p.p)*o*p.m,z:p.z+Math.sin(t+p.p)*P.tension*.5};}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.04,1.2);g.background(pal[0][0],pal[0][1],pal[0][2]);const pts=TN.map(p=>_tnPos(p,t));g.strokeWeight(map(P.struts,0,1,.45,2.6));for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const a=pts[i],b=pts[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<map(P.struts,0,1,.10,.24)&&((i+j)%3||P.tension>.55)){const za=(a.z-.5)*dep,zb=(b.z-.5)*dep,s1=1-za*.12,s2=1-zb*.12;g.stroke(pal[(i+j)%2+1][0],pal[(i+j)%2+1][1],pal[(i+j)%2+1][2],55+120*(1-d/.24));g.line(cx+(a.x*W-cx)*s1,cy+(a.y*H-cy)*s1+za*H*.09,cx+(b.x*W-cx)*s2,cy+(b.y*H-cy)*s2+zb*H*.09);}}g.noStroke();for(const p of pts){const z=p.z*dep,s=1-z*.12,col=p.z>0?pal[2]:pal[1];g.fill(col[0],col[1],col[2],170);g.circle(cx+(p.x*W-cx)*s,cy+(p.y*H-cy)*s+z*H*.09,map(P.mass,0,1,3,14)*(1+p.z*.25));}}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.04,1.2),pts=TN.map(p=>_tnPos(p,t));for(let j=0;j<G;j++)for(let i=0;i<G;i++){const x=i/(G-1),y=j/(G-1);let v=0;for(const p of pts){const d=(x-p.x)*(x-p.x)+(y-p.y)*(y-p.y);v=Math.max(v,Math.exp(-d*map(P.mass,0,1,900,2600))*(.5+p.z*.35));}out[i+j*G]=Math.max(0,Math.min(1,v));}_edgeMask(out,G);return out;}` },
+
+{ id:"phyllotaxis_stack", title:"phyllotaxis stack",
+  system:[
+    {k:"seeds",label:"seeds",min:0,max:1,step:.01,v:.58,sys:true},{k:"turn",label:"turn ratio",min:0,max:1,step:.01,v:.50,rr:true},{k:"stack",label:"stack height",min:0,max:1,step:.01,v:.62,rr:true},{k:"petal",label:"petal scale",min:0,max:1,step:.01,v:.44,rr:true},{k:"twist",label:"twist",min:0,max:1,step:.01,v:.38,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.46,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.18},{k:"pal",label:"palette",min:0,max:9,step:1,v:2},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.28,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.66,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _psVal(x,y,t){const dx=x-.5,dy=y-.5,r=Math.sqrt(dx*dx+dy*dy),a=Math.atan2(dy,dx)+t*.05;let v=0,n=Math.floor(map(P.seeds,0,1,120,760)),gold=map(P.turn,0,1,2.1,2.65);for(let i=0;i<n;i+=4){const rr=Math.sqrt(i/n)*.48,aa=i*gold+P.twist*rr*8,px=.5+Math.cos(aa)*rr,py=.5+Math.sin(aa)*rr,d=(x-px)*(x-px)+(y-py)*(y-py);v=Math.max(v,Math.exp(-d*map(P.petal,0,1,900,4200))*(i/n));}return Math.max(v,Math.sin(a*8+r*60+P.twist*8)*.06+r*P.stack);}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.04,1),n=Math.floor(map(P.seeds,0,1,120,760)),gold=map(P.turn,0,1,2.1,2.65);g.background(pal[0][0],pal[0][1],pal[0][2]);g.noStroke();for(let i=0;i<n;i++){const rr=Math.sqrt(i/n)*.48,aa=i*gold+t*.04+P.twist*rr*8,x=.5+Math.cos(aa)*rr,y=.5+Math.sin(aa)*rr,z=(i/n-.5)*2*P.stack,sc=1-z*.18*dep,col=i/n>.55?pal[2]:pal[1];g.fill(col[0],col[1],col[2],80+120*i/n);g.ellipse(cx+(x*W-cx)*sc,cy+(y*H-cy)*sc+z*H*.08*dep,map(P.petal,0,1,2,10)*(1+i/n),map(P.petal,0,1,1,5));}}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.04,1);for(let j=0;j<G;j++)for(let i=0;i<G;i++)out[i+j*G]=Math.min(1,_psVal(i/(G-1),j/(G-1),t));_edgeMask(out,G);return out;}` },
+
+{ id:"origami_fold_field", title:"origami fold field",
+  system:[
+    {k:"folds",label:"folds",min:0,max:1,step:.01,v:.54,sys:true},{k:"crease",label:"crease depth",min:0,max:1,step:.01,v:.64,rr:true},{k:"facets",label:"facets",min:0,max:1,step:.01,v:.50,rr:true},{k:"skew",label:"skew",min:0,max:1,step:.01,v:.42,rr:true},{k:"ridge",label:"ridge width",min:0,max:1,step:.01,v:.36,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.58,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.16},{k:"pal",label:"palette",min:0,max:9,step:1,v:8},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.34,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.62,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.70,rr:true}
+  ],
+  code:`
+function build(){}
+function _ofVal(x,y,t){let v=.5,n=Math.floor(map(P.folds,0,1,4,18));for(let i=0;i<n;i++){const a=i*TWO_PI/n+P.skew*1.7,s=(x-.5)*Math.cos(a)+(y-.5)*Math.sin(a)+Math.sin(t+i)*.035;v+=Math.sign(Math.sin(s*map(P.facets,0,1,6,24)))*P.crease*.055;v+=Math.exp(-Math.abs(s)*map(P.ridge,0,1,20,95))*.18;}return Math.max(0,Math.min(1,v));}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.03,.7),res=86;g.background(pal[0][0],pal[0][1],pal[0][2]);g.noStroke();for(let j=0;j<res;j++)for(let i=0;i<res;i++){const x=i/res,y=j/res,v=_ofVal(x,y,t),z=(v-.5)*2,s=1-z*.22*dep,col=v>.54?pal[2]:pal[1];g.fill(col[0],col[1],col[2],60+v*150);g.rect(cx+(x*W-cx)*s,cy+(y*H-cy)*s+z*H*.11*dep,W/res*1.25,H/res*1.25);}}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.03,.7);for(let j=0;j<G;j++)for(let i=0;i<G;i++)out[i+j*G]=_ofVal(i/(G-1),j/(G-1),t);_edgeMask(out,G);return out;}` },
+
+{ id:"woven_lattice_relief", title:"woven lattice relief",
+  system:[
+    {k:"warp",label:"warp count",min:0,max:1,step:.01,v:.50,sys:true},{k:"weft",label:"weft count",min:0,max:1,step:.01,v:.54,rr:true},{k:"over",label:"over under",min:0,max:1,step:.01,v:.58,rr:true},{k:"bend",label:"bend",min:0,max:1,step:.01,v:.42,rr:true},{k:"thread",label:"thread width",min:0,max:1,step:.01,v:.40,rr:true},{k:"zdepth",label:"z depth",min:-1.5,max:1.5,step:.01,v:.50,rr:true},{k:"speed",label:"speed",min:0,max:1,step:.01,v:.20},{k:"pal",label:"palette",min:0,max:9,step:1,v:1},{k:"height",g:"extrude",label:"height",min:0,max:1,step:.01,v:.24,rr:true},{k:"hvar",g:"extrude",label:"variation",min:0,max:1,step:.01,v:.68,rr:true},{k:"light",g:"extrude",label:"light",min:0,max:1,step:.01,v:.62,rr:true}
+  ],
+  code:`
+function build(){}
+function _wlVal(x,y,t){const wx=map(P.warp,0,1,6,34),wy=map(P.weft,0,1,6,34),tw=map(P.thread,0,1,.014,.055);const dx=Math.abs((x*wx)%1-.5),dy=Math.abs((y*wy)%1-.5),ix=Math.floor(x*wx),iy=Math.floor(y*wy),over=((ix+iy)%2?1:-1)*map(P.over,0,1,.15,.45);let v=Math.max(Math.exp(-dx*dx/(tw*tw)),Math.exp(-dy*dy/(tw*tw)));v*=.55+over*.5+Math.sin((x+y+t)*map(P.bend,0,1,4,18))*.08;return Math.max(0,Math.min(1,v));}
+function render(g,pal){const W=g.width,H=g.height,cx=W/2,cy=H/2,dep=P.zdepth||0,t=animT*map(P.speed,0,1,.04,1),res=92;g.background(pal[0][0],pal[0][1],pal[0][2]);g.noStroke();for(let j=0;j<res;j++)for(let i=0;i<res;i++){const x=i/res,y=j/res,v=_wlVal(x,y,t);if(v>.08){const z=(v-.5)*2,s=1-z*.16*dep,col=((Math.floor(x*map(P.warp,0,1,6,34))+Math.floor(y*map(P.weft,0,1,6,34)))%2)?pal[2]:pal[1];g.fill(col[0],col[1],col[2],45+v*170);g.rect(cx+(x*W-cx)*s,cy+(y*H-cy)*s+z*H*.08*dep,W/res*1.15,H/res*1.15);}}}
+function heightField(G){const out=new Float32Array(G*G),t=animT*map(P.speed,0,1,.04,1);for(let j=0;j<G;j++)for(let i=0;i<G;i++)out[i+j*G]=_wlVal(i/(G-1),j/(G-1),t);_edgeMask(out,G);return out;}` },
+
 ];
 
 // ---------------- write files ----------------
