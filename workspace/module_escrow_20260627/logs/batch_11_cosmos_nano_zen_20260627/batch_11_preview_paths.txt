@@ -1,0 +1,20 @@
+batch: batch_11_cosmos_nano_zen_20260627
+project_folder: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab
+
+primary_preview_path:
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/escrow_shell.html
+
+module_preview_paths:
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_boids_ink_current.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_cellular_rake_tiles.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_recursive_kintsugi_array.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_shodo_vector_field.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_particle_moss_orbits.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_wave_sand_interference.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_torii_depth_lattice.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_bonsai_circuit_growth.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_pressure_thread_physics.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_zen_caustic_relief.html
+
+note:
+- separate batch preview file was not required because escrow_shell wiring is safe.

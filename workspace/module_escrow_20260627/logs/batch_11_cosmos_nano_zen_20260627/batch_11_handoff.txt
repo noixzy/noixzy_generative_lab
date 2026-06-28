@@ -1,0 +1,42 @@
+batch_name: batch_11_cosmos_nano_zen_20260627
+project_folder: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab
+output_folder: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates
+log_folder: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/logs/batch_11_cosmos_nano_zen_20260627
+preview_path: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/escrow_shell.html
+
+module_paths:
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_boids_ink_current.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_cellular_rake_tiles.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_recursive_kintsugi_array.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_shodo_vector_field.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_particle_moss_orbits.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_wave_sand_interference.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_torii_depth_lattice.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_bonsai_circuit_growth.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_pressure_thread_physics.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_zen_caustic_relief.html
+
+one_sentence_per_module:
+- noixzy_boids_ink_current: Boid swarms render as ink-like current ribbons with alignment/cohesion/separation and displacement behavior.
+- noixzy_cellular_rake_tiles: Cellular automata produce raked tile glyph fields with mutation and extrude-illusion depth.
+- noixzy_recursive_kintsugi_array: Recursive fractured panels draw kintsugi crack seams with adjustable fracture density and line weight.
+- noixzy_shodo_vector_field: Calligraphic strokes flow through a semi-random vector field with curl and ink bleed control.
+- noixzy_particle_moss_orbits: Lightweight orbital particle dust creates moss-air ambience with attraction and damped motion.
+- noixzy_wave_sand_interference: Interfering wave lines generate sand-rake patterns with density, frequency, and amplitude modulation.
+- noixzy_torii_depth_lattice: Receding torii portal frames build false depth using perspective and extrude controls.
+- noixzy_bonsai_circuit_growth: Recursive branching growth blends bonsai silhouettes with circuit-like line routing.
+- noixzy_pressure_thread_physics: Spring-thread curves react to tension and damping to form pressure-line lattices.
+- noixzy_zen_caustic_relief: Animated caustic relief contours simulate light-driven sand texture with subdivision refinement.
+
+parameter_pass_summary:
+- full control category pass completed across the 10-module batch: seed/randomize, density/count, speed/time, palette/color, extrude, bump, displace, subdivision/refinement, field/force, line/stroke, export/snapshot.
+
+broken_or_weak_notes:
+- no blocking issues found in module availability or preview wiring.
+- modules use shared runtime pattern by design; wrappers are intentionally minimal.
+
+git_status:
+- recorded via final verification command output in terminal.
+
+next_10_module_batch_idea:
+- batch_12_ritual_signal_topography: shrine contour marching, paper fiber erosion, lantern fog lanes, sumi turbulence sheets, tatami stress tiling, stone rain attractors, reed harmonic fields, zen knot lattices, cedar ring waveforms, and pagoda diffraction stacks.

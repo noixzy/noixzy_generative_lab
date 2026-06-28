@@ -1,0 +1,27 @@
+batch: batch_11_cosmos_nano_zen_20260627
+parameter_pass: complete
+
+control_category_coverage_across_batch:
+- seed/randomize: present in all 10 modules (seed input + randomize button)
+- density/count: present (density, particle count, node count, portal count, wave count)
+- speed/time: present (speed, growth speed, tick rate)
+- palette/color: present (palette or color handling in multiple modules)
+- extrude: present (extrude illusion in cellular_rake_tiles; extrude in torii_depth_lattice)
+- bump: present in all 10 modules
+- displace: present in all 10 modules (displace/displacement naming)
+- subdivision/refinement: present (subdivision in cellular_rake_tiles, bonsai_circuit_growth, zen_caustic_relief)
+- field/force: present (vector field controls, attraction, stiffness/tension dynamics)
+- line/stroke: present (line weight, stroke length, line density)
+- export/snapshot: present in all 10 modules (export png button)
+
+module_control_checks:
+- noixzy_boids_ink_current: density, alignment, cohesion, separation, trail fade, bump, displace, speed, seed/randomize/export.
+- noixzy_cellular_rake_tiles: cell size, mutation, tick rate, extrude illusion, bump, subdivision, palette, speed, seed/randomize/export.
+- noixzy_recursive_kintsugi_array: recursion depth, fracture, spacing, rotation, bump, displace, line weight, seed drift, seed/randomize/export.
+- noixzy_shodo_vector_field: field scale, curl, stroke length, ink bleed, bump, displace, speed, seed drift, seed/randomize/export.
+- noixzy_particle_moss_orbits: particle count, orbit radius, attraction, damping, trail opacity, bump, displace, speed, seed/randomize/export.
+- noixzy_wave_sand_interference: wave count, frequency, amplitude, bump, displacement, line density, speed, palette, seed/randomize/export.
+- noixzy_torii_depth_lattice: grid depth, portal count, perspective, extrude, bump, displace, palette, speed, seed/randomize/export.
+- noixzy_bonsai_circuit_growth: branch depth, split angle, growth speed, subdivision, bump, displace, line weight, seed drift, seed/randomize/export.
+- noixzy_pressure_thread_physics: node count, stiffness, damping, tension, bump, displace, drift, line weight, seed/randomize/export.
+- noixzy_zen_caustic_relief: caustic scale, light angle, relief depth, bump, displace, subdivision, speed, line density, seed/randomize/export.

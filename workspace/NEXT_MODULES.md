@@ -127,3 +127,59 @@ All new modules follow the **new standalone pattern** (see CHATGPT_PROMPT.md "Ne
 5. Add to `build_lab.js` ALL_MODULES array (if that's where the list lives)
 6. Capture thumbnail: open in Chrome, `→ thumb`, save to `gallery/thumbs/module_id.png`
 7. Browser verify: console clean, controls respond, pause/play, theme switch, save png
+
+---
+
+## Escrow Batch Updates (2026-06-27)
+
+### Batch 12 delivered to escrow shell
+
+- `noixzy_minimal_parti`
+- `noixzy_quiet_grid`
+- `noixzy_white_space_field`
+- `noixzy_modulor_field`
+- `noixzy_brise_soleil`
+- `noixzy_aperture_field`
+- `noixzy_section_cut`
+- `noixzy_load_path`
+- `noixzy_shadow_louver`
+- `noixzy_service_core`
+
+### Next batch candidate queue (unexplored focus)
+
+- `noixzy_courtyard_plan`
+- `noixzy_light_well`
+- `noixzy_mashrabiya_modern`
+- `noixzy_poche_generator`
+- `noixzy_threshold_map`
+- `noixzy_screen_block`
+- `noixzy_diagrid_tower`
+- `noixzy_parametric_pavilion`
+- `noixzy_street_canyon`
+- `noixzy_panelization_solver`
+
+### Batch 13 delivered to escrow shell
+
+- `noixzy_courtyard_plan`
+- `noixzy_light_well`
+- `noixzy_mashrabiya_modern`
+- `noixzy_poche_generator`
+- `noixzy_threshold_map`
+- `noixzy_screen_block`
+- `noixzy_diagrid_tower`
+- `noixzy_parametric_pavilion`
+- `noixzy_street_canyon`
+- `noixzy_panelization_solver`
+
+### Next batch candidate queue (Batch 14 unexplored focus)
+
+- `noixzy_prairie_grid`
+- `noixzy_cantilever_stack`
+- `noixzy_leaded_glass_grid`
+- `noixzy_axonometric_city`
+- `noixzy_site_section`
+- `noixzy_megastructure`
+- `noixzy_coffered_ceiling`
+- `noixzy_parametric_stair`
+- `noixzy_sacred_modern_plan`
+- `noixzy_hypar_roof`

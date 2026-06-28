@@ -1,0 +1,92 @@
+{
+  "scan_date": "2026-06-27",
+  "scan_version": "1.0",
+  "total_files_found": 9,
+  "total_experiments_catalogued": 20,
+  "canonical_project_root": "/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026",
+  "primary_resources": [
+    {
+      "id": "resource_001",
+      "name": "experiment_seed_data.json",
+      "type": "card_library",
+      "path": "/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026/experiment_seed_data.json",
+      "strength": "strongest_card_library",
+      "contains": 20,
+      "status": "authoritative"
+    },
+    {
+      "id": "resource_002",
+      "name": "experiment_manifest.json",
+      "type": "system_manifest",
+      "path": "/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026/experiment_manifest.json",
+      "strength": "strongest_generator_definition",
+      "categories": 16,
+      "flags": 7,
+      "status": "authoritative"
+    },
+    {
+      "id": "resource_003",
+      "name": "cosmos_batch_clean_hero_polish_pass_v1.py",
+      "type": "blender_automation",
+      "path": "/Users/noixzy.macbookpro/Documents/cosmos_batch_clean_hero_polish_pass_v1.py",
+      "strength": "strongest_blender_execution_strategy",
+      "purpose": "Material/lighting/camera/geometry optimization pass",
+      "status": "production_ready"
+    }
+  ],
+  "card_categories": [
+    "brutalist_architecture",
+    "parametric_architecture",
+    "sacred_geometry",
+    "sdf_geometry",
+    "field_systems",
+    "force_field_motion",
+    "projection_mapping",
+    "analog_video_effects",
+    "ae_motion_graphics",
+    "blender_geometry_nodes",
+    "historical_art_mix",
+    "modern_art_mix",
+    "color_system_study",
+    "audio_reactive_study",
+    "perceived_3d_mapping",
+    "lightweight_physics"
+  ],
+  "card_execution_platforms": [
+    "blender",
+    "ae",
+    "touchdesigner",
+    "projection_mapping",
+    "cpu_gpu_light",
+    "light_physics",
+    "audio_hook"
+  ],
+  "render_artifacts": {
+    "location": "/Volumes/noixzy T5 EVO SSD/ASSET LIBRARY/______newDemo Renders",
+    "format": "PNG 1920x1080",
+    "quantity": 26,
+    "naming_pattern": "*_card_*base.png"
+  },
+  "strongest_20_cards": [
+    "exp_001: Brutalist Constructivist SDF Blocks",
+    "exp_002: Gothic Arches + Volumetric Light Rays",
+    "exp_003: Bauhaus Grid Kinetic Typography",
+    "exp_004: Baroque Ornament Displacement Fields",
+    "exp_005: Cubist Projection Mapping Fractured Planes",
+    "exp_006: Futurist Speed Lines + Force-Field Motion",
+    "exp_007: Abstract Expressionist Particle Turbulence",
+    "exp_008: Suprematist Modular Architecture",
+    "exp_009: De Stijl Color Grid Animation",
+    "exp_010: Op Art Moire Field Tests",
+    "exp_011: Brutalist Towers + Audio-Reactive Window Pulses",
+    "exp_012: Analog CRT Smear + Feedback Concept",
+    "exp_013: Point-Cloud Perceived Depth Map",
+    "exp_014: Light Physics Caustic Card Study",
+    "exp_015: Low-Poly Shatter Architectural Frame",
+    "exp_016: AE Shape-Layer Rig to Blender Nodes",
+    "exp_017: Particle Attractor Nexus-Style Logic",
+    "exp_018: Soft Body Cloth Flag Checkbox Test",
+    "exp_019: Sacred Geometry Flower of Life Build",
+    "exp_020: SDF Boolean Portal Transitions"
+  ]
+}

@@ -2,16 +2,15 @@
   "schemaVersion": "1.0.0",
   "summary": {
     "moduleCount": 58,
-    "enabledInShellCount": 57,
-    "listedInGalleryCount": 57,
-    "missingFileCount": 1,
+    "enabledInShellCount": 56,
+    "listedInGalleryCount": 56,
+    "missingFileCount": 0,
     "missingThumbCount": 0
   },
   "discrepancies": {
-    "missingFiles": [
-      "fold"
-    ],
-    "missingThumbs": []
+    "missingFiles": [],
+    "missingThumbs": [],
+    "archived": ["fold"]
   },
   "modules": [
     {
@@ -130,9 +129,10 @@
       "file": "fold/noixzy_fold.html",
       "thumb": "gallery/thumbs/fold.png",
       "authorship": "hand-authored",
-      "listedInGallery": true,
-      "enabledInShell": true,
-      "status": "listed"
+      "listedInGallery": false,
+      "enabledInShell": false,
+      "status": "archived",
+      "reason": "file archived in _archive/fold — not available at expected path"
     },
     {
       "id": "fractal_tiles",

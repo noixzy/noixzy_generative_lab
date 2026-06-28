@@ -5,114 +5,243 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>noixzy module escrow</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0a0a;
-            color: #e0e0e0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace, sans-serif;
+            background: #080808;
+            color: #e0ddd8;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             height: 100vh;
             overflow: hidden;
         }
         header {
-            background: #111;
-            padding: 12px 20px;
-            border-bottom: 1px solid #333;
+            background: #0c0c0c;
+            padding: 10px 16px;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            height: 40px;
         }
         h1 {
-            font-size: 16px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            color: #999;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.14em;
+            color: #666;
+            text-transform: lowercase;
         }
-        .container {
-            display: flex;
-            height: calc(100vh - 45px);
+        .global-nav { display: flex; gap: 5px; flex: 0 0 auto; }
+        .global-nav button {
+            width: 28px;
+            height: 22px;
+            border: 1px solid #2c2c2c;
+            background: #111;
+            color: #888;
+            font: inherit;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            letter-spacing: 0;
         }
+        .global-nav button:hover { border-color: #555; color: #ddd; background: #181818; }
+        .container { display: flex; height: calc(100vh - 40px); }
         .sidebar {
             width: 300px;
-            background: #141414;
-            border-right: 1px solid #333;
+            background: #0e0e0e;
+            border-right: 1px solid #1e1e1e;
             overflow-y: auto;
-            padding: 20px;
+            overflow-x: hidden;
+            padding: 10px 0 40px;
+            display: flex;
+            flex-direction: column;
         }
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 999px; }
+        #search-wrap {
+            padding: 8px 12px 6px;
+            border-bottom: 1px solid #1a1a1a;
+            position: sticky;
+            top: 0;
+            background: #0e0e0e;
+            z-index: 2;
+        }
+        #search-input {
+            width: 100%;
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            color: #c8c4bc;
+            padding: 6px 8px;
+            font: inherit;
+            font-size: 10px;
+            letter-spacing: 0.04em;
+            outline: none;
+        }
+        #search-input::placeholder { color: #444; }
+        #search-input:focus { border-color: #444; }
+        .batch-header {
+            padding: 14px 12px 6px;
+            font-size: 9px;
+            letter-spacing: 0.14em;
+            color: #444;
+            text-transform: lowercase;
+            border-top: 1px solid #181818;
+            margin-top: 4px;
+        }
+        .batch-header:first-of-type { border-top: none; margin-top: 0; }
         .candidate {
-            margin-bottom: 24px;
-            padding: 16px;
-            background: #1a1a1a;
-            border: 1px solid #222;
-            border-radius: 4px;
+            margin: 0;
+            padding: 10px 12px;
+            background: transparent;
+            border: none;
+            border-left: 2px solid transparent;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.12s, border-color 0.12s;
         }
-        .candidate:hover {
-            background: #202020;
-            border-color: #444;
-        }
+        .candidate:hover { background: #141414; border-left-color: #333; }
         .candidate.active {
-            background: #252525;
-            border-color: #555;
+            background: #161616;
+            border-left-color: rgba(255,255,255,0.32);
+            box-shadow: -2px 0 16px rgba(255,255,255,0.04);
         }
         .candidate h3 {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #ddd;
+            font-size: 10px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #c8c4bc;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .candidate p {
-            font-size: 11px;
-            line-height: 1.5;
-            color: #888;
-            margin-bottom: 12px;
+            font-size: 9px;
+            line-height: 1.55;
+            color: #555;
+            margin-bottom: 8px;
         }
         .candidate a {
             display: inline-block;
-            font-size: 11px;
-            color: #6aa;
+            font-size: 9px;
+            color: rgba(200,196,188,0.55);
             text-decoration: none;
-            padding: 4px 8px;
-            border: 1px solid #6aa;
-            border-radius: 3px;
-            transition: all 0.2s;
+            padding: 3px 6px;
+            border: 1px solid #2e2e2e;
+            transition: all 0.14s;
+            letter-spacing: 0.04em;
         }
-        .candidate a:hover {
-            background: #6aa;
-            color: #111;
-        }
-        .preview {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #0a0a0a;
-        }
+        .candidate a:hover { background: rgba(255,255,255,0.06); color: #e0ddd8; border-color: #444; }
+        .preview { flex: 1; display: flex; flex-direction: column; background: #060606; min-width: 0; }
         .preview-header {
-            padding: 12px 20px;
-            background: #111;
-            border-bottom: 1px solid #333;
-            font-size: 12px;
-            color: #777;
+            padding: 10px 16px;
+            background: #0c0c0c;
+            border-bottom: 1px solid #1e1e1e;
+            font-size: 10px;
+            color: #555;
+            letter-spacing: 0.06em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            height: 40px;
+            display: flex;
+            align-items: center;
         }
-        iframe {
-            flex: 1;
-            border: none;
-            background: #000;
+        iframe { flex: 1; border: none; background: #000; width: 100%; }
+        .shortcut-footer {
+            position: sticky;
+            bottom: 0;
+            padding: 6px 12px;
+            background: #0e0e0e;
+            border-top: 1px solid #181818;
+            font-size: 8px;
+            color: #333;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
         }
+        .hidden-candidate { display: none; }
+        @media (max-width: 860px) { .sidebar { width: 240px; } }
     </style>
 </head>
 <body>
     <header>
-        <h1>noixzy module escrow</h1>
+        <h1>noixzy · module escrow</h1>
+        <div class="global-nav" aria-label="module navigation">
+            <button id="prev-module" type="button" aria-label="Previous module" title="previous module (←)">‹</button>
+            <button id="next-module" type="button" aria-label="Next module" title="next module (→)">›</button>
+        </div>
     </header>
     <div class="container">
         <div class="sidebar">
+            <div id="search-wrap">
+                <input id="search-input" type="search" placeholder="filter modules…" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="batch-header">standalone · brutalist massing</div>
             <div class="candidate active" data-src="candidates/noixzy_brutalist_massing.html">
                 <h3>noixzy_brutalist_massing</h3>
                 <p>Procedural brutalist architectural massing generator. Stacked slabs, towers, blocks, voids, courtyards, cantilevers, and hard-edged architectural silhouettes.</p>
                 <a href="candidates/noixzy_brutalist_massing.html" target="_blank">open standalone</a>
             </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_towers.html">
+                <h3>noixzy_brutalist_massing_towers</h3>
+                <p>Vertical monoliths. Tower clusters, setback articulation, core cutouts, podium base, skyline composition.</p>
+                <a href="candidates/noixzy_brutalist_massing_towers.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_slabs.html">
+                <h3>noixzy_brutalist_massing_slabs</h3>
+                <p>Horizontal stacked plates. Cantilevered slabs, datum lines, compressed verticals, overhang expression, void patterns.</p>
+                <a href="candidates/noixzy_brutalist_massing_slabs.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_megaform.html">
+                <h3>noixzy_brutalist_massing_megaform</h3>
+                <p>Pyramidal ziggurat mass. Terraced megastructure, progressive taper, monumental scale, single unified form with incisions.</p>
+                <a href="candidates/noixzy_brutalist_massing_megaform.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_cluster.html">
+                <h3>noixzy_brutalist_massing_cluster</h3>
+                <p>Campus cluster composition. Grouped volumes, courtyard voids, multi-center distribution, bridge linkages between masses.</p>
+                <a href="candidates/noixzy_brutalist_massing_cluster.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_cantilever.html">
+                <h3>noixzy_brutalist_massing_cantilever</h3>
+                <p>Dramatic overhangs. Floating volumes, structural supports, gravity-defying masses, underside expression, projection depth.</p>
+                <a href="candidates/noixzy_brutalist_massing_cantilever.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_mat.html">
+                <h3>noixzy_brutalist_massing_mat</h3>
+                <p>Low-rise horizontal field. Mat building, groundscraper, distributed mass, courtyard network, cellular grid.</p>
+                <a href="candidates/noixzy_brutalist_massing_mat.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_folded.html">
+                <h3>noixzy_brutalist_massing_folded</h3>
+                <p>Folded plates. Angular volumes, sloped roofs, faceted surfaces, crystalline geometry, ridge lines, sharp edges.</p>
+                <a href="candidates/noixzy_brutalist_massing_folded.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_modular.html">
+                <h3>noixzy_brutalist_massing_modular</h3>
+                <p>Modular grid. Prefab units, stacked containers, kit-of-parts, systematic assembly, ID labels, gap articulation.</p>
+                <a href="candidates/noixzy_brutalist_massing_modular.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_linear.html">
+                <h3>noixzy_brutalist_massing_linear</h3>
+                <p>Linear bars. Ribbon blocks, extended slabs, horizontal datum, directional emphasis, break joints, curvature.</p>
+                <a href="candidates/noixzy_brutalist_massing_linear.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_asymmetric.html">
+                <h3>noixzy_brutalist_massing_asymmetric</h3>
+                <p>Asymmetric composition. Off-balance volumes, heavy anchor mass, counter-weighted volumes, tension lines, dynamic equilibrium.</p>
+                <a href="candidates/noixzy_brutalist_massing_asymmetric.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_split.html">
+                <h3>noixzy_brutalist_massing_split</h3>
+                <p>Split section. Dual masses separated by gap, interlocking volumes, bridge connections, two-part dialogue, vertical rupture.</p>
+                <a href="candidates/noixzy_brutalist_massing_split.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brutalist_massing_chambers.html">
+                <h3>noixzy_brutalist_massing_chambers</h3>
+                <p>Stacked chambers. Nested vaulted spaces, hollow core expression, thick walls, opening portals, structural ribs.</p>
+                <a href="candidates/noixzy_brutalist_massing_chambers.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">standalone · facades + systems</div>
             <div class="candidate" data-src="candidates/noixzy_modernist_facade.html">
                 <h3>noixzy_modernist_facade</h3>
                 <p>Procedural modernist facade generator. Grids, window bays, fins, mullions, brise-soleil rhythm, panel breaks, and subtle controlled irregularities.</p>
@@ -123,31 +252,640 @@
                 <p>Procedural concrete relief / displacement-map style generator. Raised and recessed bands, contour relief, carved grooves, panel seams, surface erosion, and formwork-like geometry.</p>
                 <a href="candidates/noixzy_concrete_relief.html" target="_blank">open standalone</a>
             </div>
+            <div class="candidate" data-src="candidates/noixzy_parametric_shell.html">
+                <h3>noixzy_parametric_shell</h3>
+                <p>Curved concrete shell structures. Hyperbolic paraboloids, folded plates, vault systems, and thin-shell roof geometry.</p>
+                <a href="candidates/noixzy_parametric_shell.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_structural_grid.html">
+                <h3>noixzy_structural_grid</h3>
+                <p>Exposed frame systems. Column grids, beam networks, diagonal bracing, megastructure exoskeletons, and infill panels.</p>
+                <a href="candidates/noixzy_structural_grid.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_entropy_mask_field.html">
+                <h3>noixzy_entropy_mask_field</h3>
+                <p>Sound-pressure masks erode topographic mass, fracture luma bands, and smear analog feedback.</p>
+                <a href="candidates/noixzy_entropy_mask_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">candidate runtime · algorithmic</div>
+            <div class="candidate" data-src="candidates/noixzy_differential_growth.html">
+                <h3>noixzy_differential_growth</h3>
+                <p>Self-avoiding contour colonies. Membrane pressure, coral linework, organic nets, and growth tension studies.</p>
+                <a href="candidates/noixzy_differential_growth.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_wfc_tiles.html">
+                <h3>noixzy_wfc_tiles</h3>
+                <p>Constraint-solved architectural tiles. Truchet gates, propagated edge rules, entropy bands, and facade pressure.</p>
+                <a href="candidates/noixzy_wfc_tiles.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_girih_star_field.html">
+                <h3>noixzy_girih_star_field</h3>
+                <p>Islamic geometric rosettes. Girih strapwork, radial subdivisions, star polygons, and lattice overlays.</p>
+                <a href="candidates/noixzy_girih_star_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_penrose_deflation.html">
+                <h3>noixzy_penrose_deflation</h3>
+                <p>Aperiodic kite-and-dart field. Golden-ratio rings, deflation structure, print-ready edges, and slow rotation.</p>
+                <a href="candidates/noixzy_penrose_deflation.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_substrate_cracks.html">
+                <h3>noixzy_substrate_cracks</h3>
+                <p>Geologic crack propagation. Branching stress fields, plotted fracture maps, and structural fault lines.</p>
+                <a href="candidates/noixzy_substrate_cracks.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_rib_vault_generator.html">
+                <h3>noixzy_rib_vault_generator</h3>
+                <p>Gothic rib networks. Bay grids, catenary arches, vault crowns, and structural line diagrams.</p>
+                <a href="candidates/noixzy_rib_vault_generator.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_diffusion_aggregate.html">
+                <h3>noixzy_diffusion_aggregate</h3>
+                <p>Branching mineral clusters. Lightning cores, frozen deposition fields, recursive forks, and soft glow.</p>
+                <a href="candidates/noixzy_diffusion_aggregate.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_apollonian_packing.html">
+                <h3>noixzy_apollonian_packing</h3>
+                <p>Recursive circle pressure. Nested voids, stone-inlay packing studies, and golden radial compression.</p>
+                <a href="candidates/noixzy_apollonian_packing.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_hilbert_plan.html">
+                <h3>noixzy_hilbert_plan</h3>
+                <p>Space-filling circulation paths. Obsessive plan diagrams, routed density, nodes, and secondary grids.</p>
+                <a href="candidates/noixzy_hilbert_plan.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_floorplan_splitter.html">
+                <h3>noixzy_floorplan_splitter</h3>
+                <p>BSP room subdivision. Corridor traces, plan massing diagrams, poche fields, and door cuts.</p>
+                <a href="candidates/noixzy_floorplan_splitter.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brick_bond_field.html">
+                <h3>noixzy_brick_bond_field</h3>
+                <p>Flemish and herringbone courses. Masonry rhythm, mortar gaps, weathering, and facade pattern studies.</p>
+                <a href="candidates/noixzy_brick_bond_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_catenary_arches.html">
+                <h3>noixzy_catenary_arches</h3>
+                <p>Hanging-chain curves. Parabolic vault studies, structural section stacks, and layered compression ribs.</p>
+                <a href="candidates/noixzy_catenary_arches.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_urban_voronoi.html">
+                <h3>noixzy_urban_voronoi</h3>
+                <p>District seeds and arterial cuts. Block diagrams, city-cell pressure, parks, and road networks.</p>
+                <a href="candidates/noixzy_urban_voronoi.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_chladni_plate.html">
+                <h3>noixzy_chladni_plate</h3>
+                <p>Standing-wave nodal geometry. Cymatic sand maps, acoustic sections, and modal interference fields.</p>
+                <a href="candidates/noixzy_chladni_plate.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_physarum_network.html">
+                <h3>noixzy_physarum_network</h3>
+                <p>Transport slime paths. Weighted nodes, adaptive connective tissue, glowing links, and network pressure.</p>
+                <a href="candidates/noixzy_physarum_network.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_phyllotaxis_dome.html">
+                <h3>noixzy_phyllotaxis_dome</h3>
+                <p>Golden-angle packing. Seed heads, radial architectural panels, lifted dome geometry, and spiral density.</p>
+                <a href="candidates/noixzy_phyllotaxis_dome.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_moire_facade.html">
+                <h3>noixzy_moire_facade</h3>
+                <p>Overlaid louvers. Phase-shift screens, kinetic brise-soleil, interference bands, and warped blades.</p>
+                <a href="candidates/noixzy_moire_facade.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_weave_matrix.html">
+                <h3>noixzy_weave_matrix</h3>
+                <p>Plain, twill, and satin-like crossings. Textile logic translated into facade and screen studies.</p>
+                <a href="candidates/noixzy_weave_matrix.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_labyrinth_field.html">
+                <h3>noixzy_labyrinth_field</h3>
+                <p>Recursive maze circuits. Ritual paths, plan-view linework, braided passages, and marker cells.</p>
+                <a href="candidates/noixzy_labyrinth_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_tensegrity_web.html">
+                <h3>noixzy_tensegrity_web</h3>
+                <p>Floating compression bars. Tension cables, structural equilibrium diagrams, and rotating frame fields.</p>
+                <a href="candidates/noixzy_tensegrity_web.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_section_stack.html">
+                <h3>noixzy_section_stack</h3>
+                <p>Topographic building sections. Layered strata, extrusion slices, cutaways, and contour elevations.</p>
+                <a href="candidates/noixzy_section_stack.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_lsystem_canopy.html">
+                <h3>noixzy_lsystem_canopy</h3>
+                <p>Branching grammar. Column-to-canopy growth, botanical structure plans, and recursive limb systems.</p>
+                <a href="candidates/noixzy_lsystem_canopy.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">cosmos quick runtime</div>
+            <div class="candidate" data-src="candidates/noixzy_offset_plinth_threshold.html">
+                <h3>noixzy_offset_plinth_threshold</h3>
+                <p>Cosmos quick sketch. Dusty concrete plinth offsets, dark threshold voids, warm worn bevels.</p>
+                <a href="candidates/noixzy_offset_plinth_threshold.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_indexed_hinge_array.html">
+                <h3>noixzy_indexed_hinge_array</h3>
+                <p>Cosmos quick sketch. Blackened steel hinges, aluminum pins, indexed repetitions, graphite gaps.</p>
+                <a href="candidates/noixzy_indexed_hinge_array.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_structural_spine_signal.html">
+                <h3>noixzy_structural_spine_signal</h3>
+                <p>Cosmos quick sketch. Matte black chassis, cyan emissive core, smoked acrylic ribs.</p>
+                <a href="candidates/noixzy_structural_spine_signal.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_visible_standoff_cage.html">
+                <h3>noixzy_visible_standoff_cage</h3>
+                <p>Cosmos quick sketch. Frosted panel, black ceramic cage, brass micro standoffs.</p>
+                <a href="candidates/noixzy_visible_standoff_cage.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_half_hidden_chamber.html">
+                <h3>noixzy_half_hidden_chamber</h3>
+                <p>Cosmos quick sketch. Dusty plaster, sealed interior dark, soft occlusion veil.</p>
+                <a href="candidates/noixzy_half_hidden_chamber.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_frosted_baffle_field.html">
+                <h3>noixzy_frosted_baffle_field</h3>
+                <p>Cosmos quick sketch. Frosted translucent baffles, cold gray frame, edge-lit slots.</p>
+                <a href="candidates/noixzy_frosted_baffle_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_calibrated_gate_relic.html">
+                <h3>noixzy_calibrated_gate_relic</h3>
+                <p>Cosmos quick sketch. Weathered bronze gate, black base, tiny engraved ticks.</p>
+                <a href="candidates/noixzy_calibrated_gate_relic.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_tilted_glyph_system.html">
+                <h3>noixzy_tilted_glyph_system</h3>
+                <p>Cosmos quick sketch. Charcoal glyph plates, chalky etched marks, muted violet glints.</p>
+                <a href="candidates/noixzy_tilted_glyph_system.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_misaligned_float_scaffold.html">
+                <h3>noixzy_misaligned_float_scaffold</h3>
+                <p>Cosmos quick sketch. Pale concrete floats, thin black scaffold, blue-gray ambient light.</p>
+                <a href="candidates/noixzy_misaligned_float_scaffold.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_recursive_keystone_frame.html">
+                <h3>noixzy_recursive_keystone_frame</h3>
+                <p>Cosmos quick sketch. Warm stone keystones, nested soot frames, worn highlighted edges.</p>
+                <a href="candidates/noixzy_recursive_keystone_frame.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">batch 11 · cosmos nano zen</div>
+            <div class="candidate" data-src="candidates/noixzy_boids_ink_current.html">
+                <h3>noixzy_boids_ink_current</h3>
+                <p>Boids moving like ink currents through a nano garden field.</p>
+                <a href="candidates/noixzy_boids_ink_current.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_cellular_rake_tiles.html">
+                <h3>noixzy_cellular_rake_tiles</h3>
+                <p>Game-of-life cells rendered as raked tiles and nano sand glyphs.</p>
+                <a href="candidates/noixzy_cellular_rake_tiles.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_recursive_kintsugi_array.html">
+                <h3>noixzy_recursive_kintsugi_array</h3>
+                <p>Recursive arrays with broken-gold kintsugi line structure.</p>
+                <a href="candidates/noixzy_recursive_kintsugi_array.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_shodo_vector_field.html">
+                <h3>noixzy_shodo_vector_field</h3>
+                <p>Japanese calligraphy strokes following a semi-random vector field.</p>
+                <a href="candidates/noixzy_shodo_vector_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_particle_moss_orbits.html">
+                <h3>noixzy_particle_moss_orbits</h3>
+                <p>Slow nano-particles orbiting like moss, dust, and temple air.</p>
+                <a href="candidates/noixzy_particle_moss_orbits.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_wave_sand_interference.html">
+                <h3>noixzy_wave_sand_interference</h3>
+                <p>Wave interference creating sand, water, and signal-rake patterns.</p>
+                <a href="candidates/noixzy_wave_sand_interference.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_torii_depth_lattice.html">
+                <h3>noixzy_torii_depth_lattice</h3>
+                <p>Torii-inspired recursive portal grid with false depth.</p>
+                <a href="candidates/noixzy_torii_depth_lattice.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_bonsai_circuit_growth.html">
+                <h3>noixzy_bonsai_circuit_growth</h3>
+                <p>Procedural growth mixing bonsai branching and circuit/nano lattice.</p>
+                <a href="candidates/noixzy_bonsai_circuit_growth.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_pressure_thread_physics.html">
+                <h3>noixzy_pressure_thread_physics</h3>
+                <p>Lightweight spring/thread field reacting like pressure lines.</p>
+                <a href="candidates/noixzy_pressure_thread_physics.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_zen_caustic_relief.html">
+                <h3>noixzy_zen_caustic_relief</h3>
+                <p>Lightweight caustic/bump relief field like light on raked sand.</p>
+                <a href="candidates/noixzy_zen_caustic_relief.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">batch 12 · architectural facades</div>
+            <div class="candidate" data-src="candidates/noixzy_minimal_parti.html">
+                <h3>noixzy_minimal_parti</h3>
+                <p>Abstract architectural parti diagrams with bars, voids, and axis lines.</p>
+                <a href="candidates/noixzy_minimal_parti.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_quiet_grid.html">
+                <h3>noixzy_quiet_grid</h3>
+                <p>Sparse orthogonal grid with deletions, offsets, and restrained asymmetry.</p>
+                <a href="candidates/noixzy_quiet_grid.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_white_space_field.html">
+                <h3>noixzy_white_space_field</h3>
+                <p>Few architectural masses suspended in a controlled negative field.</p>
+                <a href="candidates/noixzy_white_space_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_modulor_field.html">
+                <h3>noixzy_modulor_field</h3>
+                <p>Proportion-band generator using modular ratio systems and measured intervals.</p>
+                <a href="candidates/noixzy_modulor_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_brise_soleil.html">
+                <h3>noixzy_brise_soleil</h3>
+                <p>Kinetic facade fins responding to sun-angle-like phase and rhythm fields.</p>
+                <a href="candidates/noixzy_brise_soleil.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_aperture_field.html">
+                <h3>noixzy_aperture_field</h3>
+                <p>Wall apertures generated by view, privacy, and rhythm bias in one field.</p>
+                <a href="candidates/noixzy_aperture_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_section_cut.html">
+                <h3>noixzy_section_cut</h3>
+                <p>Sectional mass slices with floor plates, shafts, and atmospheric depth.</p>
+                <a href="candidates/noixzy_section_cut.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_load_path.html">
+                <h3>noixzy_load_path</h3>
+                <p>Structural force traces linking supports, beams, and compressed spans.</p>
+                <a href="candidates/noixzy_load_path.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_shadow_louver.html">
+                <h3>noixzy_shadow_louver</h3>
+                <p>Louver field casting moving shadow bands and phase-interference occlusion.</p>
+                <a href="candidates/noixzy_shadow_louver.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_service_core.html">
+                <h3>noixzy_service_core</h3>
+                <p>Core-and-plate architecture diagram with shafts, offsets, and served/servant contrast.</p>
+                <a href="candidates/noixzy_service_core.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">batch 13 · architectural systems</div>
+            <div class="candidate" data-src="candidates/noixzy_courtyard_plan.html">
+                <h3>noixzy_courtyard_plan</h3>
+                <p>Courtyard-building generator with rings, perimeter bars, and carved central voids.</p>
+                <a href="candidates/noixzy_courtyard_plan.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_light_well.html">
+                <h3>noixzy_light_well</h3>
+                <p>Top-lit shafts and sectional light wells with depth haze and beam gradients.</p>
+                <a href="candidates/noixzy_light_well.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_mashrabiya_modern.html">
+                <h3>noixzy_mashrabiya_modern</h3>
+                <p>Modern mashrabiya lattice fields balancing aperture density, symmetry, and shade.</p>
+                <a href="candidates/noixzy_mashrabiya_modern.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_poche_generator.html">
+                <h3>noixzy_poche_generator</h3>
+                <p>Architectural poche maps with thick wall logic, carved rooms, and hatch fields.</p>
+                <a href="candidates/noixzy_poche_generator.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_threshold_map.html">
+                <h3>noixzy_threshold_map</h3>
+                <p>Nested threshold, gate, and portal diagrams for transition and privacy sequencing.</p>
+                <a href="candidates/noixzy_threshold_map.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_screen_block.html">
+                <h3>noixzy_screen_block</h3>
+                <p>Breeze-block masonry systems with perforation, bevel, and light-angle modulation.</p>
+                <a href="candidates/noixzy_screen_block.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_diagrid_tower.html">
+                <h3>noixzy_diagrid_tower</h3>
+                <p>Diagrid tower envelopes with taper, pitch control, and structural rhythm bands.</p>
+                <a href="candidates/noixzy_diagrid_tower.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_parametric_pavilion.html">
+                <h3>noixzy_parametric_pavilion</h3>
+                <p>Column-and-rib pavilion generator with curved roof arcs and openness controls.</p>
+                <a href="candidates/noixzy_parametric_pavilion.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_street_canyon.html">
+                <h3>noixzy_street_canyon</h3>
+                <p>Urban street-section canyon studies with facade walls, depth lines, and sun slices.</p>
+                <a href="candidates/noixzy_street_canyon.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_panelization_solver.html">
+                <h3>noixzy_panelization_solver</h3>
+                <p>Fabrication panel seam solver with tolerance jitter, panel labels, and grid logic.</p>
+                <a href="candidates/noixzy_panelization_solver.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">batch 12 math · simulation + signal</div>
+            <div class="candidate" data-src="candidates/noixzy_lenia_kernel_garden.html">
+                <h3>noixzy_lenia_kernel_garden</h3>
+                <p>Continuous cellular-life field as soft nano organisms and garden pools.</p>
+                <a href="candidates/noixzy_lenia_kernel_garden.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_superformula_shell_stack.html">
+                <h3>noixzy_superformula_shell_stack</h3>
+                <p>Nested supershape shells with recursive symmetry and petal extrusion.</p>
+                <a href="candidates/noixzy_superformula_shell_stack.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_falling_sand_microphysics.html">
+                <h3>noixzy_falling_sand_microphysics</h3>
+                <p>Cellular sand, water, and ember grains as lightweight material physics.</p>
+                <a href="candidates/noixzy_falling_sand_microphysics.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_cyclic_ca_spiral_reactor.html">
+                <h3>noixzy_cyclic_ca_spiral_reactor</h3>
+                <p>Rock-paper-scissors cellular automata forming chemical spiral waves.</p>
+                <a href="candidates/noixzy_cyclic_ca_spiral_reactor.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_strange_attractor_dust.html">
+                <h3>noixzy_strange_attractor_dust</h3>
+                <p>Chaotic Clifford/de Jong dust field with long-exposure glow.</p>
+                <a href="candidates/noixzy_strange_attractor_dust.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_fourier_epicycle_array.html">
+                <h3>noixzy_fourier_epicycle_array</h3>
+                <p>Clockwork epicycles drawing recursive sigil traces.</p>
+                <a href="candidates/noixzy_fourier_epicycle_array.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_hitomezashi_stitch_matrix.html">
+                <h3>noixzy_hitomezashi_stitch_matrix</h3>
+                <p>Binary sashiko stitch grids with nano textile modularity.</p>
+                <a href="candidates/noixzy_hitomezashi_stitch_matrix.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_thin_film_interference.html">
+                <h3>noixzy_thin_film_interference</h3>
+                <p>Oil-slick chromatic interference as layered nano-film contour bands.</p>
+                <a href="candidates/noixzy_thin_film_interference.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_spectrogram_ridge_terrain.html">
+                <h3>noixzy_spectrogram_ridge_terrain</h3>
+                <p>Audio-like frequency terrain built from synthetic spectral ridges.</p>
+                <a href="candidates/noixzy_spectrogram_ridge_terrain.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_magnetic_dipole_linework.html">
+                <h3>noixzy_magnetic_dipole_linework</h3>
+                <p>Invisible-force field lines flowing between charges and nano pins.</p>
+                <a href="candidates/noixzy_magnetic_dipole_linework.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">batch 14 · unexplored geometry</div>
+            <div class="candidate" data-src="candidates/noixzy_gosper_curve_city.html">
+                <h3>noixzy_gosper_curve_city</h3>
+                <p>Gosper/flowsnake space-filling city plans with nested block stacks.</p>
+                <a href="candidates/noixzy_gosper_curve_city.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_turmite_masonry.html">
+                <h3>noixzy_turmite_masonry</h3>
+                <p>Turmite rule paths carving brick, ash, and nano-stone courses.</p>
+                <a href="candidates/noixzy_turmite_masonry.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_quasicrystal_diffraction_garden.html">
+                <h3>noixzy_quasicrystal_diffraction_garden</h3>
+                <p>Aperiodic diffraction blooms with nano garden pins and radial symmetry.</p>
+                <a href="candidates/noixzy_quasicrystal_diffraction_garden.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_ifs_fern_scaffold.html">
+                <h3>noixzy_ifs_fern_scaffold</h3>
+                <p>Barnsley/IFS fern growth as architectural scaffold foliage.</p>
+                <a href="candidates/noixzy_ifs_fern_scaffold.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_wang_tile_machine.html">
+                <h3>noixzy_wang_tile_machine</h3>
+                <p>Rule-table Wang tiles with coded edge colors and kit-part cells.</p>
+                <a href="candidates/noixzy_wang_tile_machine.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_bz_reaction_rings.html">
+                <h3>noixzy_bz_reaction_rings</h3>
+                <p>Belousov-Zhabotinsky inspired chemical rings and oscillating fronts.</p>
+                <a href="candidates/noixzy_bz_reaction_rings.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_spectral_ribbon_bridge.html">
+                <h3>noixzy_spectral_ribbon_bridge</h3>
+                <p>Signal ribbons braided into bridge spans, ribs, and suspended traces.</p>
+                <a href="candidates/noixzy_spectral_ribbon_bridge.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_nano_kitbash_lattice.html">
+                <h3>noixzy_nano_kitbash_lattice</h3>
+                <p>Tiny modular bars, sockets, slabs, pins, and recursive lattice stacks.</p>
+                <a href="candidates/noixzy_nano_kitbash_lattice.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_escher_tessellation_morph.html">
+                <h3>noixzy_escher_tessellation_morph</h3>
+                <p>Symmetry-group tile morphs between creature-like cells and hard geometry.</p>
+                <a href="candidates/noixzy_escher_tessellation_morph.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_modulor_grid_system.html">
+                <h3>noixzy_modulor_grid_system</h3>
+                <p>Golden-ratio modular grids with proportional stacks and nano markers.</p>
+                <a href="candidates/noixzy_modulor_grid_system.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">batch 15 · extended unexplored</div>
+            <div class="candidate" data-src="candidates/noixzy_peano_curve_archipelago.html">
+                <h3>noixzy_peano_curve_archipelago</h3>
+                <p>Peano space-filling coastlines, island blocks, and recursive urban water gaps.</p>
+                <a href="candidates/noixzy_peano_curve_archipelago.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_gaussian_integer_orbits.html">
+                <h3>noixzy_gaussian_integer_orbits</h3>
+                <p>Complex integer lattices with modular orbit shells, residue glow, and polar scaffolds.</p>
+                <a href="candidates/noixzy_gaussian_integer_orbits.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_dragon_curve_scaffold.html">
+                <h3>noixzy_dragon_curve_scaffold</h3>
+                <p>Heighway dragon folds converted into architectural ribs and nested brace systems.</p>
+                <a href="candidates/noixzy_dragon_curve_scaffold.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_menger_void_array.html">
+                <h3>noixzy_menger_void_array</h3>
+                <p>Recursive cube-void logic flattened into stacked portals, frames, and nano apertures.</p>
+                <a href="candidates/noixzy_menger_void_array.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_julia_contour_relic.html">
+                <h3>noixzy_julia_contour_relic</h3>
+                <p>Complex Julia escape contours as etched relic plates with raised threshold bands.</p>
+                <a href="candidates/noixzy_julia_contour_relic.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_turing_morphogenesis_field.html">
+                <h3>noixzy_turing_morphogenesis_field</h3>
+                <p>Reaction-inhibition style spots, stripes, cells, and biological mask geometry.</p>
+                <a href="candidates/noixzy_turing_morphogenesis_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_eden_percolation_sprawl.html">
+                <h3>noixzy_eden_percolation_sprawl</h3>
+                <p>Stochastic colony growth and percolation corridors forming lichen-like city tissue.</p>
+                <a href="candidates/noixzy_eden_percolation_sprawl.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_triangulated_signal_mesh.html">
+                <h3>noixzy_triangulated_signal_mesh</h3>
+                <p>Delaunay-like signal facets, jittered point clouds, and tensioned mesh relief.</p>
+                <a href="candidates/noixzy_triangulated_signal_mesh.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_origami_miura_fold.html">
+                <h3>noixzy_origami_miura_fold</h3>
+                <p>Miura-ori fold tessellations with alternating mountain/valley depth and plate shimmer.</p>
+                <a href="candidates/noixzy_origami_miura_fold.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_grayscott_preset_bank.html">
+                <h3>noixzy_grayscott_preset_bank</h3>
+                <p>Curated Gray-Scott-inspired preset families: mitosis, coral, worms, holes, and soliton bands.</p>
+                <a href="candidates/noixzy_grayscott_preset_bank.html" target="_blank">open standalone</a>
+            </div>
+            <div class="batch-header">proto · new escrow candidates 2026-06-27</div>
+            <div class="candidate" data-src="candidates/noixzy_proto_cymatics_nodal.html">
+                <h3>noixzy_proto_cymatics_nodal</h3>
+                <p>Chladni nodal line patterns from plate vibration modes. Particles settle at zero-crossing lines. Audio-native concept.</p>
+                <a href="candidates/noixzy_proto_cymatics_nodal.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_proto_standing_wave_pattern.html">
+                <h3>noixzy_proto_standing_wave_pattern</h3>
+                <p>2D standing wave modes on a rectangular membrane. Superposed interference ridges. Sonar and signal cartography.</p>
+                <a href="candidates/noixzy_proto_standing_wave_pattern.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_proto_hyperbolic_tiling.html">
+                <h3>noixzy_proto_hyperbolic_tiling</h3>
+                <p>Poincaré disk hyperbolic tiling. Infinite symmetry compressed into finite space. Sacred geometry, ritual mathematics.</p>
+                <a href="candidates/noixzy_proto_hyperbolic_tiling.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_proto_root_system.html">
+                <h3>noixzy_proto_root_system</h3>
+                <p>Fractal root system with gravitropism, depth tapering, and soil horizon layering. Mycelium and vascular networks.</p>
+                <a href="candidates/noixzy_proto_root_system.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_proto_delaunay_mesh_field.html">
+                <h3>noixzy_proto_delaunay_mesh_field</h3>
+                <p>Delaunay triangulation of a jittered point field with terrain elevation coloring. Pairs with voronoi family.</p>
+                <a href="candidates/noixzy_proto_delaunay_mesh_field.html" target="_blank">open standalone</a>
+            </div>
+            <div class="shortcut-footer">← → navigate · click to preview · open standalone for full controls</div>
+            <div class="candidate" data-src="candidates/noixzy_hyperbolic_horocycle_garden.html">
+                <h3>noixzy_hyperbolic_horocycle_garden</h3>
+                <p>Poincare disk arcs, nested horocycles, and impossible garden paths.</p>
+                <a href="candidates/noixzy_hyperbolic_horocycle_garden.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_circle_inversion_shrine.html">
+                <h3>noixzy_circle_inversion_shrine</h3>
+                <p>Circle inversion chains with recursive halos, tangent gates, and relic rings.</p>
+                <a href="candidates/noixzy_circle_inversion_shrine.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_clifford_attractor_loom.html">
+                <h3>noixzy_clifford_attractor_loom</h3>
+                <p>Chaotic Clifford point clouds woven into luminous textile currents.</p>
+                <a href="candidates/noixzy_clifford_attractor_loom.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_perlin_dune_ridgelines.html">
+                <h3>noixzy_perlin_dune_ridgelines</h3>
+                <p>Anisotropic dune ridges, wind shear contours, and sand-etched relief lines.</p>
+                <a href="candidates/noixzy_perlin_dune_ridgelines.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_voronoi_foam_relief.html">
+                <h3>noixzy_voronoi_foam_relief</h3>
+                <p>Foam cell mosaics with raised membranes, nucleation points, and packed voids.</p>
+                <a href="candidates/noixzy_voronoi_foam_relief.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_braid_group_knotfield.html">
+                <h3>noixzy_braid_group_knotfield</h3>
+                <p>Braid group crossings, knot traces, strand tension, and woven signal columns.</p>
+                <a href="candidates/noixzy_braid_group_knotfield.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_csg_relic_assembler.html">
+                <h3>noixzy_csg_relic_assembler</h3>
+                <p>Constructive-solid-geometry plates, boolean cuts, sockets, and nano relic parts.</p>
+                <a href="candidates/noixzy_csg_relic_assembler.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_reaction_vein_atlas.html">
+                <h3>noixzy_reaction_vein_atlas</h3>
+                <p>Branching reaction veins, pressure ridges, and mineral maps.</p>
+                <a href="candidates/noixzy_reaction_vein_atlas.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_radial_barcode_topography.html">
+                <h3>noixzy_radial_barcode_topography</h3>
+                <p>Polar barcodes, circular data strata, stepped topographic rings.</p>
+                <a href="candidates/noixzy_radial_barcode_topography.html" target="_blank">open standalone</a>
+            </div>
+            <div class="candidate" data-src="candidates/noixzy_cellular_masonry_automata.html">
+                <h3>noixzy_cellular_masonry_automata</h3>
+                <p>Cellular automata brick courses, shifting mortar logic, and tower-like accretion.</p>
+                <a href="candidates/noixzy_cellular_masonry_automata.html" target="_blank">open standalone</a>
+            </div>
         </div>
         <div class="preview">
-            <div class="preview-header">
-                <span id="current-module">noixzy_brutalist_massing</span>
-            </div>
+            <div class="preview-header"><span id="current-module">noixzy_brutalist_massing</span></div>
             <iframe id="module-frame" src="candidates/noixzy_brutalist_massing.html"></iframe>
         </div>
     </div>
     <script>
-        const candidates = document.querySelectorAll('.candidate');
+        const allCandidates = Array.from(document.querySelectorAll('.candidate'));
         const iframe = document.getElementById('module-frame');
         const currentModule = document.getElementById('current-module');
+        const prevModule = document.getElementById('prev-module');
+        const nextModule = document.getElementById('next-module');
+        const searchInput = document.getElementById('search-input');
 
-        candidates.forEach(candidate => {
-            candidate.addEventListener('click', (e) => {
-                if (e.target.tagName === 'A') return;
-                
-                candidates.forEach(c => c.classList.remove('active'));
-                candidate.classList.add('active');
-                
-                const src = candidate.dataset.src;
-                const name = candidate.querySelector('h3').textContent;
-                
-                iframe.src = src;
-                currentModule.textContent = name;
+        let activeIndex = Math.max(0, allCandidates.findIndex(c => c.classList.contains('active')));
+
+        function visibleCandidates() {
+            return allCandidates.filter(c => !c.classList.contains('hidden-candidate'));
+        }
+
+        function showModule(indexInVisible) {
+            const visible = visibleCandidates();
+            if (!visible.length) return;
+            const target = visible[(indexInVisible % visible.length + visible.length) % visible.length];
+            activeIndex = allCandidates.indexOf(target);
+            allCandidates.forEach(c => c.classList.remove('active'));
+            target.classList.add('active');
+            iframe.src = target.dataset.src;
+            currentModule.textContent = target.querySelector('h3').textContent;
+            target.scrollIntoView({ block: 'nearest' });
+        }
+
+        function activeVisibleIndex() {
+            const visible = visibleCandidates();
+            const active = allCandidates[activeIndex];
+            const vi = visible.indexOf(active);
+            return vi >= 0 ? vi : 0;
+        }
+
+        allCandidates.forEach((candidate, index) => {
+            candidate.addEventListener('click', event => {
+                if (event.target.tagName === 'A') return;
+                const visible = visibleCandidates();
+                const vi = visible.indexOf(candidate);
+                if (vi >= 0) showModule(vi);
+            });
+        });
+
+        prevModule.addEventListener('click', () => showModule(activeVisibleIndex() - 1));
+        nextModule.addEventListener('click', () => showModule(activeVisibleIndex() + 1));
+
+        document.addEventListener('keydown', e => {
+            if (e.target === searchInput) return;
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); showModule(activeVisibleIndex() - 1); }
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); showModule(activeVisibleIndex() + 1); }
+        });
+
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.trim().toLowerCase();
+            allCandidates.forEach(c => {
+                const name = c.querySelector('h3')?.textContent.toLowerCase() ?? '';
+                const desc = c.querySelector('p')?.textContent.toLowerCase() ?? '';
+                const match = !q || name.includes(q) || desc.includes(q);
+                c.classList.toggle('hidden-candidate', !match);
+            });
+            // hide batch headers that have no visible candidates below them
+            document.querySelectorAll('.batch-header').forEach(header => {
+                let next = header.nextElementSibling;
+                let hasVisible = false;
+                while (next && !next.classList.contains('batch-header') && !next.classList.contains('shortcut-footer')) {
+                    if (next.classList.contains('candidate') && !next.classList.contains('hidden-candidate')) hasVisible = true;
+                    next = next.nextElementSibling;
+                }
+                header.style.display = hasVisible ? '' : 'none';
             });
         });
     </script>

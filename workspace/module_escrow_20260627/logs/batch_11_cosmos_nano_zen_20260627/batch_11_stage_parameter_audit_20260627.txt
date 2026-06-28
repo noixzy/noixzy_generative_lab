@@ -1,0 +1,62 @@
+stage parameter audit: all escrow modules
+created: 2026-06-27
+
+scope
+- escrow shell global stage/system parameters translated to module-local geometry/look parameters.
+- translation targets module controls, not shell-only transforms.
+
+implementation summary
+1) shell broadcast bus
+- file: workspace/module_escrow_20260627/escrow_shell.html
+- adds message emission `noixzy:stage-params` to loaded module iframes.
+- emission triggers on stage control changes, module load, and module switching.
+
+2) runtime-native translators
+- file: workspace/module_escrow_20260627/candidates/noixzy_candidate_runtime.js
+- file: workspace/module_escrow_20260627/candidates/noixzy_cosmos_quick_runtime.js
+- file: workspace/module_escrow_20260627/candidates/noixzy_batch_11_runtime.js
+- each runtime now listens for `noixzy:stage-params` and maps global stage profile into local control state with clamped ranges and UI sync.
+
+3) same-origin fallback translator
+- file: workspace/module_escrow_20260627/escrow_shell.html
+- for modules without runtime adapter, shell inspects iframe range controls and maps stage profile to matching labels/ids by keyword classes.
+- baseline value memory prevents cumulative drift on repeated stage updates.
+
+coverage audit
+- total escrow candidate modules: 60
+- candidate runtime modules (native mapping): 22
+- cosmos quick runtime modules (native mapping): 10
+- batch 11 runtime modules (native mapping): 10
+- inline/other modules (fallback mapping): 18
+- inline/other range-control presence: 18/18 modules expose range controls (fallback applicable)
+
+global -> local translation families
+- 3d transform profile: rotate x/y, depth, zoom
+  maps into: rotate/tilt/phase/perspective, depth/extrude/offset/displace, temporal speed controls
+- array system profile: array count/spread/ghost
+  maps into: density/count/cells/nodes/repeats/portal count and spacing-like controls
+- kitbash system profile: kitbash type/density/scale
+  maps into: structural complexity controls (line/stroke/branch/recursion/detail) and feature density
+- material grade profile
+  maps into: bump/relief, line emphasis, palette/color drift, contrast-style internal look controls
+
+keyword classes used for generic fallback mapping
+- density/count class
+- speed/time class
+- palette/color class
+- extrude/depth/displace class
+- bump/relief class
+- subdivision/refinement/detail class
+- field/force/dynamics class
+- line/stroke/thickness class
+- rotate/angle/tilt/perspective class
+
+verification
+- javascript syntax check passed for all updated runtimes.
+- stage bridge markers present:
+  - emitStageParams in shell
+  - message listener + applyStageParams in 3 runtime files
+
+notes
+- module internal rendering logic remains intact; translation only adjusts existing control values.
+- this keeps stage shell as orchestrator and modules as geometry owners.

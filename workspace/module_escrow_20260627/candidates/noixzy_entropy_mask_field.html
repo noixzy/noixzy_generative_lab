@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noixzy entropy mask field</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050505;
+      --panel: #101010;
+      --line: #2e2e2e;
+      --text: #e8e3d8;
+      --muted: #8d8981;
+      --accent: #c4c0ad;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 292px;
+      min-height: 100vh;
+    }
+
+    main {
+      min-width: 0;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 48% 35%, rgba(255,255,255,.06), transparent 34%),
+        linear-gradient(180deg, #101010, #020202 82%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    aside {
+      border-left: 1px solid var(--line);
+      background: rgba(13, 13, 13, .98);
+      padding: 14px;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      letter-spacing: 0;
+      text-transform: lowercase;
+    }
+
+    .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid #373737;
+      background: #171717;
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      text-transform: lowercase;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+
+    .seed-row {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    label,
+    .seed-row span {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: lowercase;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #343434;
+      background: #080808;
+      color: var(--text);
+      padding: 8px;
+      font: inherit;
+      font-size: 11px;
+    }
+
+    .control {
+      padding: 10px 0;
+      border-top: 1px solid #222;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 7px;
+      font-size: 11px;
+    }
+
+    .value {
+      color: var(--accent);
+      min-width: 42px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .physics-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 12px;
+      padding: 9px 0;
+      border-top: 1px solid #222;
+      border-bottom: 1px solid #222;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: lowercase;
+    }
+
+    .physics-toggle input { accent-color: var(--accent); }
+
+    .note {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #222;
+      color: #6f6b63;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) 315px;
+      }
+
+      aside {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="view" aria-label="entropy pressure erosion mask field canvas"></canvas>
+  </main>
+  <aside>
+    <h1>noixzy entropy mask field</h1>
+    <p class="sub">sound-pressure masks erode topographic mass, fracture luma bands, and smear analog feedback</p>
+    <div class="buttons">
+      <button id="play">pause</button>
+      <button id="randomize">randomize</button>
+      <button id="reset">reset</button>
+      <button id="export">export png</button>
+    </div>
+    <div class="seed-row">
+      <span>seed</span>
+      <input id="seed" type="text" value="entropy-fields-001" spellcheck="false">
+    </div>
+    <div id="controls"></div>
+    <label class="physics-toggle"><input id="experimental-physics" type="checkbox"> experimental physics</label>
+    <p class="note">future entropy fields audio: lows displace mass, mids crawl surface texture, highs scratch/scanline, transients fracture the mask, loop energy stacks modular cells.</p>
+  </aside>
+
+  <script>
+    const defaults = {
+      pressure: 74,
+      erosion: 64,
+      fracture: 58,
+      feedback: 58,
+      lumaBands: 68,
+      topoScale: 46,
+      scratch: 50,
+      displacement: 72,
+      loopStack: 54,
+      plexus: 60
+    };
+
+    const controlDefs = [
+      ["pressure", "entropy pressure", 0, 140, 1],
+      ["erosion", "erosion pressure", 0, 140, 1],
+      ["fracture", "transient fracture", 0, 140, 1],
+      ["feedback", "feedback smear", 0, 140, 1],
+      ["lumaBands", "luma mask bands", 0, 140, 1],
+      ["topoScale", "topographic scale", 8, 180, 1],
+      ["scratch", "high scratch dust", 0, 140, 1],
+      ["displacement", "low displacement", 0, 140, 1],
+      ["loopStack", "loop stack cells", 0, 140, 1],
+      ["plexus", "plexus network", 0, 140, 1]
+    ];
+
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const controls = document.getElementById("controls");
+    const seedInput = document.getElementById("seed");
+    const playButton = document.getElementById("play");
+    const values = {};
+    let state = { ...defaults };
+    let running = true;
+    let frame = 0;
+    let width = 1;
+    let height = 1;
+    let dpr = 1;
+    let experimentalPhysics = false;
+    function randomBiasFor(label) {
+      const k = String(label).toLowerCase();
+      if (/palette|material|color|hue/.test(k)) return Math.random();
+      if (/density|count|grid|cells|points|nodes|modules|bays|divisions|segments|cracks|repeats/.test(k)) return 0.38 + Math.random() * 0.62;
+      if (/extrude|depth|height|stack|layer|relief|bump|displace|amplitude|thickness|width|size|scale|cantilever|perspective|slab|fin|mullion|erosion/.test(k)) return 0.28 + Math.random() * 0.72;
+      if (/offset|jitter|noise|field|force|twist|warp|phase|bias|rotation|entropy|feedback|pressure|void|variation|fracture/.test(k)) return 0.12 + Math.random() * 0.76;
+      if (/line|stroke|shadow/.test(k)) return 0.18 + Math.random() * 0.62;
+      return 0.15 + Math.random() * 0.7;
+    }
+    function snapToStep(value, min, max, step) {
+      const safeStep = Number(step) || 1;
+      const snapped = Math.round(value / safeStep) * safeStep;
+      return Math.max(Number(min), Math.min(Number(max), Number.isInteger(safeStep) ? Math.round(snapped) : Number(snapped.toFixed(3))));
+    }
+    function randomizeModuleControls() {
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const value = snapToStep(min + (max - min) * randomBiasFor(label || key), min, max, step);
+        state[key] = value;
+        const input = document.getElementById(key);
+        if (input) input.value = value;
+        if (values[key]) values[key].textContent = value;
+      });
+      experimentalPhysics = Math.random() > 0.55;
+      const physics = document.getElementById("experimental-physics");
+      if (physics) physics.checked = experimentalPhysics;
+      applyExperimentalPhysics();
+    }
+    function applyExperimentalPhysics() {
+      const dx = experimentalPhysics ? Math.sin(frame * 0.017) * 4.5 : 0;
+      const dy = experimentalPhysics ? Math.cos(frame * 0.013) * 3.5 : 0;
+      const breathe = experimentalPhysics ? 1 + Math.sin(frame * 0.011) * 0.004 : 1;
+      canvas.style.transformOrigin = "50% 50%";
+      canvas.style.transform = experimentalPhysics ? `translate3d(${dx}px, ${dy}px, 0) scale(${breathe})` : "";
+      canvas.style.filter = experimentalPhysics ? "contrast(1.06) saturate(1.08)" : "";
+    }
+
+
+    function hashString(text) {
+      let hash = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function randomSource(seed) {
+      let t = hashString(seed) || 1;
+      return function random() {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function unit(value, max = 140) {
+      return clamp(value / max, 0, 1.35);
+    }
+
+    function buildControls() {
+      controls.innerHTML = "";
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const wrap = document.createElement("div");
+        wrap.className = "control";
+        wrap.innerHTML = `
+          <div class="control-head">
+            <label for="${key}">${label}</label>
+            <span class="value" id="${key}Value">${state[key]}</span>
+          </div>
+          <input id="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${state[key]}">
+        `;
+        controls.appendChild(wrap);
+        values[key] = wrap.querySelector(".value");
+        wrap.querySelector("input").addEventListener("input", event => {
+          state[key] = Number(event.target.value);
+          values[key].textContent = state[key];
+          draw();
+        });
+      });
+    }
+
+    function resizeCanvas() {
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = canvas.getBoundingClientRect();
+      width = Math.max(320, Math.floor(rect.width));
+      height = Math.max(260, Math.floor(rect.height));
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function noise2(x, y, random) {
+      const ix = Math.floor(x);
+      const iy = Math.floor(y);
+      const fx = x - ix;
+      const fy = y - iy;
+      const s = seedInput.value;
+      const a = randomSource(`${s}|${ix}|${iy}`)();
+      const b = randomSource(`${s}|${ix + 1}|${iy}`)();
+      const c = randomSource(`${s}|${ix}|${iy + 1}`)();
+      const d = randomSource(`${s}|${ix + 1}|${iy + 1}`)();
+      const ux = fx * fx * (3 - 2 * fx);
+      const uy = fy * fy * (3 - 2 * fy);
+      return lerp(lerp(a, b, ux), lerp(c, d, ux), uy) + random * 0;
+    }
+
+    function drawBaseField() {
+      const random = randomSource(`${seedInput.value}|field`);
+      const cell = Math.max(12, state.topoScale);
+      const cols = Math.ceil(width / cell) + 2;
+      const rows = Math.ceil(height / cell) + 2;
+      const pressure = unit(state.pressure);
+      const erosion = unit(state.erosion);
+      const disp = unit(state.displacement);
+      const loop = unit(state.loopStack);
+      const stackCount = Math.floor(1 + loop * 5);
+      const t = frame * 0.012;
+
+      ctx.save();
+      ctx.translate(width * .5, height * .5);
+      ctx.rotate(Math.sin(t * .3) * 0.015 * disp);
+      ctx.translate(-width * .5, -height * .5);
+
+      for (let y = -1; y < rows; y++) {
+        for (let x = -1; x < cols; x++) {
+          const px = x * cell;
+          const py = y * cell;
+          const nx = x * .37 + Math.sin(t) * .7;
+          const ny = y * .37 + Math.cos(t * .8) * .7;
+          const field = noise2(nx, ny, random());
+          const band = Math.sin((py / height) * Math.PI * lerp(3, 26, unit(state.lumaBands)) + t * 4);
+          const eroded = clamp(field - erosion * .42 + band * pressure * .22, 0, 1);
+          const lift = Math.pow(eroded, 1.7);
+          const modular = Math.sin((x + y) * .9 + t * 3.5) * loop;
+          const shift = (lift - .5) * cell * disp * 1.9 + modular * cell * .38;
+          const shade = Math.floor(clamp(lerp(20, 226, lift + loop * .04), 0, 255));
+          const alpha = clamp(lerp(.18, .94, lift), .12, .96);
+          ctx.fillStyle = `rgba(${shade},${shade - 3},${shade - 11},${alpha})`;
+          ctx.fillRect(px + shift, py - shift * .42, cell + 1, cell + 1);
+          for (let s = 1; s < stackCount; s++) {
+            const inset = s * cell * .08;
+            const ox = shift * .28 + Math.sin(t + s + x) * loop * cell * .12;
+            const oy = -shift * .18 + Math.cos(t + s + y) * loop * cell * .09;
+            ctx.strokeStyle = `rgba(235,230,214,${.025 + lift * .07})`;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px + inset + ox, py + inset + oy, Math.max(2, cell - inset * 2), Math.max(2, cell - inset * 2));
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawFractures() {
+      const random = randomSource(`${seedInput.value}|fractures|${Math.floor(frame / 9)}`);
+      const count = Math.floor(lerp(8, 150, unit(state.fracture)));
+      const pressure = unit(state.pressure);
+      ctx.save();
+      ctx.lineCap = "square";
+      for (let i = 0; i < count; i++) {
+        const transient = random() < pressure * .6;
+        const x = random() * width;
+        const y = random() * height;
+        const len = lerp(25, 260, random()) * (transient ? 1.35 : .65);
+        const angle = lerp(-.25, .25, random()) + (random() > .5 ? 0 : Math.PI * .5);
+        ctx.strokeStyle = transient ? "rgba(245,242,230,.42)" : "rgba(0,0,0,.42)";
+        ctx.lineWidth = transient ? lerp(1, 4, random()) : 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawFeedbackSmear() {
+      const random = randomSource(`${seedInput.value}|smear|${Math.floor(frame / 3)}`);
+      const feedback = unit(state.feedback);
+      const bands = Math.floor(lerp(5, 54, feedback));
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      for (let i = 0; i < bands; i++) {
+        const y = random() * height;
+        const h = lerp(2, 34, random()) * lerp(.4, 1.5, feedback);
+        const xShift = (random() - .5) * state.feedback * 2.8;
+        const alpha = lerp(.025, .18, random()) * clamp(state.pressure / 90, .05, 1.25);
+        ctx.fillStyle = `rgba(220,216,203,${alpha})`;
+        ctx.fillRect(xShift, y, width + Math.abs(xShift), h);
+      }
+      ctx.restore();
+    }
+
+    function drawScratches() {
+      const random = randomSource(`${seedInput.value}|scratch|${Math.floor(frame / 2)}`);
+      const scratch = unit(state.scratch);
+      const count = Math.floor(lerp(8, 360, scratch));
+      ctx.save();
+      ctx.strokeStyle = "rgba(238,235,222,.22)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < count; i++) {
+        const x = random() * width;
+        const y = random() * height;
+        const h = lerp(2, 46, random());
+        ctx.globalAlpha = lerp(.05, .5, random()) * scratch;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + (random() - .5) * 5, y + h);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawMaskArchitecture() {
+      const random = randomSource(`${seedInput.value}|architecture`);
+      const count = 11;
+      const baseY = height * .72;
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      for (let i = 0; i < count; i++) {
+        const w = lerp(width * .04, width * .16, random());
+        const h = lerp(height * .08, height * .44, random()) * lerp(.6, 1.55, unit(state.displacement));
+        const x = width * .12 + i * (width * .78 / count) + (random() - .5) * width * .035;
+        const y = baseY - h;
+        ctx.fillStyle = `rgba(0,0,0,${lerp(.12, .5, unit(state.erosion))})`;
+        ctx.fillRect(x, y, w, h);
+        if (random() < .55) {
+          ctx.clearRect(x + w * .18, y + h * .18, w * .64, h * .18);
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawPlexus() {
+      const amount = unit(state.plexus);
+      if (amount <= .02) return;
+      const random = randomSource(`${seedInput.value}|plexus`);
+      const count = Math.floor(lerp(18, 96, amount));
+      const points = [];
+      const drift = running ? frame * .01 : 0;
+
+      for (let i = 0; i < count; i++) {
+        const ring = i / count;
+        const angle = random() * Math.PI * 2 + Math.sin(drift + ring * 9) * .16;
+        const radius = lerp(Math.min(width, height) * .08, Math.min(width, height) * .48, random());
+        points.push({
+          x: width * .5 + Math.cos(angle) * radius + (random() - .5) * width * .18,
+          y: height * .5 + Math.sin(angle) * radius * .72 + (random() - .5) * height * .16
+        });
+      }
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+          const dx = points[i].x - points[j].x;
+          const dy = points[i].y - points[j].y;
+          const dist = Math.hypot(dx, dy);
+          const limit = lerp(70, 210, amount);
+          if (dist < limit) {
+            const alpha = (1 - dist / limit) * lerp(.035, .16, amount);
+            ctx.strokeStyle = `rgba(235,232,218,${alpha})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(points[i].x, points[i].y);
+            ctx.lineTo(points[j].x, points[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.fillStyle = `rgba(245,241,228,${lerp(.08, .22, amount)})`;
+      points.forEach(point => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, lerp(.8, 2.1, amount), 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    // Future "entropy fields" audio-input mapping:
+    // - fft.low: drive state.displacement and base mass push
+    // - fft.mid: modulate erosion/noise crawling over the surface
+    // - fft.high: increase scratch, dust, scanlines, and spark noise
+    // - transient detector: spike fracture count and luma band tearing
+    // - loop energy: raise loopStack for recursive modular cell displacement
+    // - spectral centroid: raise plexus for connected high-frequency filaments
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#050505";
+      ctx.fillRect(0, 0, width, height);
+      drawBaseField();
+      drawMaskArchitecture();
+      drawFeedbackSmear();
+      drawFractures();
+      drawPlexus();
+      drawScratches();
+
+      ctx.save();
+      ctx.globalCompositeOperation = "overlay";
+      const scan = Math.max(2, 13 - state.scratch * .075);
+      ctx.fillStyle = "rgba(255,255,255,.035)";
+      for (let y = (frame % scan); y < height; y += scan) ctx.fillRect(0, y, width, 1);
+      ctx.restore();
+
+      ctx.fillStyle = "rgba(232,227,216,.72)";
+      ctx.font = "11px ui-monospace, monospace";
+      ctx.fillText(seedInput.value || "seed", 16, height - 18);
+      ctx.fillText("entropy fields / placeholder audio mask", 16, 22);
+    }
+
+    function tick() {
+      if (running) {
+        frame++;
+        applyExperimentalPhysics();
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function randomSeed() {
+      return `entropy-fields-${Math.floor(Math.random() * 999999).toString(36)}`;
+    }
+
+    function resetAll() {
+      experimentalPhysics = false;
+      const physics = document.getElementById("experimental-physics");
+      if (physics) physics.checked = false;
+      applyExperimentalPhysics();
+      state = { ...defaults };
+      seedInput.value = "entropy-fields-001";
+      controlDefs.forEach(([key]) => {
+        const input = document.getElementById(key);
+        input.value = state[key];
+        values[key].textContent = state[key];
+      });
+      frame = 0;
+      draw();
+    }
+
+    function exportPng() {
+      draw();
+      const link = document.createElement("a");
+      link.download = `noixzy_entropy_mask_field_${seedInput.value || "seed"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    const physicsToggle = document.getElementById("experimental-physics");
+    if (physicsToggle) physicsToggle.addEventListener("change", () => {
+      experimentalPhysics = physicsToggle.checked;
+      applyExperimentalPhysics();
+      draw();
+    });
+
+    seedInput.addEventListener("input", draw);
+    playButton.addEventListener("click", () => {
+      running = !running;
+      playButton.textContent = running ? "pause" : "play";
+      draw();
+    });
+    document.getElementById("randomize").addEventListener("click", () => {
+      seedInput.value = randomSeed();
+      randomizeModuleControls();
+      draw();
+    });
+    document.getElementById("reset").addEventListener("click", resetAll);
+    document.getElementById("export").addEventListener("click", exportPng);
+    window.addEventListener("resize", resizeCanvas);
+
+    buildControls();
+    resizeCanvas();
+    tick();
+  </script>
+</body>
+</html>

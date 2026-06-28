@@ -1,0 +1,104 @@
+{
+  "manifest": {
+    "title": "noixzy_experiment_engine",
+    "version": "27062026",
+    "description": "Experimental batch ideation and testing scaffold for motion graphics, Blender, TouchDesigner, algorithmic architecture, and visual experiments",
+    "categories": [
+      {
+        "id": "brutalist_architecture",
+        "name": "Brutalist Architecture",
+        "description": "Raw concrete forms, geometric repetition, monumental scale"
+      },
+      {
+        "id": "parametric_architecture",
+        "name": "Parametric Architecture",
+        "description": "Algorithm-driven forms, adaptive geometry, computational design"
+      },
+      {
+        "id": "sacred_geometry",
+        "name": "Sacred Geometry",
+        "description": "Platonic solids, golden ratio, harmonic patterns"
+      },
+      {
+        "id": "sdf_geometry",
+        "name": "SDF Geometry",
+        "description": "Signed distance fields, boolean operations, smooth blending"
+      },
+      {
+        "id": "field_systems",
+        "name": "Field Systems",
+        "description": "Vector fields, displacement fields, flow patterns"
+      },
+      {
+        "id": "force_field_motion",
+        "name": "Force-Field Motion",
+        "description": "Particle attractors, repellers, turbulence dynamics"
+      },
+      {
+        "id": "projection_mapping",
+        "name": "Projection Mapping",
+        "description": "Architectural projection, spatial augmentation, UV unwrapping"
+      },
+      {
+        "id": "analog_video_effects",
+        "name": "Analog Video Effects",
+        "description": "CRT scan lines, VHS glitch, phosphor trails"
+      },
+      {
+        "id": "ae_motion_graphics",
+        "name": "AE-Inspired Motion Graphics",
+        "description": "Shape layers, graph editor, expression-driven animation"
+      },
+      {
+        "id": "blender_geometry_nodes",
+        "name": "Blender Geometry Nodes",
+        "description": "Procedural modeling, instance geometry, attribute-driven systems"
+      },
+      {
+        "id": "historical_art_mix",
+        "name": "Historical Art Period Mix",
+        "description": "Baroque, Gothic, Renaissance, Art Nouveau combinations"
+      },
+      {
+        "id": "modern_art_mix",
+        "name": "Modern Art Period Mix",
+        "description": "Bauhaus, Constructivism, De Stijl, Suprematism"
+      },
+      {
+        "id": "color_system_study",
+        "name": "Color System Study",
+        "description": "Complementary pairs, triadic harmony, monochrome gradients"
+      },
+      {
+        "id": "audio_reactive_study",
+        "name": "Audio-Reactive Study",
+        "description": "FFT analysis, amplitude triggers, rhythm-driven motion"
+      },
+      {
+        "id": "perceived_3d_mapping",
+        "name": "Perceived 3D Point Mapping",
+        "description": "Point clouds, depth reconstruction, parallax illusions"
+      },
+      {
+        "id": "lightweight_physics",
+        "name": "Lightweight Physics",
+        "description": "Soft body, cloth, rigid body basics for CPU efficiency"
+      }
+    ],
+    "flags": [
+      "light_physics",
+      "audio_hook",
+      "blender",
+      "ae",
+      "touchdesigner",
+      "projection_mapping",
+      "cpu_gpu_light"
+    ],
+    "status_types": [
+      "seed",
+      "test",
+      "promising",
+      "parked"
+    ]
+  }
+}

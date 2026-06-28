@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>noixzy voronoi shatter — prototype</title>
+<style>
+:root{color-scheme:dark;--a:#c8c0a0;--t:#e8e1d4;--m:#8c877d}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#040404;color:var(--t);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+body{display:grid;grid-template-columns:minmax(0,1fr) 280px}
+main{min-width:0;min-height:0;background:#040404}
+canvas{display:block;width:100%;height:100%}
+aside{border-left:1px solid #2a2a2a;background:#0e0e0e;padding:14px;overflow-y:auto}
+h1{margin:0 0 4px;font-size:13px;font-weight:500;text-transform:lowercase;color:var(--t)}
+.sub{color:var(--m);font-size:10px;line-height:1.5;margin-bottom:12px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+button{height:32px;border:1px solid #333;background:#141414;color:var(--t);font:inherit;font-size:10px;cursor:pointer;letter-spacing:.04em}
+button:hover{border-color:#555;background:#1a1a1a}
+.row{display:grid;grid-template-columns:46px 1fr;gap:8px;align-items:center;margin-bottom:10px}
+.row span{font-size:10px;color:var(--m)}
+input[type=text]{width:100%;background:#070707;border:1px solid #2e2e2e;color:var(--t);padding:7px;font:inherit;font-size:10px}
+.ctl{border-top:1px solid #1e1e1e;padding:8px 0}
+.head{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:var(--m)}
+.head b{font-weight:400;color:var(--a)}
+input[type=range]{width:100%;accent-color:var(--a)}
+.note{color:#444;font-size:9px;line-height:1.5;margin-top:12px;border-top:1px solid #1a1a1a;padding-top:8px}
+</style>
+</head>
+<body>
+<main><canvas id="cv"></canvas></main>
+<aside>
+  <h1>noixzy voronoi shatter</h1>
+  <p class="sub">voronoi cells fractured and drifting apart with spring tension — broken glass · concrete fracture · cell-fracture input</p>
+  <div class="btns">
+    <button id="play">pause</button>
+    <button id="rnd">randomize</button>
+    <button id="rst">reset</button>
+    <button id="png">save png</button>
+  </div>
+  <div class="row"><span>seed</span><input id="seed" value="vshatter-001" spellcheck="false"></div>
+  <div id="ctls"></div>
+  <p class="note">proto — unified shell candidate · 2026-06-27 · not in production<br>voronoi shatter → Blender cell-fracture input via heightfield export</p>
+</aside>
+<script>
+const CONTROLS = [
+  ["cells","cells",8,80,1,28],
+  ["crack_speed","crack speed",0,100,1,44],
+  ["tension","tension",0,100,1,62],
+  ["fragment_spin","fragment spin",0,100,1,32],
+  ["gap","gap width",0,100,1,22],
+  ["edge_weight","edge weight",1,5,1,2],
+  ["palette","palette",0,3,1,2]
+];
+
+const PALETTES = [
+  {fill:"rgba(32,28,22,0.92)",edge:"#a0907a",crack:"#d0c0a0"},
+  {fill:"rgba(10,14,20,0.92)",edge:"#7090b0",crack:"#b0d0f0"},
+  {fill:"rgba(20,20,20,0.95)",edge:"#888",crack:"#e0e0d8"},
+  {fill:"rgba(20,10,10,0.92)",edge:"#906060",crack:"#e0b0b0"}
+];
+
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function mkRng(seed){let t=hash(seed)||1;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^(t>>>15),1|t);r^=r+Math.imul(r^(r>>>7),61|r);return((r^(r>>>14))>>>0)/4294967296;};}
+
+const cv=document.getElementById("cv");
+const ctx=cv.getContext("2d");
+const ctlsEl=document.getElementById("ctls");
+const seedEl=document.getElementById("seed");
+
+const S={};
+CONTROLS.forEach(([k,,,,v])=>S[k]=v);
+
+let W=1,H=1,dpr=1,frame=0,running=true;
+let cells=[];
+
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  const rect=cv.parentElement.getBoundingClientRect();
+  W=rect.width;H=rect.height;
+  cv.width=W*dpr;cv.height=H*dpr;
+  cv.style.width=W+"px";cv.style.height=H+"px";
+  ctx.scale(dpr,dpr);
+  init();
+}
+
+function voronoi(pts,w,h){
+  const cells=pts.map((p,i)=>({cx:p[0],cy:p[1],verts:[],vx:0,vy:0,spin:0,rot:0,ox:p[0],oy:p[1]}));
+  const res=4;const gw=Math.ceil(w/res),gh=Math.ceil(h/res);
+  const cellIdx=new Int32Array(gw*gh);
+  for(let gy=0;gy<gh;gy++){
+    for(let gx=0;gx<gw;gx++){
+      const px=gx*res+res/2,py=gy*res+res/2;
+      let best=-1,bestD=Infinity;
+      pts.forEach(([cx,cy],i)=>{const d=(px-cx)**2+(py-cy)**2;if(d<bestD){bestD=d;best=i;}});
+      cellIdx[gy*gw+gx]=best;
+    }
+  }
+  // extract polygon verts per cell (marching squares style — approximate)
+  // use edge detection between adjacent pixels
+  const edgeMap=new Set();
+  for(let gy=0;gy<gh-1;gy++){
+    for(let gx=0;gx<gw-1;gx++){
+      const c=cellIdx[gy*gw+gx],r=cellIdx[gy*gw+gx+1],b=cellIdx[(gy+1)*gw+gx];
+      if(c!==r)edgeMap.add(c+","+r);
+      if(c!==b)edgeMap.add(c+","+b);
+    }
+  }
+  // compute convex hull of pixels per cell
+  pts.forEach((p,i)=>{
+    const pxs=[];
+    for(let gy=0;gy<gh;gy++)for(let gx=0;gx<gw;gx++){
+      if(cellIdx[gy*gw+gx]===i)pxs.push([gx*res,gy*res]);
+    }
+    cells[i].verts=convexHull(pxs);
+  });
+  return cells;
+}
+
+function cross(O,A,B){return(A[0]-O[0])*(B[1]-O[1])-(A[1]-O[1])*(B[0]-O[0]);}
+function convexHull(pts){
+  if(pts.length<3)return pts;
+  const sorted=[...pts].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const lower=[],upper=[];
+  for(const p of sorted){while(lower.length>=2&&cross(lower[lower.length-2],lower[lower.length-1],p)<=0)lower.pop();lower.push(p);}
+  for(let i=sorted.length-1;i>=0;i--){const p=sorted[i];while(upper.length>=2&&cross(upper[upper.length-2],upper[upper.length-1],p)<=0)upper.pop();upper.push(p);}
+  upper.pop();lower.pop();
+  return lower.concat(upper);
+}
+
+function init(){
+  const rng=mkRng(seedEl.value);
+  const count=Math.max(4,Math.floor(S.cells));
+  const pts=[];
+  for(let i=0;i<count;i++)pts.push([rng()*W*0.9+W*0.05,rng()*H*0.9+H*0.05]);
+  cells=voronoi(pts,W,H);
+  const spd=S.crack_speed*0.001;
+  cells.forEach(c=>{
+    const angle=rng()*Math.PI*2;
+    const dist=rng()*spd*(0.3+rng()*0.7);
+    c.vx=Math.cos(angle)*dist;
+    c.vy=Math.sin(angle)*dist;
+    c.spin=(rng()-0.5)*S.fragment_spin*0.0003;
+    c.rot=0;
+  });
+  frame=0;
+}
+
+function draw(){
+  if(!running){requestAnimationFrame(draw);return;}
+  const pal=PALETTES[Math.min(Math.floor(S.palette),PALETTES.length-1)];
+  const tension=S.tension*0.0001;
+  const gap=S.gap*0.2;
+  const ew=S.edge_weight;
+  const crackSpd=S.crack_speed;
+
+  ctx.fillStyle="#040404";
+  ctx.fillRect(0,0,W,H);
+
+  cells.forEach(c=>{
+    if(crackSpd>0){
+      c.cx+=c.vx;c.cy+=c.vy;
+      c.vx*=1-tension;c.vy*=1-tension;
+      c.rot+=c.spin;
+    }
+    if(!c.verts||c.verts.length<3)return;
+
+    const cos=Math.cos(c.rot),sin=Math.sin(c.rot);
+    const verts=c.verts.map(([x,y])=>{
+      const dx=x-c.ox,dy=y-c.oy;
+      return [c.cx+dx*cos-dy*sin,c.cy+dx*sin+dy*cos];
+    });
+
+    // inset by gap
+    const centX=verts.reduce((s,v)=>s+v[0],0)/verts.length;
+    const centY=verts.reduce((s,v)=>s+v[1],0)/verts.length;
+    const inset=verts.map(([x,y])=>{
+      const dx=x-centX,dy=y-centY;
+      const d=Math.sqrt(dx*dx+dy*dy)||1;
+      return [x-dx/d*gap,y-dy/d*gap];
+    });
+
+    ctx.beginPath();
+    inset.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+    ctx.closePath();
+    ctx.fillStyle=pal.fill;
+    ctx.fill();
+    ctx.strokeStyle=pal.edge;
+    ctx.lineWidth=ew;
+    ctx.stroke();
+
+    // crack seam
+    ctx.beginPath();
+    inset.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+    ctx.closePath();
+    ctx.strokeStyle=pal.crack;
+    ctx.lineWidth=0.5;
+    ctx.globalAlpha=0.3;
+    ctx.stroke();
+    ctx.globalAlpha=1;
+  });
+
+  frame++;
+  requestAnimationFrame(draw);
+}
+
+function buildCtls(){
+  ctlsEl.innerHTML="";
+  CONTROLS.forEach(([k,label,mn,mx,st])=>{
+    const d=document.createElement("div");d.className="ctl";
+    d.innerHTML=`<div class="head"><span>${label}</span><b>${S[k]}</b></div><input type="range" min="${mn}" max="${mx}" step="${st}" value="${S[k]}">`;
+    d.querySelector("input").addEventListener("input",e=>{S[k]=+e.target.value;d.querySelector("b").textContent=S[k];});
+    ctlsEl.appendChild(d);
+  });
+}
+
+function randomize(){
+  CONTROLS.forEach(([k,label,mn,mx,st])=>{
+    const bias=(/cells/.test(k)?0.3:0.1)+Math.random()*0.7;
+    S[k]=Math.round((mn+(mx-mn)*bias)/st)*st;
+  });
+  buildCtls();init();
+}
+
+document.getElementById("play").addEventListener("click",e=>{running=!running;e.target.textContent=running?"pause":"play";});
+document.getElementById("rnd").addEventListener("click",randomize);
+document.getElementById("rst").addEventListener("click",()=>{CONTROLS.forEach(([k,,,,v])=>S[k]=v);buildCtls();init();});
+document.getElementById("png").addEventListener("click",()=>{const a=document.createElement("a");a.download="noixzy_voronoi_shatter.png";a.href=cv.toDataURL();a.click();});
+seedEl.addEventListener("change",init);
+
+window.addEventListener("resize",resize);
+buildCtls();
+resize();
+draw();
+</script>
+</body>
+</html>

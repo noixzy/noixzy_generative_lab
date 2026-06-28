@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>noixzy standing wave pattern</title>
+<style>
+:root{color-scheme:dark;--a:#80b8d0;--t:#e8e1d4;--m:#8c877d}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#030408;color:var(--t);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+body{display:grid;grid-template-columns:minmax(0,1fr) 280px}
+main{min-width:0;min-height:0;background:#030408}
+canvas{display:block;width:100%;height:100%}
+aside{border-left:1px solid #2a2a2a;background:#0e0e0e;padding:14px;overflow-y:auto}
+h1{margin:0 0 4px;font-size:13px;font-weight:500;text-transform:lowercase}
+.sub{color:var(--m);font-size:10px;line-height:1.5;margin-bottom:12px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+button{height:32px;border:1px solid #333;background:#141414;color:var(--t);font:inherit;font-size:10px;cursor:pointer;letter-spacing:.04em}
+button:hover{border-color:#555}
+.row{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;margin-bottom:10px}
+.row span{font-size:10px;color:var(--m)}
+input[type=text]{width:100%;background:#070707;border:1px solid #2e2e2e;color:var(--t);padding:7px;font:inherit;font-size:10px}
+.ctl{border-top:1px solid #1e1e1e;padding:8px 0}
+.head{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:var(--m)}
+.head b{font-weight:400;color:var(--a)}
+input[type=range]{width:100%;accent-color:var(--a)}
+.note{color:#444;font-size:9px;line-height:1.5;margin-top:12px;border-top:1px solid #1a1a1a;padding-top:8px}
+.physics-toggle{display:flex;align-items:center;gap:8px;margin:10px 0 12px;padding:9px 0;border-top:1px solid #222;border-bottom:1px solid #222;color:var(--m);font-size:10px}
+.physics-toggle input{accent-color:var(--a)}
+</style>
+</head>
+<body>
+<main><canvas id="cv"></canvas></main>
+<aside>
+  <h1>noixzy standing wave pattern</h1>
+  <p class="sub">2d standing wave modes on a rectangular membrane — interference ridges · sonar · signal cartography</p>
+  <div class="btns">
+    <button id="play">pause</button>
+    <button id="rnd">randomize</button>
+    <button id="rst">reset</button>
+    <button id="png">save png</button>
+  </div>
+  <div class="row"><span>seed</span><input id="seed" value="standing-wave-001" spellcheck="false"></div>
+  <div id="ctls"></div>
+  <label class="physics-toggle"><input id="experimental-physics" type="checkbox"> experimental physics</label>
+  <p class="note">escrow proto · signal batch · 2026-06-27<br>standing modes: sum of cos(m·π·x/L)·cos(n·π·y/L)·cos(ω·t) with superposition</p>
+</aside>
+<script>
+const CONTROLS=[
+  ["m_mode","m mode",1,14,1,3],
+  ["n_mode","n mode",1,14,1,5],
+  ["mode_count","mode sum",1,6,1,2],
+  ["amplitude","amplitude",0,100,1,72],
+  ["decay","decay",0,100,1,48],
+  ["speed","speed",0,100,1,36],
+  ["palette","palette",0,3,1,0]
+];
+
+const PALETTES=[
+  {lo:[3,4,18],hi:[120,190,240]},
+  {lo:[18,4,4],hi:[240,160,80]},
+  {lo:[4,14,4],hi:[120,240,100]},
+  {lo:[14,12,18],hi:[200,180,240]}
+];
+
+const cv=document.getElementById("cv");
+const ctx=cv.getContext("2d");
+const ctlsEl=document.getElementById("ctls");
+const seedEl=document.getElementById("seed");
+const S={};
+CONTROLS.forEach(([k,,,,v])=>S[k]=v);
+let W=1,H=1,dpr=1,frame=0,running=true,experimentalPhysics=false;
+const GS=3;
+let imgData,pixels;
+
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  const rect=cv.parentElement.getBoundingClientRect();
+  W=rect.width;H=rect.height;
+  cv.width=W*dpr;cv.height=H*dpr;
+  cv.style.width=W+"px";cv.style.height=H+"px";
+  ctx.scale(dpr,dpr);
+  const gw=Math.floor(W/GS),gh=Math.floor(H/GS);
+  imgData=ctx.createImageData(gw,gh);
+  pixels=imgData.data;
+}
+
+function draw(){
+  if(!running){requestAnimationFrame(draw);return;}
+  const pal=PALETTES[Math.min(Math.floor(S.palette),3)];
+  const m=Math.floor(S.m_mode);
+  const n=Math.floor(S.n_mode);
+  const count=Math.floor(S.mode_count);
+  const amp=S.amplitude/100;
+  const decay=S.decay/100;
+  const spd=S.speed*0.006+0.01;
+  const t=frame*spd;
+  const gw=Math.floor(W/GS),gh=Math.floor(H/GS);
+
+  for(let gy=0;gy<gh;gy++){
+    for(let gx=0;gx<gw;gx++){
+      const px=gx/gw,py=gy/gh;
+      let v=0;
+      for(let k=0;k<count;k++){
+        const mk=m+k*(k%2===0?1:-1);
+        const nk=n+k*(k%2===0?-1:1);
+        const omega=Math.sqrt(mk*mk+nk*nk);
+        v+=Math.cos(mk*Math.PI*px)*Math.cos(nk*Math.PI*py)*Math.cos(omega*t+k*1.3);
+      }
+      v/=count;
+      // apply decay envelope
+      const edge=Math.min(px,1-px,py,1-py)*4;
+      v*=Math.min(1,edge)*amp;
+      // map to [0,1]
+      const norm=(v+1)*0.5;
+      const lo=pal.lo,hi=pal.hi;
+      const r=lo[0]*(1-norm)+hi[0]*norm;
+      const g=lo[1]*(1-norm)+hi[1]*norm;
+      const b=lo[2]*(1-norm)+hi[2]*norm;
+      const i=(gy*gw+gx)*4;
+      pixels[i]=r;pixels[i+1]=g;pixels[i+2]=b;pixels[i+3]=255;
+    }
+  }
+
+  const tmpCv=document.createElement("canvas");tmpCv.width=gw;tmpCv.height=gh;
+  tmpCv.getContext("2d").putImageData(imgData,0,0);
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(tmpCv,0,0,W,H);
+
+  if(experimentalPhysics){
+    cv.style.transform=`translate3d(${Math.sin(frame*0.017)*3}px,${Math.cos(frame*0.013)*2}px,0)`;
+    cv.style.filter="contrast(1.08) saturate(1.1)";
+  } else {cv.style.transform="";cv.style.filter="";}
+
+  frame++;requestAnimationFrame(draw);
+}
+
+function buildCtls(){
+  ctlsEl.innerHTML="";
+  CONTROLS.forEach(([k,label,mn,mx,st])=>{
+    const d=document.createElement("div");d.className="ctl";
+    d.innerHTML=`<div class="head"><span>${label}</span><b>${S[k]}</b></div><input type="range" min="${mn}" max="${mx}" step="${st}" value="${S[k]}">`;
+    d.querySelector("input").addEventListener("input",e=>{S[k]=+e.target.value;d.querySelector("b").textContent=S[k];});
+    ctlsEl.appendChild(d);
+  });
+}
+
+function randomize(){
+  CONTROLS.forEach(([k,label,mn,mx,st])=>{
+    S[k]=Math.round((mn+(mx-mn)*(0.1+Math.random()*0.8))/st)*st;
+  });
+  buildCtls();
+}
+
+document.getElementById("play").addEventListener("click",e=>{running=!running;e.target.textContent=running?"pause":"play";});
+document.getElementById("rnd").addEventListener("click",randomize);
+document.getElementById("rst").addEventListener("click",()=>{CONTROLS.forEach(([k,,,,v])=>S[k]=v);buildCtls();});
+document.getElementById("png").addEventListener("click",()=>{const a=document.createElement("a");a.download="noixzy_standing_wave.png";a.href=cv.toDataURL();a.click();});
+document.getElementById("experimental-physics").addEventListener("change",e=>{experimentalPhysics=e.target.checked;});
+window.addEventListener("resize",resize);
+buildCtls();resize();draw();
+</script>
+</body>
+</html>

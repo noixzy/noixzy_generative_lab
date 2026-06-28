@@ -1,0 +1,27 @@
+batch: batch_11_cosmos_nano_zen_20260627
+date: 2026-06-27
+project_folder: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab
+output_folder: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates
+
+cosmos_handoff_lookup_path:
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/logs
+result: no cosmos handoff files found in escrow logs path; continued with provided module list.
+
+created_or_verified_module_files:
+- workspace/module_escrow_20260627/candidates/noixzy_boids_ink_current.html
+- workspace/module_escrow_20260627/candidates/noixzy_cellular_rake_tiles.html
+- workspace/module_escrow_20260627/candidates/noixzy_recursive_kintsugi_array.html
+- workspace/module_escrow_20260627/candidates/noixzy_shodo_vector_field.html
+- workspace/module_escrow_20260627/candidates/noixzy_particle_moss_orbits.html
+- workspace/module_escrow_20260627/candidates/noixzy_wave_sand_interference.html
+- workspace/module_escrow_20260627/candidates/noixzy_torii_depth_lattice.html
+- workspace/module_escrow_20260627/candidates/noixzy_bonsai_circuit_growth.html
+- workspace/module_escrow_20260627/candidates/noixzy_pressure_thread_physics.html
+- workspace/module_escrow_20260627/candidates/noixzy_zen_caustic_relief.html
+
+shared_runtime_verified:
+- workspace/module_escrow_20260627/candidates/noixzy_batch_11_runtime.js
+
+escrow_shell_wiring:
+- workspace/module_escrow_20260627/escrow_shell.html
+status: safe and wired for all 10 batch modules.

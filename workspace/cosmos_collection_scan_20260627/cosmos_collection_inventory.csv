@@ -1,0 +1,9 @@
+file_path,file_type,file_name,size_kb,last_modified,description
+/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026/experiment_seed_data.json,JSON,experiment_seed_data.json,12,"2026-06-27","20 card experiments with full system details"
+/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026/experiment_manifest.json,JSON,experiment_manifest.json,28,"2026-06-27","Manifest: 16 categories, flags, status types"
+/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026/experiment_cards.js,JavaScript,experiment_cards.js,8,"2026-06-27","Card rendering and interaction logic"
+/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026/experiment_index.html,HTML,experiment_index.html,8,"2026-06-27","Experiment browser interface"
+/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026/experiment_styles.css,CSS,experiment_styles.css,5,"2026-06-27","Card grid and control styling"
+/Users/noixzy.macbookpro/Documents/cosmos_batch_clean_hero_polish_pass_v1.py,Python,cosmos_batch_clean_hero_polish_pass_v1.py,42,"2026-06-27","Blender material/lighting/camera polish automation"
+/Volumes/noixzy\ T5\ EVO\ SSD/ASSET\ LIBRARY/______newDemo\ Renders/*_card_*.png,PNG,Card renders (26+),2400,"2026-06-27","Hero card sweep renders 1920x1080"
+/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/noixzy_experiment_engine_27062026/notes/noixzy_experiment_engine_notes_27062026.md,Markdown,experiment_engine_notes.md,4,"2026-06-27","Development notes and handoff"

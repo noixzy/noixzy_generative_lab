@@ -6,5 +6,7 @@ planning_dashboard/dashboard_preview.png
 __pycache__/
 *.pyc
 *.log
+*.pid
 _rollback_*/
 _panic_backup_*/
+node_modules/

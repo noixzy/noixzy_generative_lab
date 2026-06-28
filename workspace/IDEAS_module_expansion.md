@@ -3,6 +3,24 @@
 _A long menu. Skim, annotate, mark keepers. Nothing here is committed._
 _Built on top of OVERVIEW / HANDOFF / FUTURE_INSTALLMENTS — this goes broader and deeper, and tries not to repeat what you already have queued._
 
+## Escrow batch note — math/nano systems added 2026-06-27
+
+Fresh escrow directions to continue developing as full modules: Lenia kernel gardens, superformula shell stacks, falling sand microphysics, cyclic cellular-automata spiral reactors, strange attractor dust fields, Fourier epicycle arrays, hitomezashi stitch matrices, thin-film interference bands, spectrogram ridge terrain, and magnetic dipole linework. Next adjacent ideas: Gosper curve city plans, turmite masonry, quasicrystal diffraction gardens, IFS fern scaffolds, modular Wang tile machines, BZ reaction rings, spectral ribbon bridges, and nano kitbash lattices.
+
+
+
+## Escrow batch note - generated Batch 16
+
+Generated exactly 10 additional escrow/unified-shell modules: hyperbolic horocycle garden, circle inversion shrine, Clifford attractor loom, Perlin dune ridgelines, Voronoi foam relief, braid group knotfield, CSG relic assembler, reaction vein atlas, radial barcode topography, and cellular masonry automata. This batch extends the visual language into hyperbolic geometry, inversion recursion, chaotic point fields, terrain/noise ridges, computational topology, boolean kit assembly, and polar data architecture.
+
+## Escrow batch note - generated Batch 15
+
+Generated exactly 10 new escrow modules from workspace algorithmic-art notes: Peano curve archipelago, Gaussian integer orbits, dragon curve scaffold, Menger void array, Julia contour relic, Turing morphogenesis field, Eden percolation sprawl, triangulated signal mesh, origami Miura fold, and Gray-Scott preset bank. These extend the Batch 14 path into space-filling curves, complex integer lattices, recursive void systems, complex dynamics, morphogenesis, stochastic growth, mesh triangulation, fold geometry, and curated reaction-diffusion families.
+
+## Escrow batch note — unexplored 10 generated as Batch 14
+
+Batch 14 translates the queued next-unexplored set into escrow candidates: Gosper curve city plans, turmite masonry, quasicrystal diffraction gardens, IFS fern scaffolds, Wang tile machines, BZ reaction rings, spectral ribbon bridges, nano kitbash lattices, Escher tessellation morphs, and Modulor/golden-ratio grid systems. Continue next with Gosper/Peano/Gaussian integer curves, turmite rule banks, Penrose diffraction variants, IFS dragon curves, and constructive-solid-geometry nano relics.
+
 ---
 
 ## How to read this

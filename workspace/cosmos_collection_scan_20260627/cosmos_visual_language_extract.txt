@@ -1,0 +1,323 @@
+===== COSMOS VISUAL SYSTEM LANGUAGE EXTRACTION =====
+Date: 2026-06-27
+Source: experiment_seed_data.json (20 cards), experiment_manifest.json, cosmos_batch_clean_hero_polish_pass_v1.py
+
+------- PRIMARY FORMS (Recurring Across Collections) -------
+
+GEOMETRIC PRIMITIVES:
+  • Cube (chamfered/beveled edges emphasis)
+  • Sphere (in array/voronoi distributions)
+  • Plane (fractured, displaced, subdivided)
+  • Cylinder (tower/column arrays)
+  • Torus (harmonic/resonance geometry)
+  • Arch/Curve (Gothic, parametric splines)
+
+SECONDARY FORMS (Derived Geometry):
+  • Fractured planes (Cubist decomposition)
+  • Displaced surfaces (Baroque ornament undulation)
+  • Particle trails (force-field trajectories)
+  • Volumetric clouds (atmospheric fill)
+  • Apertures/voids (negative space primary)
+  • Point clouds (perceived 3D depth mapping)
+
+------- SIGNATURE MECHANISMS & CONSTRUCTION LOGIC -------
+
+PROCEDURAL SYSTEMS:
+  1. Geometry Nodes Array Distribution
+     → Grid/hex/radial array base
+     → Per-element instance variation
+     → Recursive nesting (array within array)
+     → Boolean operations chained (union, difference, intersection)
+
+  2. Force-Field Organization
+     → Attractor points (centralized or distributed)
+     → Repeller zones (void/negative space generation)
+     → Vortex fields (directional swirl/spiral)
+     → Turbulence noise (chaotic variation)
+     → Particle system with curve guides
+
+  3. Displacement Field Deformation
+     → Noise texture (multiple octaves, layered)
+     → Audio frequency mapping (FFT bands → displacement strength)
+     → Wave function interference (moire generation)
+     → Vertex shader displacement (GPU-efficient)
+
+  4. Boolean Operations (SDF & Geometry Nodes)
+     → Smooth union (SDF blending)
+     → Hard subtraction (carved voids)
+     → Intersection (cross-section reveals)
+     → Sequential chaining (mod A then B then C)
+
+SUPPORT SYSTEMS:
+  • Camera path (orbit, push-through, slow drift)
+  • Lighting rig (key + fill + rim standard)
+  • Material assignment (4-8 material types typical)
+  • Subdivision surface (for smoothness control)
+  • Bevel modifier (micro-bevel = 0.018 standard)
+  • Weighted normal modifier (geometry readability)
+
+------- MATERIAL LANGUAGE -------
+
+MATERIAL TYPOLOGY SYSTEM:
+
+Concrete/Stone (Mineral Base):
+  • Roughness: 0.60-0.68
+  • Metallic: 0.0
+  • Bump strength: 0.020-0.036
+  • Bump scale: 34-46
+  • Use case: Brutalist architecture, structural forms
+  • Color palette: Grays, ochres, raw umbers
+
+Glass/Translucent:
+  • Alpha: 0.64
+  • Roughness: 0.34
+  • Transmission Weight: 0.35
+  • IOR: 1.45
+  • Bump strength: 0.010 (subtle)
+  • Bump scale: 82 (fine detail)
+  • Use case: Apertures, volumetric fill, portal transparency
+  • Color palette: Clear to tinted, stained glass jewel tones
+
+Metal (Reflective):
+  • Metallic: 0.34 (brushed finish)
+  • Roughness: 0.48
+  • Bump strength: 0.018 (directional surface)
+  • Bump scale: 68
+  • Use case: Accent elements, frames, structural highlights
+  • Color palette: Silvers, coppers, bronzes, graphite
+
+Generic/Hybrid:
+  • Roughness: 0.60
+  • Metallic: 0.08 (slight metallic tint)
+  • Bump strength: 0.020
+  • Use case: Default surface, blended materials
+
+Emissive (Self-Illuminating):
+  • Emission Strength: 0.65-1.45 (audio-driven typical)
+  • Roughness: 0.38
+  • Use case: Window interiors, neon, audio-reactive elements
+  • Color palette: Warm yellows, cool cyans, RGB separation possible
+
+------- LIGHTING LANGUAGE -------
+
+LIGHT STRATEGY:
+
+Key Light:
+  • Direction: 45° horizontal, 35° vertical
+  • Intensity: Multiplied by scene complexity (0.5-1.2 scaling)
+  • Type: Sun lamp (directional) typical, spot for caustics
+
+Fill Light:
+  • Opposite key, reduced intensity (0.2-0.4x key)
+  • Creates rim definition, reduces shadow harshness
+
+Rim/Back Light:
+  • Rim position: Behind subject at 180°
+  • Intensity: 0.3-0.6x key
+  • Creates edge separation and depth
+
+Volumetric/Atmospheric:
+  • Volumetric fog enabled
+  • World volume shader (Principled Volume typical)
+  • Density: 0.01-0.05 (subtle atmospheric depth)
+  • God rays from directional lights
+
+Emission-Driven (Audio Hook):
+  • Material emission multiplied by audio band
+  • FFT frequency mapping: Bass→reds, Mids→greens, Highs→blues
+  • Typical audio bands: 8-32 frequency divisions
+  • Intensity modulation: 0.65-1.45 range
+
+Caustic Rendering:
+  • Cycles glass shader with caustics enabled
+  • Light paths optimized for performance
+  • Bounce count: 4-6 (quality/speed tradeoff)
+  • Refraction quality: "Accurate" setting
+
+------- CAMERA LANGUAGE -------
+
+CAMERA CINEMATOGRAPHY:
+
+Orbit Motion:
+  • Center: Scene geometric center (auto-calculated)
+  • Radius: 2.0-5.0x scene bounds
+  • Speed: Slow (30-60 frames for 360°)
+  • FOV: 50-70° (standard narrative)
+
+Push-Through Camera:
+  • Approach vector: Along Z-axis (toward camera)
+  • Speed: Accelerating or ease-in
+  • Destination: Tight frame detail/aperture
+  • Depth of field: Slight focus falloff (0.5-1.0 f-stop)
+
+Drift Motion:
+  • Lateral and vertical slow pan
+  • Speed: Very slow (90-180 frames per pass)
+  • Follows visual hierarchy/negative space
+
+Slow Zoom:
+  • FOV fade (50° → 70° or reverse)
+  • Duration: 30-60 frames
+  • Synced to audio envelope (optional)
+
+------- NEGATIVE SPACE STRATEGY -------
+
+VOID GEOMETRY & APERTURE DESIGN:
+
+Primary Void Principles:
+  1. Apertures define form more than solid
+     → Windows in towers (punctuation)
+     → Portals between volumes (navigation)
+     → Passages through mass (spatial revelation)
+
+  2. Negative space as compositional grid
+     → Breathing room between array elements
+     → Ratio: 1:1 to 1:3 solid/void typical
+     → Void as visual counterpoint
+
+  3. Absence as material
+     → Darkness = depth cue
+     → Transparency = permeability
+     → Shadow edge = structural definition
+
+  4. Aperture rendering
+     → Black interior (no geometry behind)
+     → Rim lit edge (0.2-0.5 intensity)
+     → Implies infinite depth
+
+------- SCALE LOGIC -------
+
+DIMENSIONAL THINKING:
+
+Relative Scale:
+  • Reference object size: 1.0 units (baseline)
+  • Array repetition: 3-20x repetitions (density variation)
+  • Hierarchy: Large→medium→small (visual readability)
+  • Camera distance: 2-10x object size (framing comfort)
+
+Perceived Magnitude:
+  • Brutalist scale: Monumental (10x-100x human)
+  • Detail scale: Intimate (0.1x-1x human)
+  • Microstructure: Fractal (same logic at 10 scales)
+
+Scale Transitions:
+  • Zoom reveals detail (camera push-through)
+  • Array scale variation (size gradient)
+  • Frequency shift (high-detail close, low-detail far)
+
+------- FAILURE MODES (What Doesn't Work) -------
+
+Anti-Patterns Evident in System:
+
+  ✗ Over-smoothing (loss of structural edge definition)
+    → Solution: Micro-bevel 0.018 + weighted normal modifier
+
+  ✗ Flat lighting (no depth cues)
+    → Solution: Rim light + volumetric fog mandatory
+
+  ✗ Uniform material assignment (visual monotony)
+    → Solution: Material variation per object type (concrete/glass/metal)
+
+  ✗ Random chaos (no organizational logic)
+    → Solution: Grid/array/force-field base, then variation
+
+  ✗ Motion blur breakdown (ghosting artifacts)
+    → Solution: Particle system curve guides (smooth paths)
+
+  ✗ Caustic over-rendering (performance crater)
+    → Solution: Limited light bounce count (4-6 max)
+
+------- SUCCESS MODES (What Works) -------
+
+Consistent Success Patterns:
+
+  ✓ Historical art period + computational execution
+    → Bauhaus typography + geometry nodes grid = strong aesthetic
+    → Gothic vaults + volumetric light = believable atmosphere
+    → Constructivism geometry + SDF boolean = modern credibility
+
+  ✓ Audio integration as design principle (not decoration)
+    → Material emission driven by music frequencies
+    → Geometry transformation synced to rhythm
+    → Creates narrative causality (form follows sound)
+
+  ✓ Multi-scale fractality
+    → Same construction logic at macro and micro scales
+    → Creates visual coherence and pattern resonance
+
+  ✓ Void geometry priority
+    → Apertures before solids in compositional thinking
+    → Generates architectural legitimacy
+
+  ✓ Material coherence (concrete→glass→metal typology)
+    → Unified approach to surface treatment
+    → Reduces jarring transitions
+
+------- BLENDER EXECUTION STRATEGY -------
+
+PRODUCTION WORKFLOW:
+
+Geometry Nodes Proceduralism:
+  1. Base primitive (cube, sphere, plane)
+  2. Array node (distribution pattern)
+  3. Boolean geometry node (subtraction/intersection)
+  4. Instances to mesh (cache for rendering)
+  5. Subdivision surface (smoothness)
+  6. Bevel modifier (edge definition)
+  7. Weighted normal modifier (shading quality)
+
+Material Pipeline:
+  1. Create 4-8 material base (mineral/glass/metal/emissive)
+  2. Assign per object type (not per face)
+  3. Add noise bump to each (layer detail)
+  4. Rename with prefix "nxz_clean_" (production flag)
+  5. Audio driver on emission (if audio-reactive)
+
+Lighting Setup:
+  1. Sun lamp (key) at 45/35 degrees
+  2. Second sun lamp (fill) at 180/35 degrees, 0.3x intensity
+  3. Spot lamp (rim) at 180/-35 degrees
+  4. World volume shader (density 0.01-0.05)
+  5. Caustics enabled in Cycles (if glass present)
+
+Camera Configuration:
+  1. Focus on scene center
+  2. Distance: auto-calculated from bounds
+  3. FOV: 60° (balanced perspective)
+  4. Depth of field: 0.7 f-stop (subtle focus fall-off)
+  5. Track to empty (orbit target)
+
+Render Settings:
+  1. Samples: 256-512 (quality/speed tradeoff)
+  2. Light bounces: 4-6 (performance consideration)
+  3. Caustics: enabled (light physics)
+  4. Volumetric: enabled (atmospheric depth)
+  5. Output: 1920x1080 PNG 16-bit
+
+------- GEOMETRY NODES OPPORTUNITIES -------
+
+UNEXPLORED PROCEDURAL POSSIBILITIES:
+
+  • Point distribute on surfaces (scatter+instance)
+  • Curve to mesh with animation (animated splines)
+  • Attribute-driven color (per-instance color variation)
+  • Math node cascades (complex transformation logic)
+  • Simulation nodes (particle birth/death, physics)
+  • Baking to geometry (cache procedural results)
+  • Crossover with Shader Editor (attribute reading)
+  • Custom instancer logic (conditional spawning)
+
+------- STATUS: EXTRACTION COMPLETE -------
+
+Visual Language Summary:
+  Cosmos system defines procedural visual idiom grounded in:
+  • Architectural form language (Brutalism → Baroque historical range)
+  • Audio-driven material/geometry transformation
+  • Force-field particle organization
+  • Void geometry as primary design intent
+  • Multi-scale fractal repetition
+  • Material typology (concrete/glass/metal gradient)
+  • Camera as narrative device (orbit/push-through/drift)
+  • Negative space as equal visual weight to positive form
+
+This language forms the foundation for next escrow-shell module batch.

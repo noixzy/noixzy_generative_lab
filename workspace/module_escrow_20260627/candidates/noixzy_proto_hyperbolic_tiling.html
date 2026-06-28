@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>noixzy hyperbolic tiling</title>
+<style>
+:root{color-scheme:dark;--a:#c0a8d0;--t:#e8e1d4;--m:#8c877d}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#030304;color:var(--t);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+body{display:grid;grid-template-columns:minmax(0,1fr) 280px}
+main{min-width:0;min-height:0;background:#030304}
+canvas{display:block;width:100%;height:100%}
+aside{border-left:1px solid #2a2a2a;background:#0e0e0e;padding:14px;overflow-y:auto}
+h1{margin:0 0 4px;font-size:13px;font-weight:500;text-transform:lowercase}
+.sub{color:var(--m);font-size:10px;line-height:1.5;margin-bottom:12px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+button{height:32px;border:1px solid #333;background:#141414;color:var(--t);font:inherit;font-size:10px;cursor:pointer;letter-spacing:.04em}
+button:hover{border-color:#555}
+.row{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;margin-bottom:10px}
+.row span{font-size:10px;color:var(--m)}
+input[type=text]{width:100%;background:#070707;border:1px solid #2e2e2e;color:var(--t);padding:7px;font:inherit;font-size:10px}
+.ctl{border-top:1px solid #1e1e1e;padding:8px 0}
+.head{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:var(--m)}
+.head b{font-weight:400;color:var(--a)}
+input[type=range]{width:100%;accent-color:var(--a)}
+.note{color:#444;font-size:9px;line-height:1.5;margin-top:12px;border-top:1px solid #1a1a1a;padding-top:8px}
+.physics-toggle{display:flex;align-items:center;gap:8px;margin:10px 0 12px;padding:9px 0;border-top:1px solid #222;border-bottom:1px solid #222;color:var(--m);font-size:10px}
+.physics-toggle input{accent-color:var(--a)}
+</style>
+</head>
+<body>
+<main><canvas id="cv"></canvas></main>
+<aside>
+  <h1>noixzy hyperbolic tiling</h1>
+  <p class="sub">poincaré disk hyperbolic tiling — infinite symmetry in finite space · sacred geometry · ritual mathematics</p>
+  <div class="btns">
+    <button id="play">pause</button>
+    <button id="rnd">randomize</button>
+    <button id="rst">reset</button>
+    <button id="png">save png</button>
+  </div>
+  <div class="row"><span>seed</span><input id="seed" value="hyperbolic-001" spellcheck="false"></div>
+  <div id="ctls"></div>
+  <label class="physics-toggle"><input id="experimental-physics" type="checkbox"> experimental physics</label>
+  <p class="note">escrow proto · geometric batch · 2026-06-27<br>poincaré disk: Möbius transformation tiling with {p,q} symmetry groups</p>
+</aside>
+<script>
+const CONTROLS=[
+  ["p_sym","p symmetry",3,9,1,5],
+  ["q_sym","q symmetry",3,8,1,4],
+  ["depth","recursion depth",1,6,1,4],
+  ["line_w","line weight",1,5,1,2],
+  ["rotation","rotation",0,360,1,0],
+  ["animate","animate speed",0,100,1,18],
+  ["palette","palette",0,3,1,2]
+];
+
+const PALETTES=[
+  {bg:"#030304",line:"rgba(192,168,208,",fill0:"rgba(18,14,28,",fill1:"rgba(28,22,40,"},
+  {bg:"#030304",line:"rgba(140,200,160,",fill0:"rgba(12,22,14,",fill1:"rgba(18,30,20,"},
+  {bg:"#030304",line:"rgba(200,180,140,",fill0:"rgba(20,16,10,",fill1:"rgba(30,24,14,"},
+  {bg:"#030304",line:"rgba(140,180,210,",fill0:"rgba(10,14,22,",fill1:"rgba(16,20,32,"}
+];
+
+const cv=document.getElementById("cv");
+const ctx=cv.getContext("2d");
+const ctlsEl=document.getElementById("ctls");
+const seedEl=document.getElementById("seed");
+const S={};
+CONTROLS.forEach(([k,,,,v])=>S[k]=v);
+let W=1,H=1,dpr=1,frame=0,running=true,experimentalPhysics=false;
+
+// Möbius transformation: z → (z - a) / (1 - conj(a)*z) in Poincaré disk
+function mobius(zr,zi,ar,ai){
+  // (z-a) / (1 - conj(a)*z)
+  const nr=zr-ar,ni=zi-ai;
+  const dr=1-(ar*zr+ai*zi),di=-(ar*zi-ai*zr);
+  const denom=dr*dr+di*di;
+  return [(nr*dr+ni*di)/denom,(ni*dr-nr*di)/denom];
+}
+
+// reflect point through geodesic defined by two disk boundary points
+function reflectThrough(zr,zi,pr,pi,qr,qi){
+  // inversion: reflect z in the circle through p,q orthogonal to unit disk
+  // simplified: reflect in the geodesic arc
+  // use Möbius: T(z) that maps p→0, then reflect (negate x), then T^{-1}
+  const [tr,ti]=mobius(zr,zi,pr,pi);
+  // reflect: negate imaginary to get across the real axis in transformed space
+  const [ur,ui]=mobius(tr,-ti,-pr,-pi);
+  return [ur,ui];
+}
+
+function drawTile(zr,zi,depth,color){
+  if(depth<=0)return;
+  if(zr*zr+zi*zi>=1)return;
+  const pal=PALETTES[Math.min(Math.floor(S.palette),3)];
+  const p=S.p_sym,q=S.q_sym;
+  const n=p;
+  const R=Math.min(W,H)*0.44;
+  const cx=W/2,cy=H/2;
+  // draw a regular polygon centered at (zr,zi) in hyperbolic space
+  ctx.beginPath();
+  for(let k=0;k<n;k++){
+    const angle=(2*Math.PI*k/n)+S.rotation*Math.PI/180+(frame*S.animate*0.0002);
+    // vertex in Poincaré: move from center by a hyperbolic distance
+    const r=0.55/Math.sqrt(n);
+    const [vr,vi]=mobius(r*Math.cos(angle),r*Math.sin(angle),-zr,-zi);
+    const sx=cx+vr*R,sy=cy+vi*R;
+    k===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+  }
+  ctx.closePath();
+  ctx.fillStyle=color%2===0?pal.fill0+"0.92)":pal.fill1+"0.92)";
+  ctx.fill();
+  ctx.strokeStyle=pal.line+(0.3+depth*0.12)+")";
+  ctx.lineWidth=S.line_w*(0.4+depth*0.15);
+  ctx.stroke();
+}
+
+function tesselate(zr,zi,depth,color,visited){
+  const key=`${Math.round(zr*100)},${Math.round(zi*100)}`;
+  if(visited.has(key)||depth<=0)return;
+  if(zr*zr+zi*zi>=0.98)return;
+  visited.add(key);
+  drawTile(zr,zi,depth,color);
+  const p=S.p_sym,q=S.q_sym;
+  for(let k=0;k<p;k++){
+    const angle=2*Math.PI*k/p+S.rotation*Math.PI/180;
+    const r=0.55/Math.sqrt(p);
+    const nr=zr+Math.cos(angle)*r*0.7;
+    const ni=zi+Math.sin(angle)*r*0.7;
+    if(nr*nr+ni*ni<0.96)tesselate(nr,ni,depth-1,color+1,visited);
+  }
+}
+
+function draw(){
+  if(!running){requestAnimationFrame(draw);return;}
+  const pal=PALETTES[Math.min(Math.floor(S.palette),3)];
+  ctx.fillStyle=pal.bg;
+  ctx.fillRect(0,0,W,H);
+  // draw unit disk boundary
+  const R=Math.min(W,H)*0.44;
+  ctx.beginPath();ctx.arc(W/2,H/2,R,0,Math.PI*2);
+  ctx.strokeStyle="rgba(255,255,255,0.06)";ctx.lineWidth=1;ctx.stroke();
+  // tesselate
+  const visited=new Set();
+  tesselate(0,0,Math.floor(S.depth),0,visited);
+
+  if(experimentalPhysics){
+    cv.style.transform=`translate3d(${Math.sin(frame*0.017)*3}px,${Math.cos(frame*0.013)*2}px,0) rotate(${Math.sin(frame*0.008)*0.3}deg)`;
+    cv.style.filter="contrast(1.05)";
+  } else {cv.style.transform="";cv.style.filter="";}
+  frame++;requestAnimationFrame(draw);
+}
+
+function buildCtls(){
+  ctlsEl.innerHTML="";
+  CONTROLS.forEach(([k,label,mn,mx,st])=>{
+    const d=document.createElement("div");d.className="ctl";
+    d.innerHTML=`<div class="head"><span>${label}</span><b>${S[k]}</b></div><input type="range" min="${mn}" max="${mx}" step="${st}" value="${S[k]}">`;
+    d.querySelector("input").addEventListener("input",e=>{S[k]=+e.target.value;d.querySelector("b").textContent=S[k];});
+    ctlsEl.appendChild(d);
+  });
+}
+
+function randomize(){
+  CONTROLS.forEach(([k,label,mn,mx,st])=>{
+    const bias=/depth|recursion/.test(k)?0.3:0.1+Math.random()*0.6;
+    S[k]=Math.round((mn+(mx-mn)*bias)/st)*st;
+  });
+  buildCtls();
+}
+
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  const rect=cv.parentElement.getBoundingClientRect();
+  W=rect.width;H=rect.height;
+  cv.width=W*dpr;cv.height=H*dpr;
+  cv.style.width=W+"px";cv.style.height=H+"px";
+  ctx.scale(dpr,dpr);
+}
+
+document.getElementById("play").addEventListener("click",e=>{running=!running;e.target.textContent=running?"pause":"play";});
+document.getElementById("rnd").addEventListener("click",randomize);
+document.getElementById("rst").addEventListener("click",()=>{CONTROLS.forEach(([k,,,,v])=>S[k]=v);buildCtls();});
+document.getElementById("png").addEventListener("click",()=>{const a=document.createElement("a");a.download="noixzy_hyperbolic_tiling.png";a.href=cv.toDataURL();a.click();});
+document.getElementById("experimental-physics").addEventListener("change",e=>{experimentalPhysics=e.target.checked;});
+window.addEventListener("resize",resize);
+buildCtls();resize();draw();
+</script>
+</body>
+</html>

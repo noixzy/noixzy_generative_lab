@@ -144,65 +144,58 @@ select:hover { border-color:var(--accent); }
 .seedLabel { display:block; line-height:1.12; }
 .seedRead { display:block; margin-top:4px; color:var(--dim); font-size:10px; line-height:1; letter-spacing:.08em; }
   /* NOIXZY_GEOMETRY_ONLY_MODE */
-  /* Geometry-only viewport: lock viewport to canvas, hide UI chrome. */
-  html, body {
-    margin:0 !important;
-    padding:0 !important;
+  /* Add class="geoOnly" to <body> to activate canvas-only mode (thumbnail capture, export). */
+  body.geoOnly {
+    position:fixed !important;
+    inset:0 !important;
     width:100% !important;
     height:100% !important;
     overflow:hidden !important;
     background:#000 !important;
   }
-  body {
-    position:fixed !important;
-    inset:0 !important;
-    width:100% !important;
-    height:100% !important;
-  }
-  /* Hide all UI elements by display:none so they don't reserve layout space */
-  .navBar,
-  .galleryMark,
-  .navCurrent,
-  .stageThumbs,
-  #stageThumbs,
-  .panel,
-  .controls,
-  .ctrls,
-  .toolbar,
-  .toolBar,
-  .console,
-  .consolePanel,
-  .consoleRule,
-  .side,
-  .sidebar,
-  .leftPanel,
-  .rightPanel,
-  .params,
-  .paramPanel,
-  .favPanel,
-  .btns,
-  .seed,
-  button,
-  select,
-  input,
-  textarea,
-  label,
-  footer,
-  header,
-  .stageTools,
-  #stageTools,
-  .previewHistory,
-  #previewHistory,
-  .favs,
-  #favs,
-  .stageFavs,
-  #stageFavs {
+  body.geoOnly .navBar,
+  body.geoOnly .galleryMark,
+  body.geoOnly .navCurrent,
+  body.geoOnly .stageThumbs,
+  body.geoOnly #stageThumbs,
+  body.geoOnly .panel,
+  body.geoOnly .controls,
+  body.geoOnly .ctrls,
+  body.geoOnly .toolbar,
+  body.geoOnly .toolBar,
+  body.geoOnly .console,
+  body.geoOnly .consolePanel,
+  body.geoOnly .consoleRule,
+  body.geoOnly .side,
+  body.geoOnly .sidebar,
+  body.geoOnly .leftPanel,
+  body.geoOnly .rightPanel,
+  body.geoOnly .params,
+  body.geoOnly .paramPanel,
+  body.geoOnly .favPanel,
+  body.geoOnly .btns,
+  body.geoOnly .seed,
+  body.geoOnly button,
+  body.geoOnly select,
+  body.geoOnly input,
+  body.geoOnly textarea,
+  body.geoOnly label,
+  body.geoOnly footer,
+  body.geoOnly header,
+  body.geoOnly .stageTools,
+  body.geoOnly #stageTools,
+  body.geoOnly .previewHistory,
+  body.geoOnly #previewHistory,
+  body.geoOnly .favs,
+  body.geoOnly #favs,
+  body.geoOnly .stageFavs,
+  body.geoOnly #stageFavs {
     display:none !important;
     visibility:hidden !important;
     pointer-events:none !important;
   }
-  /* Ensure stage fills the locked viewport and canvas does not create scrollbars */
-  .stage, #stage {
+  body.geoOnly .stage,
+  body.geoOnly #stage {
     position:fixed !important;
     inset:0 !important;
     width:100vw !important;
@@ -210,7 +203,7 @@ select:hover { border-color:var(--accent); }
     overflow:hidden !important;
     background:#000 !important;
   }
-  .stage canvas {
+  body.geoOnly .stage canvas {
     display:block !important;
     width:100% !important;
     height:100% !important;

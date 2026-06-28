@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noixzy brutalist massing slabs</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050505;
+      --panel: #101010;
+      --line: #2d2d2d;
+      --text: #e7e2d8;
+      --muted: #8f8a82;
+      --accent: #c9b27c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 292px;
+      min-height: 100vh;
+    }
+
+    main {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,255,255,.055), transparent 35%),
+        linear-gradient(180deg, #0b0b0b 0%, #030303 100%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    aside {
+      border-left: 1px solid var(--line);
+      background: rgba(12, 12, 12, .96);
+      padding: 14px;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: lowercase;
+    }
+
+    .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid #383838;
+      background: #171717;
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      text-transform: lowercase;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+
+    .seed-row {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .seed-row span {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: lowercase;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+    }
+
+    .control {
+      margin-bottom: 16px;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .control-head label {
+      color: var(--muted);
+      text-transform: lowercase;
+    }
+
+    .control-head .value {
+      color: var(--text);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 3px;
+      background: #2a2a2a;
+      outline: none;
+      appearance: none;
+    }
+
+    .physics-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 12px;
+      padding: 9px 0;
+      border-top: 1px solid #222;
+      border-bottom: 1px solid #222;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: lowercase;
+    }
+
+    .physics-toggle input { accent-color: var(--accent); }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--accent);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="view"></canvas>
+  </main>
+
+  <aside>
+    <h1>noixzy brutalist massing slabs</h1>
+    <p class="sub">horizontal emphasis, stacked plates, floating masses, cantilevers, datum lines</p>
+
+    <div class="buttons">
+      <button id="randomize">randomize</button>
+      <button id="reset">reset</button>
+      <button id="play">pause</button>
+      <button id="export">export png</button>
+    </div>
+
+    <div class="seed-row">
+      <span>seed</span>
+      <input id="seed" type="text" value="noixzy-slabs-001" spellcheck="false">
+    </div>
+    <div id="controls"></div>
+    <label class="physics-toggle"><input id="experimental-physics" type="checkbox"> experimental physics</label>
+  </aside>
+
+  <script>
+    const defaults = {
+      layers: 12,
+      slabWidth: 88,
+      slabDepth: 35,
+      slabHeight: 18,
+      overhang: 48,
+      offsetVar: 35,
+      voidRatio: 25,
+      compression: 65,
+      rotation: 22
+    };
+
+    const controlDefs = [
+      ["layers", "layers", 4, 24, 1],
+      ["slabWidth", "slab width", 40, 140, 1],
+      ["slabDepth", "slab depth", 15, 80, 1],
+      ["slabHeight", "slab height", 8, 40, 1],
+      ["overhang", "overhang", 0, 80, 1],
+      ["offsetVar", "offset variance", 0, 80, 1],
+      ["voidRatio", "void ratio", 0, 60, 1],
+      ["compression", "vertical compression", 20, 100, 1],
+      ["rotation", "rotation", -45, 45, 1]
+    ];
+
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const controls = document.getElementById("controls");
+    const seedInput = document.getElementById("seed");
+    const playButton = document.getElementById("play");
+    const values = {};
+    let state = { ...defaults };
+    let running = true;
+    let frame = 0;
+    let width = 1;
+    let height = 1;
+    let dpr = 1;
+    let experimentalPhysics = false;
+    function randomBiasFor(label) {
+      const k = String(label).toLowerCase();
+      if (/palette|material|color|hue/.test(k)) return Math.random();
+      if (/density|count|grid|cells|points|nodes|modules|bays|divisions|segments|cracks|repeats/.test(k)) return 0.38 + Math.random() * 0.62;
+      if (/extrude|depth|height|stack|layer|relief|bump|displace|amplitude|thickness|width|size|scale|cantilever|perspective|slab|fin|mullion|erosion/.test(k)) return 0.28 + Math.random() * 0.72;
+      if (/offset|jitter|noise|field|force|twist|warp|phase|bias|rotation|entropy|feedback|pressure|void|variation|fracture/.test(k)) return 0.12 + Math.random() * 0.76;
+      if (/line|stroke|shadow/.test(k)) return 0.18 + Math.random() * 0.62;
+      return 0.15 + Math.random() * 0.7;
+    }
+    function snapToStep(value, min, max, step) {
+      const safeStep = Number(step) || 1;
+      const snapped = Math.round(value / safeStep) * safeStep;
+      return Math.max(Number(min), Math.min(Number(max), Number.isInteger(safeStep) ? Math.round(snapped) : Number(snapped.toFixed(3))));
+    }
+    function randomizeModuleControls() {
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const value = snapToStep(min + (max - min) * randomBiasFor(label || key), min, max, step);
+        state[key] = value;
+        const input = document.getElementById(key);
+        if (input) input.value = value;
+        if (values[key]) values[key].textContent = value;
+      });
+      experimentalPhysics = Math.random() > 0.55;
+      const physics = document.getElementById("experimental-physics");
+      if (physics) physics.checked = experimentalPhysics;
+      applyExperimentalPhysics();
+    }
+    function applyExperimentalPhysics() {
+      const dx = experimentalPhysics ? Math.sin(frame * 0.017) * 4.5 : 0;
+      const dy = experimentalPhysics ? Math.cos(frame * 0.013) * 3.5 : 0;
+      const breathe = experimentalPhysics ? 1 + Math.sin(frame * 0.011) * 0.004 : 1;
+      canvas.style.transformOrigin = "50% 50%";
+      canvas.style.transform = experimentalPhysics ? `translate3d(${dx}px, ${dy}px, 0) scale(${breathe})` : "";
+      canvas.style.filter = experimentalPhysics ? "contrast(1.06) saturate(1.08)" : "";
+    }
+
+
+    function hashString(text) {
+      let hash = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function randomSource(seed) {
+      let t = hashString(seed) || 1;
+      return function random() {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function shade(hex, amount) {
+      const n = parseInt(hex.slice(1), 16);
+      const r = clamp((n >> 16) + amount, 0, 255);
+      const g = clamp(((n >> 8) & 255) + amount, 0, 255);
+      const b = clamp((n & 255) + amount, 0, 255);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function buildControls() {
+      controls.innerHTML = "";
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const wrap = document.createElement("div");
+        wrap.className = "control";
+        wrap.innerHTML = `
+          <div class="control-head">
+            <label for="${key}">${label}</label>
+            <span class="value" id="${key}Value">${state[key]}</span>
+          </div>
+          <input id="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${state[key]}">
+        `;
+        controls.appendChild(wrap);
+        values[key] = wrap.querySelector(".value");
+        wrap.querySelector("input").addEventListener("input", event => {
+          state[key] = Number(event.target.value);
+          values[key].textContent = state[key];
+          draw();
+        });
+      });
+    }
+
+    function resizeCanvas() {
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = canvas.getBoundingClientRect();
+      width = Math.max(320, Math.floor(rect.width));
+      height = Math.max(260, Math.floor(rect.height));
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function isoPoint(x, y, z, cfg) {
+      const angle = (Math.PI / 4) + cfg.rotationRad;
+      const ca = Math.cos(angle);
+      const sa = Math.sin(angle);
+      const rx = x * ca - y * sa;
+      const ry = x * sa + y * ca;
+      return {
+        x: cfg.cx + rx * cfg.scale,
+        y: cfg.cy + (ry * cfg.perspective - z) * cfg.scale
+      };
+    }
+
+    function polygon(points, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+    }
+
+    function drawSlab(slab, cfg) {
+      const x0 = slab.x;
+      const x1 = slab.x + slab.w;
+      const y0 = slab.y;
+      const y1 = slab.y + slab.d;
+      const z0 = slab.z;
+      const z1 = slab.z + slab.h;
+      const base = slab.color;
+      const edge = "rgba(0,0,0,.62)";
+
+      const p000 = isoPoint(x0, y0, z0, cfg);
+      const p100 = isoPoint(x1, y0, z0, cfg);
+      const p110 = isoPoint(x1, y1, z0, cfg);
+      const p010 = isoPoint(x0, y1, z0, cfg);
+      const p001 = isoPoint(x0, y0, z1, cfg);
+      const p101 = isoPoint(x1, y0, z1, cfg);
+      const p111 = isoPoint(x1, y1, z1, cfg);
+      const p011 = isoPoint(x0, y1, z1, cfg);
+
+      // Shadow
+      const shadowOffset = 15;
+      polygon([
+        { x: p000.x + shadowOffset, y: p000.y + shadowOffset * .5 },
+        { x: p100.x + shadowOffset, y: p100.y + shadowOffset * .5 },
+        { x: p110.x + shadowOffset, y: p110.y + shadowOffset * .5 },
+        { x: p010.x + shadowOffset, y: p010.y + shadowOffset * .5 }
+      ], `rgba(0,0,0,0.28)`);
+
+      // Faces
+      polygon([p100, p110, p111, p101], shade(base, -38), edge);
+      polygon([p010, p110, p111, p011], shade(base, -58), edge);
+      polygon([p001, p101, p111, p011], shade(base, 25), edge);
+
+      // Voids if present
+      if (slab.voids && slab.voids.length > 0) {
+        slab.voids.forEach(v => {
+          const vx0 = x0 + v.x;
+          const vx1 = x0 + v.x + v.w;
+          const vy0 = y0 + v.y;
+          const vy1 = y0 + v.y + v.d;
+          
+          const v0 = isoPoint(vx0, vy0, z1 + 0.02, cfg);
+          const v1 = isoPoint(vx1, vy0, z1 + 0.02, cfg);
+          const v2 = isoPoint(vx1, vy1, z1 + 0.02, cfg);
+          const v3 = isoPoint(vx0, vy1, z1 + 0.02, cfg);
+          
+          polygon([v0, v1, v2, v3], "rgba(8,8,8,.88)", "rgba(200,195,180,.18)");
+        });
+      }
+
+      // Datum lines (thin horizontal bands)
+      if (slab.datumLines) {
+        ctx.strokeStyle = "rgba(50,48,45,.6)";
+        ctx.lineWidth = 0.8;
+        const lineCount = 3;
+        for (let i = 1; i < lineCount; i++) {
+          const lineZ = z0 + (slab.h * i / lineCount);
+          const l0 = isoPoint(x0, y0, lineZ, cfg);
+          const l1 = isoPoint(x1, y0, lineZ, cfg);
+          ctx.beginPath();
+          ctx.moveTo(l0.x, l0.y);
+          ctx.lineTo(l1.x, l1.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    function generateSlabs() {
+      const random = randomSource(`${seedInput.value}|slabs`);
+      const slabs = [];
+      const palette = ["#8e8a80", "#9d9890", "#7c7f7a", "#a8a399", "#707370"];
+      const layers = state.layers;
+      const wBase = state.slabWidth / 10;
+      const dBase = state.slabDepth / 10;
+      const hBase = state.slabHeight / 10;
+      const overhangFactor = state.overhang / 100;
+      const offsetVar = state.offsetVar / 100;
+      const voidRatio = state.voidRatio / 100;
+      const compression = state.compression / 100;
+
+      let currentZ = 0;
+      
+      for (let i = 0; i < layers; i++) {
+        const w = lerp(wBase * 0.7, wBase * 1.4, random());
+        const d = lerp(dBase * 0.6, dBase * 1.3, random());
+        const h = lerp(hBase * 0.8, hBase * 1.2, random());
+        
+        // Horizontal offset with overhang
+        const offsetX = (random() - 0.5) * w * overhangFactor + (random() - 0.5) * offsetVar * 4;
+        const offsetY = (random() - 0.5) * d * overhangFactor * 0.6 + (random() - 0.5) * offsetVar * 2;
+        
+        const x = offsetX - w / 2;
+        const y = offsetY - d / 2;
+        const z = currentZ;
+
+        // Voids
+        const voids = [];
+        if (random() < voidRatio) {
+          const numVoids = Math.floor(random() * 2) + 1;
+          for (let v = 0; v < numVoids; v++) {
+            voids.push({
+              x: w * (0.15 + random() * 0.3),
+              y: d * (0.2 + random() * 0.4),
+              w: w * (0.15 + random() * 0.25),
+              d: d * (0.3 + random() * 0.4)
+            });
+          }
+        }
+
+        slabs.push({
+          x, y, z, w, d, h,
+          color: palette[Math.floor(random() * palette.length)],
+          voids,
+          datumLines: random() > 0.6
+        });
+
+        currentZ += h * compression;
+      }
+
+      return slabs;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, "#0d0d0d");
+      gradient.addColorStop(1, "#020202");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+
+      const cfg = {
+        cx: width * 0.5,
+        cy: height * 0.68,
+        scale: Math.min(width, height) / 32,
+        perspective: 0.5,
+        rotationRad: (state.rotation + Math.sin(frame * 0.008) * (running ? 2 : 0)) * Math.PI / 180
+      };
+
+      generateSlabs().forEach(slab => drawSlab(slab, cfg));
+
+      ctx.fillStyle = "rgba(231,226,216,.72)";
+      ctx.font = "11px ui-monospace, monospace";
+      ctx.fillText(seedInput.value || "seed", 16, height - 18);
+    }
+
+    function tick() {
+      if (running) {
+        frame++;
+        applyExperimentalPhysics();
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function randomSeed() {
+      return `noixzy-slabs-${Math.floor(Math.random() * 999999).toString(36)}`;
+    }
+
+    function resetAll() {
+      experimentalPhysics = false;
+      const physics = document.getElementById("experimental-physics");
+      if (physics) physics.checked = false;
+      applyExperimentalPhysics();
+      state = { ...defaults };
+      seedInput.value = "noixzy-slabs-001";
+      controlDefs.forEach(([key]) => {
+        const input = document.getElementById(key);
+        input.value = state[key];
+        values[key].textContent = state[key];
+      });
+      frame = 0;
+      draw();
+    }
+
+    function exportPng() {
+      draw();
+      const link = document.createElement("a");
+      link.download = `noixzy_brutalist_massing_slabs_${seedInput.value || "seed"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    const physicsToggle = document.getElementById("experimental-physics");
+    if (physicsToggle) physicsToggle.addEventListener("change", () => {
+      experimentalPhysics = physicsToggle.checked;
+      applyExperimentalPhysics();
+      draw();
+    });
+
+    seedInput.addEventListener("input", draw);
+    playButton.addEventListener("click", () => {
+      running = !running;
+      playButton.textContent = running ? "pause" : "play";
+      draw();
+    });
+    document.getElementById("randomize").addEventListener("click", () => {
+      seedInput.value = randomSeed();
+      randomizeModuleControls();
+      draw();
+    });
+    document.getElementById("reset").addEventListener("click", resetAll);
+    document.getElementById("export").addEventListener("click", exportPng);
+    window.addEventListener("resize", resizeCanvas);
+
+    buildControls();
+    resizeCanvas();
+    tick();
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+=== NOIXZY AUTOMATED AGENT MONITOR ===
+Sat Jun 27 07:18:18 EDT 2026
+
+ROOT: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab
+REPORT: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/agent_ops_20260627/monitor_reports/noixzy_agent_monitor_20260627_071818.txt
+
+=== GIT STATUS ===
+ D _ha_button_wiring_audit.txt
+ D _rollback_reaction_diffusion_20260624_140210/noixzy_reaction_diffusion.before_rollback.html
+ D _rollback_reaction_extrude_20260624_145503/build_lab.before_extrude_rollback.js
+ D _rollback_reaction_total_20260624_141218/build_lab.before_total_reaction_rollback.js
+ D _rollback_reaction_total_20260624_141218/noixzy_reaction_diffusion.before_total_rollback.html
+ D algorithmic_art_ideas_sort_20260626.md
+ D algorithmic_art_roadmap_clean_20260626.md
+ D build_lab.js.bak_before_cxcy
+ D build_lab.js.bak_before_reaction_correct_defaults
+ D build_lab.js.bak_before_reaction_crisper_thinner
+ D build_lab.js.bak_before_reaction_defaults_from_screenshot
+ D build_lab.js.bak_before_reaction_esize_extreme
+ D build_lab.js.bak_before_reaction_esize_fix
+ D build_lab.js.bak_before_reaction_extrude_animation_fix
+ D build_lab.js.bak_before_reaction_extrude_edge_mask
+ D build_lab.js.bak_before_reaction_extrude_size
+ D build_lab.js.bak_before_reaction_feed_cap
+ D build_lab.js.bak_before_reaction_final_defaults
+ D build_lab.js.bak_before_reaction_form_animation
+ D build_lab.js.bak_before_reaction_heightmap_inset_sample
+ D build_lab.js.bak_before_reaction_kill_floor
+ D build_lab.js.bak_before_reaction_lighten
+ D build_lab.js.bak_before_reaction_medium_dialdown
+ D build_lab.js.bak_before_reaction_perf
+ D build_lab.js.bak_before_reaction_seedspots_max030
+ D build_lab.js.bak_before_reaction_sharper_edges
+ D build_lab.js.bak_before_reaction_spots_cap
+ D build_lab.js.bak_before_reaction_thin_white_forms
+ D build_lab.js.bak_before_reaction_thinner_lines
+ D build_lab.js.bak_before_reaction_tight_defaults
+ D build_lab.js.bak_before_reaction_visual_thin
+ D build_lab.js.bak_before_truchet_extrude_rollback
+ D build_lab.js.bak_fix_truchet_b_duplicate_speed
+ D build_lab.js.bak_fix_truchet_heightfield_hypot
+ D build_lab.js.bak_force_truchet_weight_heightfield
+ D build_lab.js.bak_input_listener_rr_support
+ D build_lab.js.bak_surgical_undo_truchet_extrude_experiment
+ D build_lab.js.bak_truchet_remove_smoothstep
+ D build_lab.js.bak_truchet_weight_rr
+ D fold/noixzy_fold.html
+ D noixzy_lab_shell_v1.html
+ M workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing.html
+ M workspace/module_escrow_20260627/escrow_shell.html
+?? _archive/backup_files_20260627/
+?? _archive/docs_notes_20260627/
+?? _archive/fold/
+?? _archive/noixzy_lab_shell_v1.html
+?? noixzy_start_5hr_agent_monitor.sh
+?? workspace/NGL_UNIFIED_SHELL_HANDOFF_20260627.md
+?? workspace/agent_ops_20260627/
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_asymmetric.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_cantilever.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_chambers.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_cluster.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_folded.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_linear.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_mat.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_megaform.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_modular.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_slabs.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_split.html
+?? workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_towers.html
+?? workspace/module_escrow_20260627/candidates/noixzy_entropy_mask_field.html
+?? workspace/module_escrow_20260627/candidates/noixzy_parametric_shell.html
+?? workspace/module_escrow_20260627/candidates/noixzy_structural_grid.html
+?? workspace/module_escrow_20260627/index.html
+?? workspace/noixzy_experiment_engine_27062026/
+
+=== NEWEST HTML, LAST 6 HOURS ===
+-rw-r--r--@ 1 noixzy.macbookpro  staff   1066 Jun 27 07:01 ./workspace/noixzy_experiment_engine_27062026/experiment_index.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  17680 Jun 27 06:08 ./workspace/module_escrow_20260627/candidates/noixzy_entropy_mask_field.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  11139 Jun 27 06:00 ./workspace/module_escrow_20260627/escrow_shell.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15220 Jun 27 05:59 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_chambers.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15044 Jun 27 05:58 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_split.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15108 Jun 27 05:57 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_asymmetric.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14502 Jun 27 05:55 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_linear.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14067 Jun 27 05:54 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_modular.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14038 Jun 27 05:53 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_folded.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14391 Jun 27 05:52 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_mat.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14919 Jun 27 05:51 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_cantilever.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14730 Jun 27 05:50 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_cluster.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14158 Jun 27 05:50 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_megaform.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14145 Jun 27 05:49 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_slabs.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15396 Jun 27 05:34 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_towers.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14666 Jun 27 05:23 ./workspace/module_escrow_20260627/candidates/noixzy_structural_grid.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  12214 Jun 27 05:22 ./workspace/module_escrow_20260627/candidates/noixzy_parametric_shell.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff    677 Jun 27 05:21 ./workspace/module_escrow_20260627/index.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15605 Jun 27 04:55 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  13814 Jun 27 03:08 ./workspace/module_escrow_20260627/candidates/noixzy_concrete_relief.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  13132 Jun 27 03:08 ./workspace/module_escrow_20260627/candidates/noixzy_modernist_facade.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  18155 Jun 27 01:37 ./unified_shell.html
+
+=== RECENT AGENT / PROMPT / HANDOFF FILES, LAST 6 HOURS ===
+-rw-r--r--@ 1 noixzy.macbookpro  staff  7183 Jun 27 07:18 ./workspace/agent_ops_20260627/monitor_reports/noixzy_agent_monitor_20260627_071818.txt
+-rw-r--r--@ 1 noixzy.macbookpro  staff   244 Jun 27 07:18 ./workspace/agent_ops_20260627/noixzy_5hr_agent_monitor.log
+-rw-r--r--@ 1 noixzy.macbookpro  staff     6 Jun 27 07:18 ./workspace/agent_ops_20260627/noixzy_5hr_agent_monitor.pid
+-rwxr-xr-x@ 1 noixzy.macbookpro  staff  3590 Jun 27 07:18 ./noixzy_start_5hr_agent_monitor.sh
+-rw-r--r--@ 1 noixzy.macbookpro  staff  1574 Jun 27 07:01 ./workspace/noixzy_experiment_engine_27062026/notes/noixzy_experiment_engine_notes_27062026.md
+-rw-r--r--@ 1 noixzy.macbookpro  staff  9187 Jun 27 02:06 ./workspace/NGL_UNIFIED_SHELL_HANDOFF_20260627.md
+
+=== MODULE ESCROW CANDIDATES ===
+-rw-r--r--@ 1 noixzy.macbookpro  staff  17680 Jun 27 06:08 ./workspace/module_escrow_20260627/candidates/noixzy_entropy_mask_field.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15220 Jun 27 05:59 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_chambers.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15044 Jun 27 05:58 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_split.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15108 Jun 27 05:57 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_asymmetric.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14502 Jun 27 05:55 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_linear.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14067 Jun 27 05:54 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_modular.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14038 Jun 27 05:53 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_folded.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14391 Jun 27 05:52 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_mat.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14919 Jun 27 05:51 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_cantilever.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14730 Jun 27 05:50 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_cluster.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14158 Jun 27 05:50 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_megaform.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14145 Jun 27 05:49 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_slabs.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15396 Jun 27 05:34 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_towers.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  14666 Jun 27 05:23 ./workspace/module_escrow_20260627/candidates/noixzy_structural_grid.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  12214 Jun 27 05:22 ./workspace/module_escrow_20260627/candidates/noixzy_parametric_shell.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  15605 Jun 27 04:55 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  13814 Jun 27 03:08 ./workspace/module_escrow_20260627/candidates/noixzy_concrete_relief.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff  13132 Jun 27 03:08 ./workspace/module_escrow_20260627/candidates/noixzy_modernist_facade.html
+
+=== CANDIDATE HTML QUICK INSPECT ===
+
+--- ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_modular.html
+-rw-r--r--@ 1 noixzy.macbookpro  staff    14K Jun 27 05:54 ./workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing_modular.html
+signals:
+  <title>noixzy brutalist massing modular</title>
+    <canvas id="view"></canvas>
+    function drawModule(mod, cfg) {
+      const modules = [];
+    function draw() {
+      requestAnimationFrame(tick);
+      link.download = `noixzy_brutalist_massing_modular_${seedInput.value || "seed"}.png`;
+blank-risk:

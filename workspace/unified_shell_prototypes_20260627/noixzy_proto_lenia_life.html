@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>noixzy lenia life</title>
+<style>
+:root{color-scheme:dark;--a:#92b892;--t:#e8e1d4;--m:#8c877d}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#030303;color:var(--t);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+body{display:grid;grid-template-columns:minmax(0,1fr) 286px}
+main{min-width:0;min-height:0;position:relative}
+canvas{display:block;width:100%;height:100%}
+aside{border-left:1px solid #222;background:#0c0c0c;padding:14px;overflow-y:auto}
+h1{margin:0 0 3px;font-size:12px;font-weight:500;text-transform:lowercase;letter-spacing:.04em}
+.sub{color:var(--m);font-size:9px;line-height:1.55;margin-bottom:12px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.btns4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+button{height:30px;border:1px solid #2e2e2e;background:#111;color:var(--t);font:inherit;font-size:9px;cursor:pointer;letter-spacing:.04em;transition:border-color .12s}
+button:hover{border-color:#505050;background:#181818}
+button.active-btn{border-color:var(--a);color:var(--a)}
+.row{display:grid;grid-template-columns:50px 1fr;gap:8px;align-items:center;margin-bottom:10px}
+.row span{font-size:9px;color:var(--m)}
+input[type=text]{width:100%;background:#060606;border:1px solid #262626;color:var(--t);padding:6px;font:inherit;font-size:9px}
+.section{border-top:1px solid #1a1a1a;padding:10px 0 4px;margin-top:2px}
+.section-label{font-size:8px;letter-spacing:.12em;color:#444;text-transform:lowercase;margin-bottom:8px}
+.ctl{padding:5px 0}
+.head{display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px;color:var(--m)}
+.head b{font-weight:400;color:var(--a)}
+input[type=range]{width:100%;accent-color:var(--a);height:14px}
+.preset-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.preset-btn{height:22px;padding:0 7px;font-size:8px;letter-spacing:.04em;border:1px solid #2a2a2a;background:#0d0d0d;color:#666;cursor:pointer;transition:all .12s}
+.preset-btn:hover,.preset-btn.sel{border-color:var(--a);color:var(--a);background:#0d100d}
+.stats{font-size:8px;color:#3a3a3a;margin-top:8px;letter-spacing:.04em}
+.note{color:#383838;font-size:8px;line-height:1.5;margin-top:10px;border-top:1px solid #181818;padding-top:8px}
+@media(max-width:760px){body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}aside{border-left:0;border-top:1px solid #222;max-height:44vh;overflow-y:auto}}
+</style>
+</head>
+<body>
+<main><canvas id="cv"></canvas></main>
+<aside>
+  <h1>noixzy lenia life</h1>
+  <p class="sub">continuous cellular automaton — living organisms from smooth-domain growth functions · ring kernel convolution · motion-native showpiece</p>
+
+  <div class="btns">
+    <button id="play">pause</button>
+    <button id="png">save png</button>
+  </div>
+  <div class="btns">
+    <button id="rnd">randomize</button>
+    <button id="rst">reset</button>
+  </div>
+  <div class="row"><span>seed</span><input id="seed" value="lenia-001" spellcheck="false"></div>
+
+  <div class="section">
+    <div class="section-label">species presets</div>
+    <div class="preset-row" id="presets"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">kernel</div>
+    <div class="ctl"><div class="head"><span>radius</span><b id="v-radius">9</b></div><input type="range" id="r-radius" min="3" max="20" step="1" value="9"></div>
+    <div class="ctl"><div class="head"><span>ring peak</span><b id="v-peak">0.5</b></div><input type="range" id="r-peak" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="ctl"><div class="head"><span>ring width</span><b id="v-rwidth">0.15</b></div><input type="range" id="r-rwidth" min="0.02" max="0.5" step="0.01" value="0.15"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">growth</div>
+    <div class="ctl"><div class="head"><span>center μ</span><b id="v-mu">0.14</b></div><input type="range" id="r-mu" min="0.01" max="0.5" step="0.01" value="0.14"></div>
+    <div class="ctl"><div class="head"><span>width σ</span><b id="v-sigma">0.014</b></div><input type="range" id="r-sigma" min="0.003" max="0.12" step="0.001" value="0.014"></div>
+    <div class="ctl"><div class="head"><span>time step</span><b id="v-dt">0.1</b></div><input type="range" id="r-dt" min="0.01" max="0.5" step="0.01" value="0.1"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">world</div>
+    <div class="ctl"><div class="head"><span>init density</span><b id="v-density">0.18</b></div><input type="range" id="r-density" min="0.02" max="0.8" step="0.01" value="0.18"></div>
+    <div class="ctl"><div class="head"><span>palette</span><b id="v-palette">0</b></div><input type="range" id="r-palette" min="0" max="4" step="1" value="0"></div>
+  </div>
+
+  <div class="stats" id="stats">— × —</div>
+  <p class="note">lenia (B. W-C. Chan 2019) · continuous CA producing drifting organisms · ring kernel convolution · proto unified shell candidate · 2026-06-27</p>
+</aside>
+<script>
+// ─── Lenia engine ───────────────────────────────────────────────────────────
+
+const PRESETS = [
+  { name:"orbium",   R:13, peak:0.5,  rw:0.15, mu:0.15,  sigma:0.015, dt:0.1,  density:0.12 },
+  { name:"aquarium", R:9,  peak:0.5,  rw:0.20, mu:0.14,  sigma:0.014, dt:0.1,  density:0.18 },
+  { name:"hydroge",  R:8,  peak:0.5,  rw:0.15, mu:0.28,  sigma:0.022, dt:0.15, density:0.2  },
+  { name:"scutium",  R:11, peak:0.45, rw:0.12, mu:0.12,  sigma:0.012, dt:0.08, density:0.14 },
+  { name:"dendrite", R:7,  peak:0.5,  rw:0.22, mu:0.35,  sigma:0.04,  dt:0.2,  density:0.3  },
+];
+
+const PALETTES = [
+  // verdant
+  (v) => { const t=v; return [Math.round(t*80+3), Math.round(t*170+18), Math.round(t*80+6), 255]; },
+  // ocean
+  (v) => { const t=v; return [Math.round(t*80+4), Math.round(t*120+20), Math.round(t*200+40), 255]; },
+  // amber
+  (v) => { return [Math.round(v*220+18), Math.round(v*140+8), Math.round(v*20+4), 255]; },
+  // monochrome
+  (v) => { const b=Math.round(v*240); return [b,b,b,255]; },
+  // lavender
+  (v) => { return [Math.round(v*160+40), Math.round(v*120+30), Math.round(v*220+50), 255]; },
+];
+
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function mkRng(s){let t=hash(s)||1;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^(t>>>15),1|t);r^=r+Math.imul(r^(r>>>7),61|r);return((r^(r>>>14))>>>0)/4294967296;};}
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+let GW=1, GH=1, CELL=3;
+let grid, next;
+let kernel, kernelR, kernelSum;
+let frame=0, running=true;
+let imgData, pixels;
+let bufCv = document.createElement('canvas');
+let bufCtx = bufCv.getContext('2d');
+let frameCount=0, lastTime=performance.now(), fps=0;
+
+// params
+let P = { R:9, peak:0.5, rw:0.15, mu:0.14, sigma:0.014, dt:0.1, density:0.18, palette:0 };
+
+function bell(x, mu, sigma){ return Math.exp(-0.5*((x-mu)/sigma)**2); }
+
+function buildKernel(){
+  kernelR = Math.max(2, P.R);
+  const D = 2*kernelR+1;
+  kernel = new Float32Array(D*D);
+  kernelSum = 0;
+  for(let dy=-kernelR; dy<=kernelR; dy++){
+    for(let dx=-kernelR; dx<=kernelR; dx++){
+      const d = Math.sqrt(dx*dx+dy*dy)/kernelR;
+      if(d<=1){
+        const v = bell(d, P.peak, P.rw);
+        kernel[(dy+kernelR)*D+(dx+kernelR)] = v;
+        kernelSum += v;
+      }
+    }
+  }
+}
+
+function resize(){
+  const rect = cv.parentElement.getBoundingClientRect();
+  const W=rect.width, H=rect.height;
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+  GW=Math.floor(W/CELL); GH=Math.floor(H/CELL);
+  grid = new Float32Array(GW*GH);
+  next = new Float32Array(GW*GH);
+  bufCv.width=GW; bufCv.height=GH;
+  imgData = bufCtx.createImageData(GW, GH);
+  pixels = imgData.data;
+  buildKernel();
+  seed();
+}
+
+function seed(){
+  const rng = mkRng(document.getElementById('seed').value + frame);
+  grid.fill(0);
+  const density = P.density;
+  // scatter live blobs
+  const blobCount = Math.max(3, Math.round(density*30));
+  for(let b=0; b<blobCount; b++){
+    const cx=Math.floor(rng()*GW), cy=Math.floor(rng()*GH);
+    const r = 4 + Math.floor(rng()*8);
+    for(let dy=-r; dy<=r; dy++){
+      for(let dx=-r; dx<=r; dx++){
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<r){
+          const ix=((cx+dx)+GW)%GW, iy=((cy+dy)+GH)%GH;
+          grid[iy*GW+ix] = Math.max(grid[iy*GW+ix], bell(d/r, 0.3, 0.25)*(0.5+rng()*0.5));
+        }
+      }
+    }
+  }
+  frame=0;
+}
+
+function step(){
+  const D=2*kernelR+1;
+  const mu=P.mu, sigma=P.sigma, dt=P.dt;
+  for(let gy=0; gy<GH; gy++){
+    for(let gx=0; gx<GW; gx++){
+      let sum=0;
+      for(let ky=0; ky<D; ky++){
+        const sy=((gy-kernelR+ky)+GH)%GH;
+        const krow=ky*D;
+        for(let kx=0; kx<D; kx++){
+          const sx=((gx-kernelR+kx)+GW)%GW;
+          sum += kernel[krow+kx]*grid[sy*GW+sx];
+        }
+      }
+      const U = sum/kernelSum;
+      const growth = 2*bell(U, mu, sigma)-1;
+      next[gy*GW+gx] = Math.max(0, Math.min(1, grid[gy*GW+gx] + dt*growth));
+    }
+  }
+  const tmp=grid; grid=next; next=tmp;
+}
+
+function render(){
+  const palFn = PALETTES[Math.min(Math.floor(P.palette), PALETTES.length-1)];
+  for(let i=0; i<GW*GH; i++){
+    const v=grid[i];
+    const [r,g,b,a]=palFn(v);
+    const p=i*4;
+    pixels[p]=r; pixels[p+1]=g; pixels[p+2]=b; pixels[p+3]=a;
+  }
+
+  bufCtx.putImageData(imgData, 0, 0);
+  const W=cv.width/(window.devicePixelRatio||1);
+  const H=cv.height/(window.devicePixelRatio||1);
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(bufCv, 0, 0, W, H);
+}
+
+function draw(){
+  if(running){
+    step();
+    render();
+    frame++;
+    frameCount++;
+    const now=performance.now();
+    if(now-lastTime>1000){ fps=Math.round(frameCount*1000/(now-lastTime)); frameCount=0; lastTime=now; document.getElementById('stats').textContent=`${GW}×${GH} grid · ${fps} fps · frame ${frame}`; }
+  }
+  requestAnimationFrame(draw);
+}
+
+// ─── Controls ────────────────────────────────────────────────────────────────
+
+const sliders = [
+  ['radius','R',1], ['peak','peak',0.01], ['rwidth','rw',0.001],
+  ['mu','mu',0.001], ['sigma','sigma',0.001], ['dt','dt',0.01],
+  ['density','density',0.01], ['palette','palette',1]
+];
+
+sliders.forEach(([id, key, step])=>{
+  const inp = document.getElementById('r-'+id);
+  const val = document.getElementById('v-'+id);
+  inp.addEventListener('input', ()=>{
+    P[key] = +inp.value;
+    val.textContent = inp.value;
+    if(id==='radius'||id==='peak'||id==='rwidth') buildKernel();
+  });
+});
+
+function applyPreset(p, idx){
+  P.R=p.R; P.peak=p.peak; P.rw=p.rw; P.mu=p.mu; P.sigma=p.sigma; P.dt=p.dt; P.density=p.density;
+  document.getElementById('r-radius').value=P.R; document.getElementById('v-radius').textContent=P.R;
+  document.getElementById('r-peak').value=P.peak; document.getElementById('v-peak').textContent=P.peak;
+  document.getElementById('r-rwidth').value=P.rw; document.getElementById('v-rwidth').textContent=P.rw;
+  document.getElementById('r-mu').value=P.mu; document.getElementById('v-mu').textContent=P.mu;
+  document.getElementById('r-sigma').value=P.sigma; document.getElementById('v-sigma').textContent=P.sigma;
+  document.getElementById('r-dt').value=P.dt; document.getElementById('v-dt').textContent=P.dt;
+  document.getElementById('r-density').value=P.density; document.getElementById('v-density').textContent=P.density;
+  document.querySelectorAll('.preset-btn').forEach((b,i)=>b.classList.toggle('sel', i===idx));
+  buildKernel(); seed();
+}
+
+const presetsEl = document.getElementById('presets');
+PRESETS.forEach((p,i)=>{
+  const b=document.createElement('button');
+  b.className='preset-btn'+(i===1?' sel':'');
+  b.textContent=p.name;
+  b.addEventListener('click',()=>applyPreset(p,i));
+  presetsEl.appendChild(b);
+});
+
+document.getElementById('play').addEventListener('click', e=>{
+  running=!running;
+  e.target.textContent=running?'pause':'play';
+});
+document.getElementById('rnd').addEventListener('click', ()=>{
+  P.R=3+Math.floor(Math.random()*16);
+  P.peak=0.3+Math.random()*0.4;
+  P.rw=0.05+Math.random()*0.3;
+  P.mu=0.05+Math.random()*0.35;
+  P.sigma=0.005+Math.random()*0.06;
+  P.dt=0.05+Math.random()*0.25;
+  sliders.forEach(([id,key])=>{
+    const inp=document.getElementById('r-'+id);
+    if(inp&&P[key]!==undefined){inp.value=P[key];document.getElementById('v-'+id).textContent=P[key];}
+  });
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('sel'));
+  buildKernel(); seed();
+});
+document.getElementById('rst').addEventListener('click', ()=>{ applyPreset(PRESETS[1], 1); });
+document.getElementById('png').addEventListener('click', ()=>{
+  const a=document.createElement('a');
+  a.download=`noixzy_lenia_life_${frame}.png`;
+  a.href=cv.toDataURL(); a.click();
+});
+document.getElementById('seed').addEventListener('change', seed);
+
+window.addEventListener('resize', ()=>{ resize(); });
+resize();
+applyPreset(PRESETS[1], 1);
+draw();
+</script>
+</body>
+</html>

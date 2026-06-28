@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noixzy brutalist massing chambers</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050505;
+      --panel: #101010;
+      --line: #2d2d2d;
+      --text: #e7e2d8;
+      --muted: #8f8a82;
+      --accent: #c9b27c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 292px;
+      min-height: 100vh;
+    }
+
+    main {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,255,255,.055), transparent 35%),
+        linear-gradient(180deg, #0b0b0b 0%, #030303 100%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    aside {
+      border-left: 1px solid var(--line);
+      background: rgba(12, 12, 12, .96);
+      padding: 14px;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: lowercase;
+    }
+
+    .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid #383838;
+      background: #171717;
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      text-transform: lowercase;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+
+    .seed-row {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .seed-row span {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: lowercase;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+    }
+
+    .control {
+      margin-bottom: 16px;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .control-head label {
+      color: var(--muted);
+      text-transform: lowercase;
+    }
+
+    .control-head .value {
+      color: var(--text);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 3px;
+      background: #2a2a2a;
+      outline: none;
+      appearance: none;
+    }
+
+    .physics-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 12px;
+      padding: 9px 0;
+      border-top: 1px solid #222;
+      border-bottom: 1px solid #222;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: lowercase;
+    }
+
+    .physics-toggle input { accent-color: var(--accent); }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--accent);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="view"></canvas>
+  </main>
+
+  <aside>
+    <h1>noixzy brutalist massing chambers</h1>
+    <p class="sub">stacked chambers, vaulted rooms, nested enclosures, cavernous spaces, interior mass, hollow core expression</p>
+
+    <div class="buttons">
+      <button id="randomize">randomize</button>
+      <button id="reset">reset</button>
+      <button id="play">pause</button>
+      <button id="export">export png</button>
+    </div>
+
+    <div class="seed-row">
+      <span>seed</span>
+      <input id="seed" type="text" value="noixzy-cham-001" spellcheck="false">
+    </div>
+    <div id="controls"></div>
+    <label class="physics-toggle"><input id="experimental-physics" type="checkbox"> experimental physics</label>
+  </aside>
+
+  <script>
+    const defaults = {
+      chambers: 8,
+      chamberScale: 68,
+      wallThick: 32,
+      vaultDepth: 55,
+      nestedLayers: 48,
+      openingSize: 42,
+      stackHeight: 65,
+      massiveness: 75,
+      rotation: 16
+    };
+
+    const controlDefs = [
+      ["chambers", "chambers", 4, 14, 1],
+      ["chamberScale", "chamber scale", 40, 120, 1],
+      ["wallThick", "wall thickness", 15, 60, 1],
+      ["vaultDepth", "vault depth", 30, 90, 1],
+      ["nestedLayers", "nested layers", 20, 80, 1],
+      ["openingSize", "opening size", 20, 80, 1],
+      ["stackHeight", "stack height", 30, 100, 1],
+      ["massiveness", "massiveness", 40, 120, 1],
+      ["rotation", "rotation", -45, 45, 1]
+    ];
+
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const controls = document.getElementById("controls");
+    const seedInput = document.getElementById("seed");
+    const playButton = document.getElementById("play");
+    const values = {};
+    let state = { ...defaults };
+    let running = true;
+    let frame = 0;
+    let width = 1;
+    let height = 1;
+    let dpr = 1;
+    let experimentalPhysics = false;
+    function randomBiasFor(label) {
+      const k = String(label).toLowerCase();
+      if (/palette|material|color|hue/.test(k)) return Math.random();
+      if (/density|count|grid|cells|points|nodes|modules|bays|divisions|segments|cracks|repeats/.test(k)) return 0.38 + Math.random() * 0.62;
+      if (/extrude|depth|height|stack|layer|relief|bump|displace|amplitude|thickness|width|size|scale|cantilever|perspective|slab|fin|mullion|erosion/.test(k)) return 0.28 + Math.random() * 0.72;
+      if (/offset|jitter|noise|field|force|twist|warp|phase|bias|rotation|entropy|feedback|pressure|void|variation|fracture/.test(k)) return 0.12 + Math.random() * 0.76;
+      if (/line|stroke|shadow/.test(k)) return 0.18 + Math.random() * 0.62;
+      return 0.15 + Math.random() * 0.7;
+    }
+    function snapToStep(value, min, max, step) {
+      const safeStep = Number(step) || 1;
+      const snapped = Math.round(value / safeStep) * safeStep;
+      return Math.max(Number(min), Math.min(Number(max), Number.isInteger(safeStep) ? Math.round(snapped) : Number(snapped.toFixed(3))));
+    }
+    function randomizeModuleControls() {
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const value = snapToStep(min + (max - min) * randomBiasFor(label || key), min, max, step);
+        state[key] = value;
+        const input = document.getElementById(key);
+        if (input) input.value = value;
+        if (values[key]) values[key].textContent = value;
+      });
+      experimentalPhysics = Math.random() > 0.55;
+      const physics = document.getElementById("experimental-physics");
+      if (physics) physics.checked = experimentalPhysics;
+      applyExperimentalPhysics();
+    }
+    function applyExperimentalPhysics() {
+      const dx = experimentalPhysics ? Math.sin(frame * 0.017) * 4.5 : 0;
+      const dy = experimentalPhysics ? Math.cos(frame * 0.013) * 3.5 : 0;
+      const breathe = experimentalPhysics ? 1 + Math.sin(frame * 0.011) * 0.004 : 1;
+      canvas.style.transformOrigin = "50% 50%";
+      canvas.style.transform = experimentalPhysics ? `translate3d(${dx}px, ${dy}px, 0) scale(${breathe})` : "";
+      canvas.style.filter = experimentalPhysics ? "contrast(1.06) saturate(1.08)" : "";
+    }
+
+
+    function hashString(text) {
+      let hash = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function randomSource(seed) {
+      let t = hashString(seed) || 1;
+      return function random() {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function shade(hex, amount) {
+      const n = parseInt(hex.slice(1), 16);
+      const r = clamp((n >> 16) + amount, 0, 255);
+      const g = clamp(((n >> 8) & 255) + amount, 0, 255);
+      const b = clamp((n & 255) + amount, 0, 255);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function buildControls() {
+      controls.innerHTML = "";
+      controlDefs.forEach(([key, label, min, max, step]) => {
+        const wrap = document.createElement("div");
+        wrap.className = "control";
+        wrap.innerHTML = `
+          <div class="control-head">
+            <label for="${key}">${label}</label>
+            <span class="value" id="${key}Value">${state[key]}</span>
+          </div>
+          <input id="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${state[key]}">
+        `;
+        controls.appendChild(wrap);
+        values[key] = wrap.querySelector(".value");
+        wrap.querySelector("input").addEventListener("input", event => {
+          state[key] = Number(event.target.value);
+          values[key].textContent = state[key];
+          draw();
+        });
+      });
+    }
+
+    function resizeCanvas() {
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = canvas.getBoundingClientRect();
+      width = Math.max(320, Math.floor(rect.width));
+      height = Math.max(260, Math.floor(rect.height));
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function isoPoint(x, y, z, cfg) {
+      const angle = (Math.PI / 4) + cfg.rotationRad;
+      const ca = Math.cos(angle);
+      const sa = Math.sin(angle);
+      const rx = x * ca - y * sa;
+      const ry = x * sa + y * ca;
+      return {
+        x: cfg.cx + rx * cfg.scale,
+        y: cfg.cy + (ry * cfg.perspective - z) * cfg.scale
+      };
+    }
+
+    function polygon(points, fill, stroke, lineWidth = 1.2) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+    function drawChamber(chamber, cfg) {
+      const base = chamber.color;
+      const edge = "rgba(0,0,0,.7)";
+      const wallFactor = state.wallThick / 100;
+
+      // Outer mass
+      const x0 = chamber.x;
+      const x1 = chamber.x + chamber.w;
+      const y0 = chamber.y;
+      const y1 = chamber.y + chamber.d;
+      const z0 = chamber.z;
+      const z1 = chamber.z + chamber.h;
+
+      const p000 = isoPoint(x0, y0, z0, cfg);
+      const p100 = isoPoint(x1, y0, z0, cfg);
+      const p110 = isoPoint(x1, y1, z0, cfg);
+      const p010 = isoPoint(x0, y1, z0, cfg);
+      const p001 = isoPoint(x0, y0, z1, cfg);
+      const p101 = isoPoint(x1, y0, z1, cfg);
+      const p111 = isoPoint(x1, y1, z1, cfg);
+      const p011 = isoPoint(x0, y1, z1, cfg);
+
+      const shadowOffset = 20;
+      polygon([
+        { x: p000.x + shadowOffset, y: p000.y + shadowOffset * .48 },
+        { x: p100.x + shadowOffset, y: p100.y + shadowOffset * .48 },
+        { x: p110.x + shadowOffset, y: p110.y + shadowOffset * .48 },
+        { x: p010.x + shadowOffset, y: p010.y + shadowOffset * .48 }
+      ], `rgba(0,0,0,0.35)`);
+
+      polygon([p100, p110, p111, p101], shade(base, -42), edge);
+      polygon([p010, p110, p111, p011], shade(base, -62), edge);
+      polygon([p001, p101, p111, p011], shade(base, 30), edge);
+
+      // Interior chamber voids
+      if (chamber.voids && chamber.voids.length > 0) {
+        chamber.voids.forEach(voidData => {
+          const vInset = voidData.inset;
+          const vDepth = voidData.depth;
+          
+          const v0 = isoPoint(x0 + vInset, y0 + vInset, z1 - vDepth, cfg);
+          const v1 = isoPoint(x1 - vInset, y0 + vInset, z1 - vDepth, cfg);
+          const v2 = isoPoint(x1 - vInset, y1 - vInset, z1 - vDepth, cfg);
+          const v3 = isoPoint(x0 + vInset, y1 - vInset, z1 - vDepth, cfg);
+          
+          const vt0 = isoPoint(x0 + vInset, y0 + vInset, z1, cfg);
+          const vt1 = isoPoint(x1 - vInset, y0 + vInset, z1, cfg);
+          const vt2 = isoPoint(x1 - vInset, y1 - vInset, z1, cfg);
+          const vt3 = isoPoint(x0 + vInset, y1 - vInset, z1, cfg);
+
+          // Void walls
+          polygon([vt1, vt2, v2, v1], shade(base, -70), "rgba(0,0,0,.5)");
+          polygon([vt3, vt2, v2, v3], shade(base, -85), "rgba(0,0,0,.5)");
+          polygon([v0, v1, v2, v3], shade(base, -55), "rgba(0,0,0,.5)");
+        });
+      }
+
+      // Opening portal
+      if (chamber.hasOpening) {
+        const openSize = chamber.openingSize;
+        const o0 = isoPoint(x0 + openSize, y0, z0 + openSize, cfg);
+        const o1 = isoPoint(x1 - openSize, y0, z0 + openSize, cfg);
+        const o2 = isoPoint(x1 - openSize, y0, z1 - openSize, cfg);
+        const o3 = isoPoint(x0 + openSize, y0, z1 - openSize, cfg);
+        polygon([o0, o1, o2, o3], "rgba(8,8,8,.92)", "rgba(180,175,165,.25)");
+      }
+
+      // Structural ribs
+      if (chamber.showRibs) {
+        ctx.strokeStyle = "rgba(100,98,92,.5)";
+        ctx.lineWidth = 1.8;
+        const ribs = 3;
+        for (let i = 1; i <= ribs; i++) {
+          const t = i / (ribs + 1);
+          const r0 = isoPoint(lerp(x0, x1, t), y0, z0, cfg);
+          const r1 = isoPoint(lerp(x0, x1, t), y0, z1, cfg);
+          ctx.beginPath();
+          ctx.moveTo(r0.x, r0.y);
+          ctx.lineTo(r1.x, r1.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    function generateChambers() {
+      const random = randomSource(`${seedInput.value}|cham`);
+      const chambers = [];
+      const palette = ["#8a8680", "#7a7d78", "#6e706d", "#9c9790", "#aba49a"];
+      const numChambers = state.chambers;
+      const scaleFactor = state.chamberScale / 100;
+      const wallFactor = state.wallThick / 100;
+      const vaultFactor = state.vaultDepth / 100;
+      const nestedFactor = state.nestedLayers / 100;
+      const openingFactor = state.openingSize / 100;
+      const stackFactor = state.stackHeight / 100;
+      const massiveFactor = state.massiveness / 100;
+
+      for (let i = 0; i < numChambers; i++) {
+        const angle = (i / numChambers) * Math.PI * 2 + random() * 0.3;
+        const radius = 1.5 + random() * 2.5;
+        const cx = Math.cos(angle) * radius;
+        const cy = Math.sin(angle) * radius;
+        
+        const w = lerp(3, 6, random()) * scaleFactor * massiveFactor;
+        const d = lerp(2.5, 5, random()) * scaleFactor * massiveFactor;
+        const h = lerp(2, 5, random()) * stackFactor;
+        const z = Math.floor(i / 3) * 1.2 * stackFactor;
+
+        const voids = [];
+        const numVoids = Math.floor(1 + random() * 2 * nestedFactor);
+        for (let v = 0; v < numVoids; v++) {
+          voids.push({
+            inset: (0.4 + v * 0.3) * wallFactor * 2,
+            depth: (0.6 + random() * 0.8) * vaultFactor * h
+          });
+        }
+
+        chambers.push({
+          x: cx - w / 2,
+          y: cy - d / 2,
+          z, w, d, h,
+          color: palette[Math.floor(random() * palette.length)],
+          voids,
+          hasOpening: random() > 0.4,
+          openingSize: 0.3 + random() * 0.4 * openingFactor,
+          showRibs: random() > 0.5
+        });
+      }
+
+      return chambers.sort((a, b) => (a.x + a.y + a.z) - (b.x + b.y + b.z));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, "#0d0d0d");
+      gradient.addColorStop(1, "#020202");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+
+      const cfg = {
+        cx: width * 0.5,
+        cy: height * 0.64,
+        scale: Math.min(width, height) / 34,
+        perspective: 0.5,
+        rotationRad: (state.rotation + Math.sin(frame * 0.008) * (running ? 2 : 0)) * Math.PI / 180
+      };
+
+      generateChambers().forEach(chamber => drawChamber(chamber, cfg));
+
+      ctx.fillStyle = "rgba(231,226,216,.72)";
+      ctx.font = "11px ui-monospace, monospace";
+      ctx.fillText(seedInput.value || "seed", 16, height - 18);
+    }
+
+    function tick() {
+      if (running) {
+        frame++;
+        applyExperimentalPhysics();
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function randomSeed() {
+      return `noixzy-cham-${Math.floor(Math.random() * 999999).toString(36)}`;
+    }
+
+    function resetAll() {
+      experimentalPhysics = false;
+      const physics = document.getElementById("experimental-physics");
+      if (physics) physics.checked = false;
+      applyExperimentalPhysics();
+      state = { ...defaults };
+      seedInput.value = "noixzy-cham-001";
+      controlDefs.forEach(([key]) => {
+        const input = document.getElementById(key);
+        input.value = state[key];
+        values[key].textContent = state[key];
+      });
+      frame = 0;
+      draw();
+    }
+
+    function exportPng() {
+      draw();
+      const link = document.createElement("a");
+      link.download = `noixzy_brutalist_massing_chambers_${seedInput.value || "seed"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    const physicsToggle = document.getElementById("experimental-physics");
+    if (physicsToggle) physicsToggle.addEventListener("change", () => {
+      experimentalPhysics = physicsToggle.checked;
+      applyExperimentalPhysics();
+      draw();
+    });
+
+    seedInput.addEventListener("input", draw);
+    playButton.addEventListener("click", () => {
+      running = !running;
+      playButton.textContent = running ? "pause" : "play";
+      draw();
+    });
+    document.getElementById("randomize").addEventListener("click", () => {
+      seedInput.value = randomSeed();
+      randomizeModuleControls();
+      draw();
+    });
+    document.getElementById("reset").addEventListener("click", resetAll);
+    document.getElementById("export").addEventListener("click", exportPng);
+    window.addEventListener("resize", resizeCanvas);
+
+    buildControls();
+    resizeCanvas();
+    tick();
+  </script>
+</body>
+</html>

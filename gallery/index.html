@@ -170,7 +170,6 @@ const pieces=[
   ["displacement","displacement sphere","noise-displaced sphere · fbm breathing surface","loop / still","h"],
   ["displacement_primitives","displacement primitives","branched displacement module · primitive type tests","loop / shape / displacement","h"],
   ["mandelbulb","mandelbulb","power-8 fractal DE · orbit trap coloring · morph","loop / still","h"],
-  ["fold","fold","kaleidoscopic IFS · menger-style space folding","loop / still","h"],
   ["metafluid","metafluid","smooth-min SDF metaballs · animated blob merging · viscous fluid","loop / still","h"],
   ["moire_field","moire field","interference bands · animated warped line field","loop / texture / graphic","e"],
   ["particle_orbitals","particle orbitals","orbiting points and trails around attractor wells","loop / motion / particles","e"],
@@ -226,9 +225,7 @@ const g=document.getElementById("grid");
 for(const [dir,name,desc,tag,type] of pieces){
   const a=document.createElement("a");
   a.className="card";
-  a.href = dir === "grid_extrude"
-    ? `../unified_shell.html?module=${dir}`
-    : `../${dir}/noixzy_${dir}.html`;
+  a.href = `../unified_shell.html?module=${dir}`;
   const badgeCls=type==="h"?"badge badge-h":"badge badge-e";
   const badgeTxt=type==="h"?"✦ authored":"◎ generated";
   a.innerHTML=`<div class="thumb"><img src="thumbs/${dir}.png" alt="${name}">

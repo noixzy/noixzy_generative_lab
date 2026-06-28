@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>noixzy cymatics nodal lines</title>
+<style>
+:root{color-scheme:dark;--a:#d0c080;--t:#e8e1d4;--m:#8c877d}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#040404;color:var(--t);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+body{display:grid;grid-template-columns:minmax(0,1fr) 280px}
+main{min-width:0;min-height:0;background:#040404}
+canvas{display:block;width:100%;height:100%}
+aside{border-left:1px solid #2a2a2a;background:#0e0e0e;padding:14px;overflow-y:auto}
+h1{margin:0 0 4px;font-size:13px;font-weight:500;text-transform:lowercase}
+.sub{color:var(--m);font-size:10px;line-height:1.5;margin-bottom:12px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+button{height:32px;border:1px solid #333;background:#141414;color:var(--t);font:inherit;font-size:10px;cursor:pointer;letter-spacing:.04em}
+button:hover{border-color:#555}
+.row{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;margin-bottom:10px}
+.row span{font-size:10px;color:var(--m)}
+input[type=text]{width:100%;background:#070707;border:1px solid #2e2e2e;color:var(--t);padding:7px;font:inherit;font-size:10px}
+.ctl{border-top:1px solid #1e1e1e;padding:8px 0}
+.head{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:var(--m)}
+.head b{font-weight:400;color:var(--a)}
+input[type=range]{width:100%;accent-color:var(--a)}
+.note{color:#444;font-size:9px;line-height:1.5;margin-top:12px;border-top:1px solid #1a1a1a;padding-top:8px}
+.physics-toggle{display:flex;align-items:center;gap:8px;margin:10px 0 12px;padding:9px 0;border-top:1px solid #222;border-bottom:1px solid #222;color:var(--m);font-size:10px}
+.physics-toggle input{accent-color:var(--a)}
+</style>
+</head>
+<body>
+<main><canvas id="cv"></canvas></main>
+<aside>
+  <h1>noixzy cymatics nodal lines</h1>
+  <p class="sub">chladni figure nodal patterns from plate vibration modes — particles settle at zero-crossing lines · audio-native concept</p>
+  <div class="btns">
+    <button id="play">pause</button>
+    <button id="rnd">randomize</button>
+    <button id="rst">reset</button>
+    <button id="png">save png</button>
+  </div>
+  <div class="row"><span>seed</span><input id="seed" value="cymatics-001" spellcheck="false"></div>
+  <div id="ctls"></div>
+  <label class="physics-toggle"><input id="experimental-physics" type="checkbox"> experimental physics</label>
+  <p class="note">escrow proto · batch — cymatics · 2026-06-27<br>chladni: nodal lines of mode (m,n) = zeroes of cos(m·πx)·cos(n·πy) + damping</p>
+</aside>
+<script>
+const CONTROLS = [
+  ["m_mode","m mode",1,12,1,3],
+  ["n_mode","n mode",1,12,1,4],
+  ["particles","particles",200,4000,100,2200],
+  ["damping","damping",0,100,1,72],
+  ["plate_shape","plate shape",0,2,1,0],
+  ["palette","palette",0,3,1,2],
+  ["speed","anim speed",0,100,1,38]
+];
+
+const PALETTES=[
+  {bg:"#040404",node:"#c8c090",particle:"rgba(200,192,140,"},
+  {bg:"#040408",node:"#90b8c8",particle:"rgba(140,184,200,"},
+  {bg:"#060404",node:"#c09070",particle:"rgba(192,144,110,"},
+  {bg:"#040406",node:"#b8a0c8",particle:"rgba(184,160,200,"}
+];
+
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function mkRng(seed){let t=hash(seed)||1;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^(t>>>15),1|t);r^=r+Math.imul(r^(r>>>7),61|r);return((r^(r>>>14))>>>0)/4294967296;};}
+
+const cv=document.getElementById("cv");
+const ctx=cv.getContext("2d");
+const ctlsEl=document.getElementById("ctls");
+const seedEl=document.getElementById("seed");
+
+const S={};
+CONTROLS.forEach(([k,,,,v])=>S[k]=v);
+let W=1,H=1,dpr=1,frame=0,running=true,experimentalPhysics=false;
+let particles=[];
+
+function chladni(x,y,m,n,shape){
+  // normalized x,y in [-1,1]
+  if(shape===1){
+    // circular plate: Bessel-inspired approximation
+    const r=Math.sqrt(x*x+y*y);
+    const a=Math.atan2(y,x);
+    return Math.cos(m*a)*Math.cos(n*Math.PI*r);
+  } else if(shape===2){
+    // triangular approximation
+    return Math.cos(m*Math.PI*(x+y)/2)*Math.cos(n*Math.PI*(x-y)/2);
+  }
+  // square plate
+  return Math.cos(m*Math.PI*x/2)*Math.cos(n*Math.PI*y/2)+Math.cos(n*Math.PI*x/2)*Math.cos(m*Math.PI*y/2);
+}
+
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  const rect=cv.parentElement.getBoundingClientRect();
+  W=rect.width;H=rect.height;
+  cv.width=W*dpr;cv.height=H*dpr;
+  cv.style.width=W+"px";cv.style.height=H+"px";
+  ctx.scale(dpr,dpr);
+  init();
+}
+
+function init(){
+  const rng=mkRng(seedEl.value);
+  const count=Math.round(S.particles);
+  particles=[];
+  for(let i=0;i<count;i++){
+    particles.push({x:rng()*W,y:rng()*H,vx:(rng()-0.5)*2,vy:(rng()-0.5)*2});
+  }
+  ctx.fillStyle=PALETTES[Math.min(Math.floor(S.palette),3)].bg;
+  ctx.fillRect(0,0,W,H);
+}
+
+function draw(){
+  if(!running){requestAnimationFrame(draw);return;}
+  const pal=PALETTES[Math.min(Math.floor(S.palette),3)];
+  const m=Math.floor(S.m_mode);
+  const n=Math.floor(S.n_mode);
+  const damp=S.damping/100;
+  const shape=Math.floor(S.plate_shape);
+  const spd=S.speed*0.004+0.02;
+
+  // fade background
+  ctx.fillStyle=pal.bg+"e8";
+  if(pal.bg.startsWith("#")){
+    ctx.globalAlpha=0.04;
+    ctx.fillStyle=pal.bg;
+    ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha=1;
+  }
+
+  const cx=W/2,cy=H/2;
+  const scale=Math.min(W,H)*0.44;
+
+  particles.forEach(p=>{
+    const nx=(p.x-cx)/scale;
+    const ny=(p.y-cy)/scale;
+    const f=chladni(nx,ny,m,n,shape);
+    // force toward nodal lines (f=0)
+    const grad_x=(chladni(nx+0.01,ny,m,n,shape)-f)/0.01;
+    const grad_y=(chladni(nx,ny+0.01,m,n,shape)-f)/0.01;
+    const force=4.0*spd;
+    // move toward zero crossing: follow -f*grad
+    p.vx-=f*grad_x*force*scale;
+    p.vy-=f*grad_y*force*scale;
+    // damping
+    p.vx*=0.8+damp*0.15;
+    p.vy*=0.8+damp*0.15;
+    // tiny random walk
+    p.vx+=(Math.random()-0.5)*0.3*spd;
+    p.vy+=(Math.random()-0.5)*0.3*spd;
+    p.x+=p.vx;p.y+=p.vy;
+    // wrap
+    if(p.x<0)p.x+=W;if(p.x>W)p.x-=W;
+    if(p.y<0)p.y+=H;if(p.y>H)p.y-=H;
+    // draw particle
+    const alpha=Math.max(0.04,0.8-Math.abs(f)*1.2);
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,1.2,0,Math.PI*2);
+    ctx.fillStyle=pal.particle+alpha+")";
+    ctx.fill();
+  });
+
+  if(experimentalPhysics){
+    const dx=Math.sin(frame*0.017)*3;
+    const dy=Math.cos(frame*0.013)*2.5;
+    cv.style.transform=`translate3d(${dx}px,${dy}px,0)`;
+    cv.style.filter="contrast(1.06) saturate(1.05)";
+  } else {
+    cv.style.transform="";cv.style.filter="";
+  }
+
+  frame++;
+  requestAnimationFrame(draw);
+}
+
+function buildCtls(){
+  ctlsEl.innerHTML="";
+  CONTROLS.forEach(([k,label,mn,mx,st])=>{
+    const d=document.createElement("div");d.className="ctl";
+    d.innerHTML=`<div class="head"><span>${label}</span><b>${S[k]}</b></div><input type="range" min="${mn}" max="${mx}" step="${st}" value="${S[k]}">`;
+    d.querySelector("input").addEventListener("input",e=>{S[k]=+e.target.value;d.querySelector("b").textContent=S[k];});
+    ctlsEl.appendChild(d);
+  });
+}
+
+function randomBiasFor(k){
+  if(/particles|count/.test(k))return 0.4+Math.random()*0.6;
+  if(/mode/.test(k))return 0.1+Math.random()*0.5;
+  return 0.15+Math.random()*0.7;
+}
+
+function randomize(){
+  CONTROLS.forEach(([k,label,mn,mx,st])=>{
+    S[k]=Math.round((mn+(mx-mn)*randomBiasFor(k))/st)*st;
+  });
+  buildCtls();init();
+}
+
+document.getElementById("play").addEventListener("click",e=>{running=!running;e.target.textContent=running?"pause":"play";});
+document.getElementById("rnd").addEventListener("click",randomize);
+document.getElementById("rst").addEventListener("click",()=>{CONTROLS.forEach(([k,,,,v])=>S[k]=v);buildCtls();init();});
+document.getElementById("png").addEventListener("click",()=>{const a=document.createElement("a");a.download="noixzy_cymatics_nodal.png";a.href=cv.toDataURL();a.click();});
+document.getElementById("experimental-physics").addEventListener("change",e=>{experimentalPhysics=e.target.checked;});
+seedEl.addEventListener("change",init);
+
+window.addEventListener("resize",resize);
+buildCtls();
+resize();
+draw();
+</script>
+</body>
+</html>
