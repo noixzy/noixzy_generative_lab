@@ -1,0 +1,81 @@
+A01 standalone-track compatibility report
+date: 2026-06-28
+
+A01 = S.A. / standalone-track compatibility bucket
+Phase D is reserved for unified shell work and was not part of this pass.
+
+unified shell path found
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/unified_shell.html
+
+edge_extrude path found
+- no exact live `edge_extrude` source file exists in the repo.
+- implemented source basis: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/grid_extrude/noixzy_grid_extrude.html
+- reason: this is the live flagship extrude module and the closest existing source to the requested standalone `edge_extrude`.
+
+second flagship module selected + reason
+- selected: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/sdf_raymarch/noixzy_sdf_raymarch.html
+- reason: project docs repeatedly frame `grid_extrude` + `sdf_raymarch` as the original flagship pair, so `sdf_raymarch` is the clean second unified-shell flagship mirror for the standalone bucket.
+
+escrow winner paths found
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_brutalist_massing.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_triangulated_signal_mesh.html
+- runtime copied for triangulated shell behavior:
+  /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/module_escrow_20260627/candidates/noixzy_batch_15_generated_runtime.js
+
+files created
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/standalone_shell.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/standalone_common.js
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/_reports/standalone_phase_1d_report.txt
+
+files copied/adapted
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/edge_extrude/noixzy_edge_extrude.html
+  copied from grid_extrude and adapted to standalone naming, local storage keys, gallery paths, and shared shell helper wiring.
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/sdf_raymarch/noixzy_sdf_raymarch.html
+  copied from live flagship and adapted with shared shell helper wiring plus corrected gallery/ruler paths.
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/noixzy_brutalist_massing/noixzy_brutalist_massing.html
+  copied from escrow and adapted with shared shell helper wiring plus conditional animation scheduling.
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/noixzy_triangulated_signal_mesh/noixzy_triangulated_signal_mesh.html
+  copied from escrow stub and adapted to load standalone helper wiring.
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/noixzy_triangulated_signal_mesh/noixzy_batch_15_generated_runtime.js
+  copied from escrow runtime and adapted for lower default point cost plus conditional animation scheduling.
+
+shell wiring changes
+- created a standalone shell with inline module registry so direct local open does not depend on manifest fetch.
+- mirrored unified shell behavior: top module rail, search, prev/next, shell control strip, iframe preview switching, URL `?module=` selection, keyboard shortcuts.
+- added shared `standalone_common.js` helper to normalize direct-open behavior and create shell-compatible proxy controls where modules did not already expose canonical IDs.
+- canonical bridge coverage now includes: pause, reset, seed, random all, random form, random color, save, save 2x, thumb, rec, bg, undo, redo, copy, paste.
+- optional controls remain optional: unsupported shell actions show a status message instead of breaking the shell.
+- direct-open quick nav added to standalone module pages so prev/shell/next navigation stays outside the right control panel.
+- shell cleanup hides legacy module nav/stage overlay chrome inside the iframe and restores panel visibility for geometry-only flagship copies.
+
+processor-light choices
+- shell itself is static: no shell animation loop, no manifest polling, no DOM rebuild per frame.
+- `noixzy_brutalist_massing` now only schedules animation frames while running or while experimental physics is enabled.
+- `noixzy_triangulated_signal_mesh` now only schedules animation frames while running or while experimental physics is enabled.
+- triangulated defaults reduced from 96 points / 84 radius to 72 points / 78 radius to trim O(n^2) edge checks.
+- save 2x and thumb fallbacks are generated only on demand through the shared helper.
+
+what was tested
+- local static serving check:
+  `curl -I http://127.0.0.1:4173/workspace/standalone_20260628/standalone_shell.html` returned HTTP 200.
+- Playwright shell smoke:
+  - shell loads
+  - 4 module buttons present
+  - edge_extrude iframe loads
+  - sdf_raymarch switching via next works
+  - rail search filtering works
+  - brutalist and triangulated module proxy controls exist
+  - direct-open quick nav works on brutalist and triangulated pages
+- Playwright export path verification:
+  - shell `2×` fired brutalist save2x download anchor
+  - shell `save` fired triangulated save download anchor
+
+what is broken/deferred
+- `edge_extrude` is currently a renamed standalone of the live `grid_extrude` flagship because no separate repo-native `edge_extrude` source exists yet.
+- brutalist and triangulated shell thumbnails are text fallbacks in the standalone shell; no new thumbnail assets were generated in this pass.
+- legacy internal flagship thumb rails/module lists still exist inside copied flagship files, but the standalone shell hides that chrome instead of rewriting those subsystems.
+- no Insydium Nexus work executed.
+- no Python migration work executed.
+
+exact local path to open standalone_shell.html
+- /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/standalone_shell.html

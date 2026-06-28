@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>noixzy</title>
+<style>
+  :root {
+    --rail-h: 78px;
+    --ink: #f0f0f0;
+    --dim: #888888;
+    --accent: #d8d8d8;
+    --thumb-w: 76px;
+    --thumb-h: 48px;
+    --logo-w: 82px;
+    --logo-h: 57px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; background: #000; }
+  body { overflow: hidden; color: var(--ink); }
+  .shell { min-height: 100vh; background: #000; }
+
+  /* ── rail ── */
+  .rail {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 10;
+    height: var(--rail-h);
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    overflow: hidden;
+    background: #000;
+    box-shadow:
+      0 0 18px rgba(255,255,255,.10),
+      0 10px 28px rgba(255,255,255,.055),
+      inset 0 -1px 0 rgba(255,255,255,.08);
+    isolation: isolate;
+  }
+  .rail::before { content: none !important; display: none !important; }
+  .rail::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    top: 24px;
+    height: 49px;
+    z-index: 5;
+    pointer-events: none;
+    opacity: .54;
+    mix-blend-mode: screen;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.07) 0px,
+      rgba(255,255,255,.07) 1px,
+      transparent 1px,
+      transparent 1.6px
+    );
+  }
+
+  /* ── thumb rail ── */
+  .thumbRail {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: var(--thumb-h);
+    min-width: 0;
+    transform: translateY(2px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(18,18,20,.96) transparent;
+  }
+  .thumbRail::-webkit-scrollbar { height: 5px; }
+  .thumbRail::-webkit-scrollbar-track { background: transparent; }
+  .thumbRail::-webkit-scrollbar-thumb { background: rgba(18,18,20,.96); border-radius: 999px; }
+  .moduleButton {
+    width: var(--thumb-w);
+    height: var(--thumb-h);
+    flex: 0 0 var(--thumb-w);
+    display: block;
+    margin: 0; padding: 0;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    overflow: visible;
+    background: rgba(0,0,0,.18);
+    cursor: pointer;
+    opacity: .50;
+    transition: opacity .14s ease, transform .14s ease;
+  }
+  .moduleButton:hover { opacity: .58; }
+  .moduleButton[aria-selected="true"] { opacity: .64; }
+  .moduleButton:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .moduleButton img {
+    display: block;
+    width: 100%; height: 100%;
+    filter: grayscale(1) contrast(1.08) brightness(.82) drop-shadow(0 0 8px rgba(255,255,255,.12));
+    object-fit: cover;
+    pointer-events: none;
+  }
+  .moduleLabel { padding: 0 8px; font-size: 10px; letter-spacing: .1em; text-transform: lowercase; text-align: center; }
+
+  /* ── logo ── */
+  .logoOverlay {
+    position: absolute;
+    left: 50%;
+    top: 14px;
+    z-index: 10;
+    width: 88px;
+    height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-50%);
+    border: none;
+    border-radius: 8px;
+    background: radial-gradient(ellipse at center, #000 0%, #000 85%, rgba(0,0,0,0) 100%);
+    cursor: pointer;
+    text-decoration: none;
+    pointer-events: auto;
+  }
+  .logoOverlay::before,
+  .logoOverlay::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 15px;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .logoOverlay::before { right: 100%; background: linear-gradient(to left, #000 0%, rgba(0,0,0,0) 100%); }
+  .logoOverlay::after  { left: 100%;  background: linear-gradient(to right, #000 0%, rgba(0,0,0,0) 100%); }
+  .logoOverlay img {
+    display: block;
+    width: var(--logo-w);
+    height: var(--logo-h);
+    max-width: 88px;
+    max-height: 88px;
+    object-fit: contain;
+    opacity: .96;
+    pointer-events: none;
+    transform: translateY(-16px) scale(1.42);
+    transform-origin: center;
+  }
+  .logoOverlay .fallback {
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .12em;
+  }
+
+  /* ── stage ── */
+  .stage { position: fixed; inset: var(--rail-h) 0 0; background: #000; }
+  #moduleFrame {
+    display: block;
+    width: 100%;
+    height: calc(100vh - var(--rail-h));
+    border: 0;
+    background: #000;
+  }
+
+  /* ── status ── */
+  .status {
+    position: fixed;
+    left: 50%;
+    top: calc(var(--rail-h) + 16px);
+    z-index: 13;
+    transform: translateX(-50%);
+    max-width: min(620px, calc(100vw - 32px));
+    padding: 9px 12px;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 6px;
+    background: rgba(0,0,0,.72);
+    color: var(--dim);
+    font-size: 11px;
+    line-height: 1.45;
+    letter-spacing: .04em;
+  }
+  .status[hidden] { display: none; }
+
+  /* ── nav badges ── */
+  .navBadge {
+    position: fixed;
+    top: calc(var(--rail-h) + 10px);
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 5px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 6px;
+    background: rgba(0,0,0,.80);
+    box-shadow: 0 2px 12px rgba(0,0,0,.54), inset 0 1px 0 rgba(255,255,255,.04);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .navBadgeLeft  { left: 10px; }
+  .navBadgeRight { right: 10px; }
+  .navBtn {
+    height: 22px;
+    padding: 0 7px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(241,240,236,.52);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 9px;
+    letter-spacing: .06em;
+    cursor: pointer;
+    transition: color .10s ease, background .10s ease;
+    white-space: nowrap;
+  }
+  .navBtn:hover  { color: rgba(241,240,236,.88); background: rgba(255,255,255,.06); }
+  .navBtn:active { background: rgba(255,255,255,.10); }
+  .navBtn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+  .navSep { width: 1px; height: 14px; background: rgba(255,255,255,.10); flex-shrink: 0; }
+
+  @media (max-width: 760px) {
+    :root { --rail-h: 96px; --thumb-w: 82px; --thumb-h: 52px; }
+    .rail { padding: 10px; }
+    .logoOverlay { top: 15px; width: 88px; height: 88px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="rail" aria-label="module rail">
+    <nav class="thumbRail" id="moduleRail" aria-label="modules"></nav>
+    <a class="logoOverlay" href="standalone_shell.html" aria-label="A01 standalone shell">
+      <img src="../../gallery/gallery.svg" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'fallback', textContent: 'noixzy' }))">
+    </a>
+  </header>
+  <main class="stage">
+    <div class="navBadge navBadgeLeft">
+      <button class="navBtn" id="navLeftPrev" type="button" aria-label="Previous module">&lt;&nbsp;prev</button>
+      <span class="navSep" aria-hidden="true"></span>
+      <button class="navBtn" id="navLeftNext" type="button" aria-label="Next module">next&nbsp;&gt;</button>
+    </div>
+    <div class="navBadge navBadgeRight">
+      <button class="navBtn" id="navRightPrev" type="button" aria-label="Previous module">&lt;&nbsp;prev</button>
+      <span class="navSep" aria-hidden="true"></span>
+      <button class="navBtn" id="navRightNext" type="button" aria-label="Next module">next&nbsp;&gt;</button>
+    </div>
+    <div class="status" id="status" hidden></div>
+    <iframe id="moduleFrame" title="noixzy standalone module"></iframe>
+  </main>
+</div>
+<script>
+(() => {
+  const modules = [
+    { id: "edge_extrude", title: "edge extrude", file: "edge_extrude/noixzy_edge_extrude.html", thumb: "../../gallery/thumbs/grid_extrude.png" },
+    { id: "sdf_raymarch", title: "sdf raymarch", file: "sdf_raymarch/noixzy_sdf_raymarch.html", thumb: "../../gallery/thumbs/sdf_raymarch.png" },
+    { id: "noixzy_brutalist_massing", title: "noixzy brutalist massing", file: "noixzy_brutalist_massing/noixzy_brutalist_massing.html" },
+    { id: "noixzy_triangulated_signal_mesh", title: "noixzy triangulated signal mesh", file: "noixzy_triangulated_signal_mesh/noixzy_triangulated_signal_mesh.html" }
+  ];
+  const moduleFrame = document.getElementById("moduleFrame");
+  const moduleRail = document.getElementById("moduleRail");
+  const status = document.getElementById("status");
+  const moduleMap = new Map(modules.map((module) => [module.id, module]));
+  let activeId = "";
+
+  const setStatus = (message) => {
+    status.hidden = !message;
+    status.textContent = message || "";
+  };
+  const activeModuleDoc = () => {
+    try { return moduleFrame.contentDocument || moduleFrame.contentWindow?.document || null; }
+    catch (error) { return null; }
+  };
+  const moduleFromUrl = () => new URLSearchParams(window.location.search).get("module") || "";
+  const setModuleParam = (id, replace = false) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("module", id);
+    history[replace ? "replaceState" : "pushState"]({ module: id }, "", url);
+  };
+
+  const renderRail = () => {
+    moduleRail.replaceChildren();
+    modules.forEach((module) => {
+      const button = document.createElement("button");
+      button.className = "moduleButton";
+      button.type = "button";
+      button.dataset.moduleId = module.id;
+      button.setAttribute("aria-selected", "false");
+      if (module.thumb) {
+        const img = document.createElement("img");
+        img.src = module.thumb;
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        button.appendChild(img);
+      }
+      button.addEventListener("click", () => selectModule(module.id, true));
+      moduleRail.appendChild(button);
+    });
+  };
+
+  const selectModule = (requestedId, updateUrl = false, replaceUrl = false) => {
+    const module = moduleMap.get(requestedId) || modules[0];
+    if (!module) return;
+    activeId = module.id;
+    moduleFrame.src = module.file;
+    moduleFrame.title = "noixzy standalone module";
+    document.querySelectorAll(".moduleButton").forEach((button) => {
+      const selected = button.dataset.moduleId === module.id;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
+    if (updateUrl) setModuleParam(module.id, replaceUrl);
+    setStatus("");
+  };
+
+  const getVisibleButtons = () => [...document.querySelectorAll(".moduleButton")].filter((button) => !button.hidden);
+  const navRail = (delta) => {
+    const visibleButtons = getVisibleButtons();
+    if (!visibleButtons.length) return;
+    const currentIndex = visibleButtons.findIndex((button) => button.dataset.moduleId === activeId);
+    const base = currentIndex === -1 ? 0 : currentIndex + delta;
+    const nextIndex = ((base % visibleButtons.length) + visibleButtons.length) % visibleButtons.length;
+    const nextButton = visibleButtons[nextIndex];
+    selectModule(nextButton.dataset.moduleId, true);
+    nextButton.scrollIntoView({ block: "nearest", inline: "nearest" });
+    nextButton.focus();
+  };
+
+  const BRIDGE_ACTIONS = {
+    pause:    { label: "Pause",        action: "pause",  targetId: "pause",        ids: ["pause", "btnPause", "play"] },
+    reset:    { label: "Reset",        action: "reset",  targetId: "reset",        ids: ["reset", "btnReset"] },
+    seed:     { label: "New Seed",     action: "seed",   targetId: "newSeed",      ids: ["newSeed", "btnNewSeed"] },
+    rndForm:  { label: "Random Form",  action: "form",   targetId: "randomForm",   ids: ["btnRandomForm", "randomForm"] },
+    rndColor: { label: "Random Color", action: "color",  targetId: "randomColor",  ids: ["btnRndColor", "randomColor"] },
+    rndAll:   { label: "Random All",   action: "rnd",    targetId: "randomAll",    ids: ["btnRandom", "randomUnlocked", "randomAll", "randomize"] },
+    save:     { label: "Save",         action: "save",   targetId: "save",         ids: ["save", "btnSave", "btnSave2", "export"] },
+    save2x:   { label: "Save 2x",      action: "save2x", targetId: "save2x",      ids: ["save2x", "btnSave2x", "btnSave2x2"] },
+    thumb:    { label: "Thumbnail",    action: "thumb",  targetId: "thumb",        ids: ["thumb", "btnThumb", "btnThumb2"] },
+    rec:      { label: "Record",       action: "rec",    targetId: "rec",          ids: ["rec", "btnRec", "btnRec2"] },
+    bg:       { label: "Transparent BG", action: "bg",  targetId: "btnTransparentBg", ids: ["btnTransparentBg"] },
+    undo:     { label: "Undo",         action: "undo",   targetId: "btnUndo",      ids: ["btnUndo"] },
+    redo:     { label: "Redo",         action: "redo",   targetId: "btnRedo",      ids: ["btnRedo"] },
+    copy:     { label: "Copy",         action: "copy",   targetId: "copyP",        ids: ["copyP", "btnCopy", "copy"] },
+    paste:    { label: "Paste",        action: "paste",  targetId: "pasteP",       ids: ["pasteP", "btnPaste", "paste"] }
+  };
+  let bridgeSeq = 0;
+  const pendingBridge = new Map();
+  const unsupportedStatus = (config, moduleId = activeId) => {
+    setStatus(`${config.label}: not supported in ${moduleId || "this module"}`);
+  };
+  const tryIframeClick = (...ids) => {
+    const doc = activeModuleDoc();
+    if (!doc) return null;
+    for (const id of ids) {
+      const element = doc.getElementById(id);
+      if (element) { element.click(); return id; }
+    }
+    return null;
+  };
+  const bridgeAction = (key) => {
+    const config = BRIDGE_ACTIONS[key];
+    if (!config) return false;
+    const hit = tryIframeClick(...config.ids);
+    if (hit) { setStatus(""); return true; }
+    const target = moduleFrame.contentWindow;
+    if (!target) { unsupportedStatus(config); return false; }
+    const requestId = `shell-${Date.now()}-${++bridgeSeq}`;
+    const moduleId = activeId;
+    const timeout = window.setTimeout(() => {
+      const pending = pendingBridge.get(requestId);
+      if (!pending) return;
+      pendingBridge.delete(requestId);
+      unsupportedStatus(pending.config, pending.moduleId);
+    }, 900);
+    pendingBridge.set(requestId, { config, moduleId, timeout });
+    target.postMessage({ type: "noixzy:standalone-action", requestId, action: config.action, targetId: config.targetId, ids: config.ids }, "*");
+    return true;
+  };
+  window.addEventListener("message", (event) => {
+    const data = event.data || {};
+    if (data.type !== "noixzy:standalone-action-result") return;
+    const pending = pendingBridge.get(data.requestId);
+    if (!pending) return;
+    window.clearTimeout(pending.timeout);
+    pendingBridge.delete(data.requestId);
+    if (data.ok) { setStatus(""); return; }
+    unsupportedStatus(pending.config, data.moduleId || pending.moduleId);
+  });
+  const bridge = {
+    pause:    () => bridgeAction("pause"),
+    reset:    () => bridgeAction("reset"),
+    seed:     () => bridgeAction("seed"),
+    rndForm:  () => bridgeAction("rndForm"),
+    rndColor: () => bridgeAction("rndColor"),
+    rndAll:   () => bridgeAction("rndAll"),
+    save:     () => bridgeAction("save"),
+    save2x:   () => bridgeAction("save2x"),
+    thumb:    () => bridgeAction("thumb"),
+    rec:      () => bridgeAction("rec"),
+    bg:       () => bridgeAction("bg"),
+    undo:     () => bridgeAction("undo"),
+    redo:     () => bridgeAction("redo"),
+    copy:     () => bridgeAction("copy"),
+    paste:    () => bridgeAction("paste")
+  };
+
+  const bindButton = (id, handler) => document.getElementById(id)?.addEventListener("click", handler);
+
+  const cleanupModuleUi = () => {
+    const doc = activeModuleDoc();
+    if (!doc || !doc.head || !doc.body || doc.getElementById("__noixzyStandaloneShellCleanup")) return;
+    const style = doc.createElement("style");
+    style.id = "__noixzyStandaloneShellCleanup";
+    style.textContent = [
+      "html,body{margin:0!important;padding:0!important;background:#000!important;}",
+      "body{position:static!important;padding-top:0!important;width:100%!important;height:100vh!important;min-height:100vh!important;overflow:hidden!important;}",
+      ".navBar,.standaloneQuickNav,.stageThumbs,#stageThumbs,.stageTools,#stageTools,.previewHistory,#previewHistory,.stageFavs,#stageFavs,.panel,[data-zone='right-panel'],body>aside{display:none!important;visibility:hidden!important;pointer-events:none!important;}",
+      ".app{display:block!important;width:100%!important;height:100vh!important;overflow:hidden!important;}",
+      ".stage,#stage,body>main{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;}"
+    ].join("");
+    doc.head.appendChild(style);
+    requestAnimationFrame(() => {
+      try { moduleFrame.contentWindow?.dispatchEvent(new Event("resize")); } catch (_) {}
+    });
+  };
+
+  bindButton("navLeftPrev",  () => navRail(-1));
+  bindButton("navLeftNext",  () => navRail(1));
+  bindButton("navRightPrev", () => navRail(-1));
+  bindButton("navRightNext", () => navRail(1));
+
+  document.addEventListener("keydown", (event) => {
+    const tag = document.activeElement?.tagName || "";
+    const inInput = ["INPUT", "TEXTAREA", "SELECT"].includes(tag);
+    if (inInput) return;
+    if (event.key === "ArrowLeft")  { event.preventDefault(); navRail(-1); return; }
+    if (event.key === "ArrowRight") { event.preventDefault(); navRail(1);  return; }
+    if (event.key === " ")  { event.preventDefault(); bridge.pause();    return; }
+    if (event.key === "r" || event.key === "R") { bridge.reset();    return; }
+    if (event.key === "n" || event.key === "N") { bridge.seed();     return; }
+    if (event.key === "f" || event.key === "F") { bridge.rndForm();  return; }
+    if (event.key === "a" || event.key === "A") { bridge.rndAll();   return; }
+    if (event.key === "s" || event.key === "S") { bridge.save();     return; }
+    if (event.key === "t" || event.key === "T") { bridge.thumb();    return; }
+  });
+  moduleFrame.addEventListener("load", () => requestAnimationFrame(cleanupModuleUi));
+  window.addEventListener("popstate", () => selectModule(moduleFromUrl(), false));
+
+  renderRail();
+  const requestedId = moduleFromUrl();
+  selectModule(requestedId, Boolean(requestedId && !moduleMap.has(requestedId)), true);
+})();
+</script>
+</body>
+</html>

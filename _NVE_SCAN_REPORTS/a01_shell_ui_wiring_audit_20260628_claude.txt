@@ -1,0 +1,638 @@
+================================================================================
+A01 SHELL UI + WIRING AUDIT
+================================================================================
+Timestamp      : 2026-06-28
+Author         : claude-sonnet-4-6 (A01 investigation pass)
+Track          : A01 / standalone-track (NOT Phase D / unified shell)
+================================================================================
+
+A01 PATH CONFIRMED
+------------------
+/Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/standalone_20260628/
+
+Files present:
+  standalone_shell.html         -- A01 entry point / shell
+  standalone_common.js          -- bridge install() system
+  edge_extrude/
+    noixzy_edge_extrude.html    -- hand-authored, full-featured
+  sdf_raymarch/
+    noixzy_sdf_raymarch.html    -- hand-authored, full-featured (2167 lines)
+  noixzy_brutalist_massing/
+    noixzy_brutalist_massing.html  -- generated / self-contained
+  noixzy_triangulated_signal_mesh/
+    noixzy_triangulated_signal_mesh.html  -- thin wrapper (26 lines)
+    noixzy_batch_15_generated_runtime.js  -- shared generated runtime
+  _reports/
+    standalone_phase_1d_report.txt
+
+NO index.html exists in this directory.
+
+
+GIT STATUS FOR A01
+------------------
+Status: ?? workspace/standalone_20260628/
+
+The entire A01 workspace directory is UNTRACKED. No A01 files have been
+committed to the repo. This is a working prototype, not yet in git history.
+
+
+================================================================================
+SECTION 1 — CURRENT A01 SHELL STATE
+================================================================================
+
+LAYOUT LAYERS:
+  .rail (fixed, z:10, h:78px)
+    └── .thumbRail + .logoOverlay (center, links back to shell via abs path)
+  .controlStrip (fixed, z:9, h:28px)
+    └── module search input only (no buttons here)
+  .stage (fixed, inset: rail+strip to bottom)
+    └── .controlStack (absolute, right:304px, top:10px, z:12)
+          [prev] [next] — sep — [pause] [reset] — sep —
+          [seed] [form] [color] [rnd] — sep —
+          [save] [2×] [thumb] [rec] — sep —
+          [bg] [undo] [redo] [copy] [paste]
+    └── .status (fixed, centered, top toast for unsupported actions)
+    └── #moduleFrame (full-stage iframe, z:0)
+
+SINGLE-SIDED CONTROL STACK:
+  All controls — including prev/next — live in ONE .controlStack div.
+  It is positioned absolute at top:10px, right:304px (clears the 292px panel).
+  This places it in the upper-right quadrant of the preview area only.
+  There are NO mirrored controls on the left side.
+
+IFRAME-FIRST BRIDGE ARCHITECTURE (dual-path):
+  1. tryIframeClick() — searches iframe contentDocument by ID, clicks directly
+  2. postMessage fallback — sends {type:"noixzy:standalone-action", action, ids}
+     iframe must have loaded standalone_common.js to respond
+  3. 900ms timeout → unsupported status toast
+  Bridge is clean and extensible. The core pattern is sound.
+
+MODULE REGISTRATION (shell-side):
+  { id:"edge_extrude",                   file:"edge_extrude/noixzy_edge_extrude.html",
+                                          thumb:"../../gallery/thumbs/grid_extrude.png" }
+  { id:"sdf_raymarch",                   file:"sdf_raymarch/noixzy_sdf_raymarch.html",
+                                          thumb:"../../gallery/thumbs/sdf_raymarch.png" }
+  { id:"noixzy_brutalist_massing",       file:"noixzy_brutalist_massing/noixzy_brutalist_massing.html",
+                                          thumb: undefined (text label fallback) }
+  { id:"noixzy_triangulated_signal_mesh",file:"noixzy_triangulated_signal_mesh/...",
+                                          thumb: undefined }
+
+LOGO HREF:
+  Current: /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/workspace/
+           standalone_20260628/standalone_shell.html
+  Problem: ABSOLUTE FILE PATH. Non-portable. Works locally but breaks if moved.
+  Fix:     Change to relative: standalone_shell.html (same directory)
+
+
+================================================================================
+SECTION 2 — PREVIEW NAV BADGE RECOMMENDATION
+================================================================================
+
+CURRENT STATE:
+  Prev and next are inside .controlStack alongside all 15 utility buttons.
+  Single location, upper-right quadrant, 304px from right edge.
+  No left-side badge. Navigation from the left side of the screen is not possible.
+
+REQUESTED: Two mirrored badge boxes, top-left and top-right of preview window.
+Each badge contains BOTH prev and next. Both badges control the same navRail().
+
+RECOMMENDED IMPLEMENTATION:
+  Add two new <div class="navBadge navBadge--left"> and <div class="navBadge navBadge--right">
+  inside <main class="stage">.
+
+  CSS:
+    .navBadge {
+      position: absolute;
+      top: 10px;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 6px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 6px;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(2px);
+    }
+    .navBadge--left  { left: 10px; }
+    .navBadge--right { right: 10px; }
+
+  HTML (each badge identical):
+    <div class="navBadge navBadge--left">
+      <button class="ctrlBtn" id="navPrevL" type="button">&lt; prev</button>
+      <button class="ctrlBtn" id="navNextL" type="button">next &gt;</button>
+    </div>
+    <div class="navBadge navBadge--right">
+      <button class="ctrlBtn" id="navPrevR" type="button">&lt; prev</button>
+      <button class="ctrlBtn" id="navNextR" type="button">next &gt;</button>
+    </div>
+
+  Wiring (4 bindings via existing navRail()):
+    bindButton("navPrevL", () => navRail(-1));
+    bindButton("navNextL", () => navRail(1));
+    bindButton("navPrevR", () => navRail(-1));
+    bindButton("navNextR", () => navRail(1));
+
+  REMOVE prev/next from .controlStack (cssPrev, cssNext) or keep them but
+  they become redundant. Recommend removing from controlStack to keep it
+  utility-only.
+
+  POSITIONING NOTES:
+    - Left badge: left:10px. No module rail conflict (rail is in the header, not stage).
+    - Right badge: right:10px. This will overlap the iframe panel.
+      To clear the 292px right panel: right:302px instead. BUT if the panel
+      is eventually floating/hideable, right:10px is the final target.
+      Recommend right:302px for now, with a future-ready data-a01-badge-pos
+      attribute that can be updated when the panel floats.
+    - Both badges float over the canvas. Keep them at top:10px (below stage top).
+    - Badge height ~30px. Compact. Does not cover much canvas.
+
+
+================================================================================
+SECTION 3 — UTILITY BUTTON WIRING FINDINGS
+================================================================================
+
+BRIDGE MECHANISM RECAP:
+  Shell's BRIDGE_ACTIONS defines per-action: label, action, targetId, ids[].
+  tryIframeClick searches iframe DOM for the FIRST matching id and clicks it.
+  If found, returns success (shell shows no status). If NOT found, falls back
+  to postMessage which hits dispatchShellAction() in common.js inside the iframe.
+  dispatchShellAction() merges: [targetId, module aliases, ids from message],
+  finds first existing element, clicks it. If none → ok:false → status toast.
+
+CRITICAL BUG — GHOST BUTTON SILENT FAILURES:
+  Both hand-authored modules (edge_extrude, sdf_raymarch) include an IIFE:
+    initNoixzyLegacyControlBridge()
+  This creates hidden <button> elements for a standard ID list including:
+    newSeed, randomUnlocked, randomForm, randomColor, reset, pause, save,
+    save2x, rec, thumb, copy, paste
+
+  These buttons have NO click event listeners. They are ID stubs only.
+
+  When tryIframeClick hits one of these ghost buttons, it calls .click().
+  Since there is no handler, nothing happens. But the shell sees "found and
+  clicked" and clears the status (no toast). THIS IS A SILENT FAILURE.
+
+  The actual handler IDs in edge_extrude and sdf_raymarch are:
+    btnRndColor   (not randomColor)
+    btnRandom     (not randomUnlocked)
+    btnRandomForm (not randomForm)
+    etc.
+
+  tryIframeClick checks shell BRIDGE_ACTIONS ids in order and stops at first
+  hit. Ghost buttons are hit before the real btn* aliases are checked.
+
+
+--- edge_extrude ---
+  Native IDs with real handlers:
+    pause ✓  reset ✓  newSeed ✓  save ✓  save2x ✓  thumb ✓  rec ✓
+    copyP ✓  pasteP ✓  btnTransparentBg ✓  btnUndo ✓  btnRedo ✓
+    btnNewSeed ✓  btnPause ✓  btnReset ✓
+    btnRandom ✓  btnRandomForm ✓  btnRndColor ✓
+
+  Ghost IDs (legacy bridge, no handler):
+    randomColor  randomForm  randomUnlocked
+
+  Shell BRIDGE_ACTIONS vs actual behavior:
+    pause    → ids:["pause","btnPause","play"]       → "pause" found, handler ✓ WORKS
+    reset    → ids:["reset","btnReset"]              → "reset" found, handler ✓ WORKS
+    seed     → ids:["newSeed","btnNewSeed"]          → "newSeed" found, handler ✓ WORKS
+    rndForm  → ids:["randomForm","btnRandomForm"]    → "randomForm" ghost hit ✗ SILENT FAIL
+    rndColor → ids:["randomColor","btnRndColor"]     → "randomColor" ghost hit ✗ SILENT FAIL
+    rndAll   → ids:["randomAll","randomUnlocked",    → "randomAll" absent,
+                     "btnRandom","randomize"]           "randomUnlocked" ghost hit ✗ SILENT FAIL
+    save     → ids:["save","btnSave","btnSave2","export"] → "save" found ✓ WORKS
+    save2x   → ids:["save2x","btnSave2x","btnSave2x2"]   → "save2x" found ✓ WORKS
+    thumb    → ids:["thumb","btnThumb","btnThumb2"]  → "thumb" found ✓ WORKS
+    rec      → ids:["rec","btnRec","btnRec2"]        → "rec" found ✓ WORKS
+    bg       → ids:["btnTransparentBg"]              → found, handler ✓ WORKS
+    undo     → ids:["btnUndo"]                       → found, handler ✓ WORKS
+    redo     → ids:["btnRedo"]                       → found, handler ✓ WORKS
+    copy     → ids:["copyP","btnCopy","copy"]        → "copyP" found ✓ WORKS
+    paste    → ids:["pasteP","btnPaste","paste"]     → "pasteP" found ✓ WORKS
+
+  Summary for edge_extrude:
+    WORKING (12): pause, reset, seed, save, save2x, thumb, rec, bg, undo, redo, copy, paste
+    SILENT FAIL (3): rndForm, rndColor, rndAll
+
+  FIX for edge_extrude:
+    In BRIDGE_ACTIONS in standalone_shell.html:
+      rndForm  ids: move "btnRandomForm"  BEFORE "randomForm"
+      rndColor ids: move "btnRndColor"    BEFORE "randomColor"
+      rndAll   ids: move "btnRandom"      BEFORE "randomUnlocked"
+    OR: add real click handlers on the ghost buttons in the module
+        (click the btn* counterparts on their click event).
+
+--- sdf_raymarch ---
+  sdf_raymarch uses the same legacy bridge pattern and same btn* handler IDs.
+  Same ghost button issue expected for rndForm, rndColor, rndAll.
+  Its install() aliases do not include btnUndo/btnRedo → undo/redo will show
+  "not supported" toast (correct behavior, NOT a silent fail).
+
+  The sdf_raymarch install() aliases for copy/paste:
+    copyP: ["copy", "btnCopy"]  — "copy" is a ghost bridge button, silent fail
+    pasteP: ["paste", "btnPaste"] — "paste" is a ghost bridge button, silent fail
+
+  ADDITIONAL WIRING NOTE: sdf_raymarch copy/paste uses module-level functions
+  _copySdfState()/_pasteSdfState() bound to elements "copy" and "paste"
+  (different from edge_extrude which uses copyP/pasteP). The ghost buttons
+  DO have handlers in sdf_raymarch because the module binds to "copy"/"paste"
+  directly. Verify in bindUI() to confirm.
+
+  Summary for sdf_raymarch (conservative estimate pending full bindUI() read):
+    LIKELY WORKING: pause, reset, seed, save, save2x, thumb, rec, bg
+    LIKELY SILENT FAIL: rndForm, rndColor, rndAll (same ghost pattern)
+    UNSUPPORTED (toast shown, correct): undo, redo
+    VERIFY: copy, paste
+
+--- noixzy_brutalist_massing ---
+  Install aliases registered:
+    pause  → ["play"]      → plays/pauses via #play button ✓
+    reset  → ["reset"]     → resets via #reset button ✓
+    newSeed→ ["randomize"] → NOTE: randomize does ALL params, not just seed
+    rndAll → ["randomize"] → same as above ✓ (intended)
+    save   → ["export"]    → triggers exportPng() ✓
+
+  Unregistered (not in aliases → falls through to common.js proxy or timeout):
+    rndForm   → no alias → common.js proxy target "randomForm" → not in DOM
+               → 900ms timeout → "Random Form: not supported" toast ✓ correct
+    rndColor  → same → toast ✓ correct
+    save2x    → common.js creates proxy → reads canvas → downloads 2x PNG ✓
+    thumb     → common.js creates proxy → reads canvas → downloads thumb PNG ✓
+    rec       → no alias → timeout → "Record: not supported" toast ✓ correct
+    bg        → no alias → timeout → toast ✓ correct
+    undo      → no alias → timeout → toast ✓ correct
+    redo      → no alias → timeout → toast ✓ correct
+    copy      → no alias → timeout → toast ✓ correct
+    paste     → no alias → timeout → toast ✓ correct
+
+  Summary for noixzy_brutalist_massing:
+    WORKING (5): pause, reset, seed*, rndAll*, save
+    PROXY FALLBACK (2): save2x, thumb (canvas download, no seed in filename)
+    CORRECTLY UNSUPPORTED (8): rndForm, rndColor, rec, bg, undo, redo, copy, paste
+    *seed and rndAll both map to "randomize" (same action, not true seed-only)
+
+--- noixzy_triangulated_signal_mesh ---
+  Thin wrapper (26 lines HTML). Delegates all rendering to
+  noixzy_batch_15_generated_runtime.js via initNoixzyBatch15("triangulated").
+  Install aliases are identical to brutalist_massing.
+
+  Same wiring outcome: 5 working, 2 proxy fallback, 8 correctly unsupported.
+
+  RISK: The runtime JS is shared between brutalist_massing and
+  triangulated_signal_mesh. Canonical IDs (play, reset, randomize, export)
+  must exist in the runtime for both modes. Verify that initNoixzyBatch15()
+  creates these DOM elements for the "triangulated" mode.
+
+
+================================================================================
+SECTION 4 — RIGHT PANEL FLOATING/GLASS RECOMMENDATION
+================================================================================
+
+CURRENT STATE:
+  The right parameter panel lives INSIDE each module iframe, not in the shell.
+  cleanupModuleUi() injects a <style> into the iframe head after load that:
+    - restores .panel / [data-zone="right-panel"] to display:flex
+    - fixes it at 292px width, full viewport height
+  This is a CSS injection approach — the panel is visually part of the shell
+  but actually owned by the module.
+
+  This creates a structural constraint: the shell cannot control the panel
+  independently. Hide/show, glass styling, and pin/dock all require either:
+    (a) CSS injection from cleanupModuleUi into the iframe, or
+    (b) A shell-level panel (requires modules to expose their param data via
+        postMessage, which is a larger architectural change).
+
+SMALLEST SAFE PATH (Option A — CSS injection extension):
+
+  Step 1 — Add panel state classes via cleanupModuleUi:
+    The shell tracks a panelVisible boolean (default: true).
+    Add to cleanupModuleUi injection:
+      "[data-zone='right-panel'],[data-zone='right-panel']{
+        transition: opacity .18s ease, transform .18s ease;
+      }"
+    When panel is hidden, inject:
+      "[data-zone='right-panel']{
+        opacity:0!important;pointer-events:none!important;
+        transform:translateX(12px)!important;
+      }"
+
+  Step 2 — Shell-level hide/show button:
+    Add a small fixed toggle button at the right edge of the controlStrip
+    or as a compact pill at the top of the right edge:
+      <button id="panelToggle" class="ctrlBtn" type="button">panel</button>
+    Clicking it: shell calls postMessage to iframe with a custom action
+      {type:"noixzy:standalone-panel", visible: false}
+    iframe common.js listens and injects/removes the hide CSS.
+
+  Step 3 — Glass styling (CSS injection only):
+    Extend cleanupModuleUi to also inject:
+      "[data-zone='right-panel']{
+        background:rgba(0,0,0,.38)!important;
+        backdrop-filter:blur(14px) saturate(1.1)!important;
+        border-left:1px solid rgba(255,255,255,.07)!important;
+        border-radius:0!important;
+      }"
+    No module changes required.
+
+  Step 4 — Future-ready class/data attributes:
+    Add data-a01-panel="docked" | "floating" | "hidden" to the panel element
+    via injection. Future dock system can key off these values.
+
+  DO NOT BUILD YET:
+    Full dock system with slot positions requires shell-level panel architecture.
+    This is the correct next step AFTER hide/show is stable.
+
+PANEL SIZING NOTE:
+  controlStack right:304px is calibrated to the 292px panel + 12px gap.
+  When the panel hides, the controlStack stays at 304px (waste of space, but
+  safe). After floating panel lands, update to right:10px.
+
+
+================================================================================
+SECTION 5 — INDEX / START / GALLERY PAGE FINDINGS
+================================================================================
+
+STATUS: NO index.html EXISTS in /workspace/standalone_20260628/.
+
+The only entry point is standalone_shell.html. There is no A01 gallery,
+module listing, or start page.
+
+RECOMMENDATION — Smallest safe index.html:
+  Single-page, static HTML, no JavaScript dependencies (or minimal).
+  Content:
+    - A01 heading + brief description
+    - Link to standalone_shell.html (primary entry)
+    - Module list with name, description, and direct link to each module HTML
+    - Visual style matches shell (monospace, noir, black bg)
+    - Optional: static SVG thumbnails (existing gallery/thumbs/)
+
+  File to create: workspace/standalone_20260628/index.html
+
+  Implementation is ~60-100 lines of HTML+CSS. No build system.
+  Logo should link to standalone_shell.html (not gallery/index.html).
+
+  DO NOT:
+    - Build a JS-driven gallery like gallery/index.html
+    - Import standalone_common.js or any bridge code
+    - Add search/filter (unnecessary at 4 modules)
+
+
+================================================================================
+SECTION 6 — LOGO LINK AND BADGE FINDINGS
+================================================================================
+
+LOGO HREF BUG:
+  Current: href="/Users/noixzy.macbookpro/.../standalone_shell.html"
+  Problem: Absolute file:// path. Breaks if project is moved or opened
+           from a server.
+  Fix:     href="standalone_shell.html" (relative, same directory)
+
+BADGE/STATUS PILL:
+  There is NO badge or status pill element under the logo in the current shell.
+  The .logoOverlay contains only an <img> and a .fallback <span>.
+  No status text leaking into the logo area. This is already clean.
+
+STATUS LOCATION:
+  Current status element is .status (fixed, centered, top of stage area).
+  This is correct — it shows unsupported action messages transiently.
+  No change needed for the status location.
+
+
+================================================================================
+SECTION 7 — SHELL COMPLIANCE RISKS
+================================================================================
+
+RISK 1 — GHOST BUTTON SILENT FAILURES (HIGH)
+  rndForm, rndColor, rndAll all silently fail in edge_extrude due to the
+  legacy bridge creating ghost IDs that are found before real btn* IDs.
+  Same likely pattern in sdf_raymarch.
+  User sees: button clicked, no status error, but nothing happens.
+  Fix effort: LOW. Reorder ids[] arrays in BRIDGE_ACTIONS, or insert real
+  handlers on the ghost buttons in each module.
+
+RISK 2 — ABSOLUTE PATH IN LOGO HREF (LOW)
+  Will break if project is moved. Easy fix.
+
+RISK 3 — CLEANUP CSS CONFLICTS IN MODULES (MEDIUM)
+  edge_extrude has multiple CSS blocks marked NOIXZY_GEOMETRY_ONLY_MODE,
+  NOIXZY_STRIP_VISIBLE_UI, NOIXZY_HEADER_1500X50, etc. These were injected
+  at different build passes and conflict with each other (some show panel,
+  some hide it, some restore it). The cleanupModuleUi injection happens after
+  load and forces the A01 panel-restore CSS to win via !important.
+  This is fragile. If a module has a later !important block that hides the
+  panel, cleanupModuleUi may lose the specificity battle.
+  Risk: panel may not appear correctly in all modules.
+
+RISK 4 — CROSS-DEPENDENCY ON gallery/ (LOW)
+  edge_extrude and sdf_raymarch load:
+    ../../../gallery/noixzy_ruler_overlay.js
+  This reaches outside the A01 workspace. If A01 is isolated or packaged,
+  this dependency breaks. Flag for future portability pass.
+
+RISK 5 — THUMB IMAGES MISSING FOR 2 MODULES (VISUAL ONLY)
+  brutalist_massing and triangulated_signal_mesh have no thumb path.
+  Module buttons fall back to text label. Not a functional issue.
+
+
+================================================================================
+SECTION 8 — GENERATED-MODULE CONVERSION RISKS
+================================================================================
+
+RISK 1 — SEED vs RANDOMIZE CONFLATION (MEDIUM)
+  Generated modules expose "randomize" but not a separate seed-only action.
+  Shell "seed" (new seed, same form) and "rnd" (randomize all) both call
+  "randomize" → same outcome. No way to advance seed without changing form.
+  This breaks the shell contract where seed and rndAll are distinct.
+  Recommended fix: generated modules should expose a getSeed/setSeed API or
+  a "newSeed" button that only re-seeds without full randomization.
+
+RISK 2 — NO COPY/PASTE STATE IN GENERATED MODULES (LOW)
+  Generated modules correctly report copy/paste as unsupported.
+  When these modules mature, they will need a state serialization format.
+
+RISK 3 — SHARED RUNTIME COUPLING (MEDIUM)
+  noixzy_triangulated_signal_mesh delegates to noixzy_batch_15_generated_runtime.js
+  which is in the brutalist_massing/ directory. Triangulated_signal_mesh loads it via
+  relative path: <script src="noixzy_batch_15_generated_runtime.js">
+  Wait — the script src has no directory prefix. The HTML is at:
+    noixzy_triangulated_signal_mesh/noixzy_triangulated_signal_mesh.html
+  And loads: noixzy_batch_15_generated_runtime.js (no path prefix)
+  This looks for the runtime in the SAME directory as the HTML.
+  But the runtime file is at: noixzy_brutalist_massing/noixzy_batch_15_generated_runtime.js
+  POTENTIAL BROKEN PATH. Verify this file exists in the triangulated_signal_mesh
+  directory or adjust the script src to "../noixzy_brutalist_massing/..."
+
+RISK 4 — INSTALL() CALLED BEFORE RUNTIME INIT COMPLETES (LOW)
+  In triangulated_signal_mesh, the install() call is in the same <script>
+  tag as initNoixzyBatch15(). If the runtime init is async or deferred,
+  the DOM elements (play, reset, etc.) may not exist when install() runs
+  and the alias proxy setup would fail silently.
+
+RISK 5 — NO CANVAS ID FOR PROXY SAVE/THUMB (LOW)
+  common.js save/save2x/thumb fallback uses document.querySelector(canvasSelector)
+  default: "canvas". Generated modules likely have a standard canvas. Low risk.
+
+
+================================================================================
+SECTION 9 — PROCESSOR LOAD RISKS
+================================================================================
+
+RISK 1 — NO PAUSE-ON-BLUR IN MODULES (MEDIUM)
+  edge_extrude runs p5.js at 60fps.
+  sdf_raymarch runs GLSL ray-marching — heavier per-frame cost.
+  Neither module appears to throttle when the iframe loses focus or when
+  the user is inactive. Only one module is active at a time (single iframe),
+  so concurrent load is not an issue. But the active module runs at full GPU
+  load continuously until manually paused.
+  Recommendation for generated modules: add document.addEventListener("visibilitychange")
+  to auto-pause when hidden.
+
+RISK 2 — SDF RAYMARCH AO + 90 MARCH STEPS (LOW-MEDIUM)
+  The GLSL fragment shader runs 90 march steps + 5-step AO per fragment at
+  full resolution. At 1440p or 2560p this can be GPU-intensive.
+  No resolution limiting is visible. Low risk on modern hardware.
+  Flag for future: add a resolution/quality toggle.
+
+RISK 3 — IFRAME COLD LOAD ON MODULE SWITCH (LOW)
+  Switching modules resets iframe.src. Each module reloads its scripts
+  (p5.js CDN, etc.) on every switch. No caching concern but latency is
+  noticeable on slow connections. Not a processor issue, a UX issue.
+
+
+================================================================================
+SECTION 10 — RECOMMENDED MODULE CAPABILITY CONTRACT
+================================================================================
+
+A minimal contract that A01 modules should satisfy to work cleanly under
+the shell. Do not implement the contract system yet.
+
+Recommended minimum fields per module registration object:
+{
+  id:          string   — unique slug
+  title:       string   — display name
+  path:        string   — relative path from shell
+  thumb:       string?  — relative thumb path
+  capabilities: {
+    pause:       bool,    // toggles animation
+    reset:       bool,    // returns to default state
+    seed:        bool,    // new seed without changing form
+    rndAll:      bool,    // full randomize
+    rndForm:     bool,    // randomize form params only
+    rndColor:    bool,    // randomize color/palette only
+    save:        bool,    // save PNG
+    save2x:      bool,    // save 2x PNG (canvas proxy is ok)
+    thumb:       bool,    // save thumb (canvas proxy is ok)
+    rec:         bool,    // record video
+    bg:          bool,    // transparent background toggle
+    undo:        bool,    // undo param history
+    redo:        bool,    // redo param history
+    copy:        bool,    // copy state to clipboard
+    paste:       bool,    // paste state from clipboard
+  }
+}
+
+When capabilities.X is false, the shell shows the unsupported toast immediately
+WITHOUT a tryIframeClick attempt. This eliminates the 900ms timeout delay
+for known-unsupported actions.
+
+This is the smallest useful version. Do not add: init/update/render hooks,
+directOpenFallback, or unsupportedActionStatus overrides until contract is live.
+
+
+================================================================================
+SECTION 11 — SMALLEST SAFE IMPLEMENTATION PLAN FOR CODEX
+================================================================================
+
+PRIORITY 1 — SILENT FAIL FIX (edge_extrude, sdf_raymarch)
+  Problem: rndForm, rndColor, rndAll silently fail because ghost legacy bridge
+           buttons are found first by tryIframeClick.
+  Fix A (shell-side, safest): Reorder ids[] in BRIDGE_ACTIONS in standalone_shell.html
+    rndForm:  ids: ["btnRandomForm", "randomForm", "randomize"]
+    rndColor: ids: ["btnRndColor", "randomColor"]
+    rndAll:   ids: ["btnRandom", "randomAll", "randomUnlocked", "randomize"]
+  This ensures real handler buttons are found before ghost stubs.
+  File: standalone_shell.html (BRIDGE_ACTIONS object, lines 325-341)
+
+PRIORITY 2 — MIRRORED NAV BADGES
+  Add two .navBadge divs inside <main class="stage"> in standalone_shell.html.
+  Each has its own prev/next buttons.
+  Add CSS for .navBadge, .navBadge--left, .navBadge--right.
+  Add 4 bindButton calls for navPrevL, navNextL, navPrevR, navNextR.
+  Optionally: remove cssPrev/cssNext from .controlStack and their bindButton lines.
+  File: standalone_shell.html (HTML + <style> + bindButton section)
+
+PRIORITY 3 — LOGO HREF FIX
+  Change absolute href to: "standalone_shell.html"
+  File: standalone_shell.html, line 206 (logoOverlay anchor)
+
+PRIORITY 4 — A01 INDEX PAGE
+  Create workspace/standalone_20260628/index.html
+  Static HTML. Module list with 4 entries. Link to standalone_shell.html.
+  ~80 lines. Match shell aesthetic (monospace, noir, black).
+  No JavaScript required.
+
+PRIORITY 5 — PANEL HIDE/SHOW (OPTIONAL, DEFER)
+  Add panelToggle button to shell controlStrip.
+  Extend standalone_common.js to listen for "noixzy:standalone-panel" message.
+  Inject hide/show CSS via postMessage response.
+  File: standalone_shell.html, standalone_common.js
+
+PRIORITY 6 — VERIFY TRIANGULATED_SIGNAL_MESH RUNTIME PATH
+  Confirm noixzy_batch_15_generated_runtime.js exists in the
+  noixzy_triangulated_signal_mesh/ directory. If not, fix the script src path.
+  File: noixzy_triangulated_signal_mesh/noixzy_triangulated_signal_mesh.html line 8
+
+
+================================================================================
+SECTION 12 — FILES CODEX SHOULD EDIT
+================================================================================
+
+  workspace/standalone_20260628/standalone_shell.html
+    -- Priority 1: BRIDGE_ACTIONS ids[] reorder (rndForm, rndColor, rndAll)
+    -- Priority 2: Add mirrored nav badges (HTML + CSS + JS bindings)
+    -- Priority 3: Fix logo href absolute→relative
+    -- Priority 5: Add panelToggle button (optional)
+
+  workspace/standalone_20260628/standalone_common.js
+    -- Priority 5: Add panel hide/show message handler (optional)
+
+  [NEW FILE] workspace/standalone_20260628/index.html
+    -- Priority 4: Create A01 start/gallery page
+
+
+================================================================================
+SECTION 13 — FILES CODEX MUST NOT TOUCH
+================================================================================
+
+  unified_shell.html                           -- Phase D, not A01
+  modules.manifest.json                        -- unified shell registry
+  gallery/index.html                           -- main gallery
+  workspace/module_escrow_20260627/            -- escrow modules
+  gallery/gallery.svg                          -- shared logo asset
+  gallery/thumbs/                              -- shared thumb assets
+  gallery/noixzy_ruler_overlay.js              -- shared utility
+
+
+================================================================================
+SECTION 14 — EXACT NEXT ACTION RECOMMENDATION
+================================================================================
+
+NEXT ACTION: Implement Priority 1 (silent fail fix) and Priority 2 (nav badges)
+             in a single focused edit to standalone_shell.html.
+
+These two changes are self-contained, low-risk, and immediately improve A01
+shell usability. They require no module edits and no changes to common.js.
+
+AFTER that:
+  - Priority 3 (logo href fix) — 1-line change, include in same edit
+  - Priority 4 (index.html) — write new file, minimal scope
+  - Priority 6 (verify runtime path) — quick file check before next test
+
+DO NOT simultaneously refactor the bridge architecture, add the panel system,
+or attempt capability contract while fixing the nav badges. Make one clean
+PR per priority tier.
+
+================================================================================
+END OF REPORT
+================================================================================

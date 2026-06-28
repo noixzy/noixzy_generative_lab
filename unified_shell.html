@@ -7,8 +7,6 @@
 <style>
   :root {
     --rail-h: 78px;
-    --ctrl-h: 28px;
-    --stage-top: calc(var(--rail-h) + var(--ctrl-h));
     --bg: #000;
     --rail: #000;
     --rail-2: #000;
@@ -176,7 +174,7 @@
     font-size: 10px;
     font-weight: 700;
     letter-spacing: .12em;
-    transform: translateY(-18px) scale(1.42);
+    text-transform: translateY(-18px) scale(1.42);
   }
 
   body.logoBadgeHidden .logoOverlay {
@@ -310,14 +308,14 @@
 
   .stage {
     position: fixed;
-    inset: var(--stage-top) 0 0;
+    inset: var(--rail-h) 0 0;
     background: #000;
   }
 
   #moduleFrame {
     display: block;
     width: 100%;
-    height: calc(100vh - var(--stage-top));
+    height: calc(100vh - var(--rail-h));
     border: 0 !important;
     outline: 0 !important;
     box-shadow: none !important;
@@ -336,7 +334,7 @@
   .status {
     position: fixed;
     left: 50%;
-    top: calc(var(--stage-top) + 8px);
+    top: calc(var(--rail-h) + 16px);
     z-index: 13;
     transform: translateX(-50%);
     max-width: min(620px, calc(100vw - 32px));
@@ -357,7 +355,6 @@
   @media (max-width: 760px) {
     :root {
       --rail-h: 96px;
-      --stage-top: calc(var(--rail-h) + var(--ctrl-h));
       --thumb-w: 82px;
       --thumb-h: 52px;
       --logo-w: calc(var(--thumb-w) * 1.36);
@@ -433,81 +430,6 @@
   }
 
 
-  /* ── Control Strip ───────────────────────────────────────────────────────── */
-
-  .controlStrip {
-    position: fixed;
-    inset: var(--rail-h) 0 auto;
-    z-index: 9;
-    height: var(--ctrl-h);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0 10px;
-    background: #000;
-    border-bottom: 1px solid rgba(255, 255, 255, .07);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .controlStrip::-webkit-scrollbar { display: none; }
-
-  .searchBox {
-    flex: 1;
-    min-width: 72px;
-    max-width: 220px;
-    height: 18px;
-    padding: 0 6px;
-    border: 1px solid rgba(255, 255, 255, .16);
-    border-radius: 3px;
-    background: rgba(255, 255, 255, .04);
-    color: var(--ink);
-    font: inherit;
-    font-size: 9px;
-    letter-spacing: .05em;
-    outline: none;
-    -webkit-appearance: none;
-  }
-
-  .searchBox::placeholder { color: var(--dim); opacity: .7; }
-  .searchBox:focus { border-color: rgba(255, 255, 255, .32); }
-  .searchBox::-webkit-search-cancel-button { -webkit-appearance: none; }
-
-  .ctrlBtn {
-    flex-shrink: 0;
-    height: 18px;
-    padding: 0 5px;
-    border: 1px solid rgba(255, 255, 255, .11);
-    border-radius: 3px;
-    background: transparent;
-    color: var(--dim);
-    font: inherit;
-    font-size: 8px;
-    letter-spacing: .06em;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: color .1s, border-color .1s;
-  }
-
-  .ctrlBtn:hover {
-    color: var(--ink);
-    border-color: rgba(255, 255, 255, .3);
-  }
-
-  .ctrlBtn:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: 1px;
-  }
-
-  .ctrlSep {
-    flex-shrink: 0;
-    width: 1px;
-    height: 12px;
-    background: rgba(255, 255, 255, .1);
-  }
-
-  /* ── Control Strip ───────────────────────────────────────────────────────── */
-
   /* NOIXZY_BADGE_EDGE_FADE */
   .logoOverlay::before,
   .logoOverlay::after {
@@ -556,32 +478,6 @@
     </div>
   </header>
 
-  <div class="controlStrip" id="controlStrip" role="toolbar" aria-label="Module controls">
-    <button class="ctrlBtn" id="cssPrev"     type="button" title="Previous Module (←)">prev</button>
-    <button class="ctrlBtn" id="cssNext"     type="button" title="Next Module (→)">next</button>
-    <span class="ctrlSep" aria-hidden="true"></span>
-    <input class="searchBox" id="moduleSearch" type="search" placeholder="/ search modules" autocomplete="off" spellcheck="false" aria-label="Search modules">
-    <span class="ctrlSep" aria-hidden="true"></span>
-    <button class="ctrlBtn" id="cssPause"    type="button" title="Pause / Resume (Space)">pause</button>
-    <button class="ctrlBtn" id="cssReset"    type="button" title="Reset (R)">reset</button>
-    <span class="ctrlSep" aria-hidden="true"></span>
-    <button class="ctrlBtn" id="cssSeed"     type="button" title="New Seed (N)">seed</button>
-    <button class="ctrlBtn" id="cssRndForm"  type="button" title="Random Form (F)">form</button>
-    <button class="ctrlBtn" id="cssRndColor" type="button" title="Random Color">color</button>
-    <button class="ctrlBtn" id="cssRndAll"   type="button" title="Random All (A)">rnd</button>
-    <span class="ctrlSep" aria-hidden="true"></span>
-    <button class="ctrlBtn" id="cssSave"     type="button" title="Save (S)">save</button>
-    <button class="ctrlBtn" id="cssSave2x"   type="button" title="Save 2×">2×</button>
-    <button class="ctrlBtn" id="cssThumb"    type="button" title="Thumbnail (T)">thumb</button>
-    <button class="ctrlBtn" id="cssRec"      type="button" title="Record">rec</button>
-    <span class="ctrlSep" aria-hidden="true"></span>
-    <button class="ctrlBtn" id="cssBg"       type="button" title="Transparent Background (B)">bg</button>
-    <button class="ctrlBtn" id="cssUndo"     type="button" title="Undo (⌘Z)">undo</button>
-    <button class="ctrlBtn" id="cssRedo"     type="button" title="Redo (⌘⇧Z)">redo</button>
-    <button class="ctrlBtn" id="cssCopy"     type="button" title="Copy">copy</button>
-    <button class="ctrlBtn" id="cssPaste"    type="button" title="Paste">paste</button>
-  </div>
-
   <main class="stage">
     <div class="status" id="status">loading modules.manifest.json</div>
     <iframe id="moduleFrame" title="noixzy module"></iframe>
@@ -602,12 +498,8 @@
     grid: "noixzyShell.grid",
     logoBadge: "noixzyShell.logoBadge"
   };
-  const shellUiStyleId = "__noixzyShellUiCleanup";
-  const shellUiDockId = "__noixzyShellProductionDock";
   let enabledModules = [];
   let activeId = "";
-
-  // "fold" removed — file missing, archived in _archive/fold
   const galleryOrder = [
     "grid_extrude",
     "sdf_raymarch",
@@ -615,6 +507,7 @@
     "displacement",
     "displacement_primitives",
     "mandelbulb",
+    "fold",
     "metafluid",
     "moire_field",
     "particle_orbitals",
@@ -640,16 +533,6 @@
     "echo_contours",
     "magnetic_dust",
     "neural_lattice",
-    "hyperbolic_tiling",
-    "voronoi_tower_field",
-    "catenary_web",
-    "reaction_terraces",
-    "quasicrystal_relief",
-    "agent_swarm_relief",
-    "tensegrity_nodes",
-    "phyllotaxis_stack",
-    "origami_fold_field",
-    "woven_lattice_relief",
     "flow_field",
     "reaction_diffusion",
     "voronoi",
@@ -855,313 +738,8 @@
     selectModule(moduleFromUrl());
   });
 
-  // ── Panel reveal: undo always-on GEOMETRY_ONLY_MODE inside the iframe ────────
-  // Generated modules (post-build_lab.js fix) use body.geoOnly; hand-authored
-  // modules still have GEOMETRY_ONLY_MODE as always-on CSS. This injection
-  // appends an override style after load to restore the panel and stage layout
-  // for both cases without touching any module art files.
-  const revealModulePanel = () => {
-    try {
-      const doc = frame.contentDocument || frame.contentWindow?.document;
-      if (!doc || !doc.head) return;
-      if (doc.getElementById("__noixzyShellReveal")) return;
-      const s = doc.createElement("style");
-      s.id = "__noixzyShellReveal";
-      s.textContent =
-        // Restore body to normal flow (GEOMETRY_ONLY_MODE makes it position:fixed)
-        "body{position:static!important;}" +
-        // Restore stage to flex child (GEOMETRY_ONLY_MODE makes it position:fixed; inset:0)
-        ".stage,#stage{position:relative!important;inset:auto!important;" +
-          "width:auto!important;height:100%!important;overflow:hidden!important;}" +
-        // Make panel visible
-        ".panel{display:block!important;visibility:visible!important;pointer-events:auto!important;}" +
-        // Make controls inside the panel visible and interactive
-        ".panel button,.panel select,.panel input,.panel textarea,.panel label{" +
-          "display:revert!important;visibility:visible!important;pointer-events:auto!important;}";
-      doc.head.appendChild(s);
-    } catch (_) {}
-  };
-
-  const rebalanceModuleUi = () => {
-    try {
-      const doc = frame.contentDocument || frame.contentWindow?.document;
-      if (!doc || !doc.head || !doc.body) return;
-
-      if (!doc.getElementById(shellUiStyleId)) {
-        const s = doc.createElement("style");
-        s.id = shellUiStyleId;
-        s.textContent = [
-          ".stageThumbs,#stageThumbs,.stageTools,#stageTools,.previewHistory,#previewHistory{display:none!important;visibility:hidden!important;pointer-events:none!important;}",
-          ".panel{display:flex!important;flex-direction:column!important;gap:10px!important;overflow-y:auto!important;}",
-          ".panel>*{min-width:0;}",
-          "#"+shellUiDockId+"{display:grid;gap:12px;margin:0 0 10px;padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(0,0,0,.22);}",
-          "#"+shellUiDockId+" .shellSectionLabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:0 0 6px;}",
-          "#"+shellUiDockId+" .shellNavRow,#"+shellUiDockId+" .shellActionGrid{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}",
-          "#"+shellUiDockId+" .shellActionGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}",
-          "#"+shellUiDockId+" .shellActionGrid>*,#"+shellUiDockId+" .shellNavRow>*{min-width:0;}",
-          "@media (max-width:960px){#"+shellUiDockId+" .shellActionGrid{grid-template-columns:repeat(1,minmax(0,1fr));}}"
-        ].join("");
-        doc.head.appendChild(s);
-      }
-
-      const panel = doc.querySelector(".panel");
-      if (!panel) return;
-
-      let dock = doc.getElementById(shellUiDockId);
-      if (!dock) {
-        dock = doc.createElement("section");
-        dock.id = shellUiDockId;
-        dock.setAttribute("aria-label", "production controls");
-        dock.innerHTML = `
-          <div class="shellSection">
-            <div class="shellSectionLabel">navigation</div>
-            <div class="shellNavRow" data-shell-slot="nav"></div>
-          </div>
-          <div class="shellSection">
-            <div class="shellSectionLabel">production</div>
-            <div class="shellActionGrid" data-shell-slot="production"></div>
-          </div>
-        `;
-        panel.insertBefore(dock, panel.firstChild);
-      }
-
-      const navRow = dock.querySelector('[data-shell-slot="nav"]');
-      const actionGrid = dock.querySelector('[data-shell-slot="production"]');
-      if (!navRow || !actionGrid) return;
-
-      const moveByIds = (ids, target) => {
-        for (const id of ids) {
-          const el = doc.getElementById(id);
-          if (el && el.parentElement !== target) {
-            target.appendChild(el);
-          }
-        }
-      };
-
-      // Group module navigation controls together.
-      moveByIds([
-        "btnUndo",
-        "btnRedo",
-        "navPrev",
-        "navNext",
-        "themePrev",
-        "themeNext",
-        "starterPrev",
-        "starterNext"
-      ], navRow);
-
-      const toolbarCandidates = [
-        doc.getElementById("previewHistory"),
-        doc.querySelector(".previewHistory"),
-        doc.getElementById("stageTools"),
-        doc.querySelector(".stageTools"),
-        doc.getElementById("toolbar"),
-        doc.querySelector(".toolbar"),
-        doc.getElementById("toolBar"),
-        doc.querySelector(".toolBar"),
-        doc.getElementById("controls"),
-        doc.querySelector(".controls"),
-        doc.getElementById("ctrls"),
-        doc.querySelector(".ctrls")
-      ].filter((el, index, arr) => el && arr.indexOf(el) === index);
-
-      for (const container of toolbarCandidates) {
-        const wasPreviewHistory = container.id === "previewHistory" || container.classList.contains("previewHistory");
-        const shouldRemove = wasPreviewHistory
-          || container.id === "stageThumbs"
-          || container.classList.contains("stageTools")
-          || container.classList.contains("toolbar")
-          || container.classList.contains("toolBar")
-          || container.classList.contains("controls")
-          || container.classList.contains("ctrls");
-        const children = [...container.children];
-        if (children.length) {
-          for (const child of children) {
-            actionGrid.appendChild(child);
-          }
-          if (shouldRemove) {
-            container.remove();
-          }
-        } else {
-          if (shouldRemove) {
-            container.remove();
-          } else {
-            actionGrid.appendChild(container);
-          }
-        }
-      }
-
-      const thumbRail = doc.getElementById("stageThumbs") || doc.querySelector(".stageThumbs");
-      thumbRail?.remove();
-    } catch (_) {}
-  };
-  frame.addEventListener("load", revealModulePanel);
-  frame.addEventListener("load", () => {
-    requestAnimationFrame(rebalanceModuleUi);
-  });
-
-  // ── Bridge, Navigation & Search ──────────────────────────────────────────────
-
-  const initBridge = () => {
-    const search = document.getElementById("moduleSearch");
-
-    // Try clicking IDs inside the active module iframe in order until one hits.
-    const tryIframeClick = (...ids) => {
-      let doc = null;
-      try {
-        doc = frame.contentDocument || frame.contentWindow?.document;
-      } catch (_) { return null; }
-      if (!doc) return null;
-      for (const id of ids) {
-        const el = doc.getElementById(id);
-        if (el) { el.click(); return id; }
-      }
-      return null;
-    };
-
-    const bridgeAction = (label, ids) => {
-      const hit = tryIframeClick(...ids);
-      if (!hit) setStatus(`${label}: not supported in ${activeId || "this module"}`);
-      return Boolean(hit);
-    };
-
-    // Priority fallback lists cover all three template generations:
-    // Template A (new/generated): save / save2x / thumb / rec / pause / reset / newSeed /
-    //   randomAll / randomForm / randomColor / btnTransparentBg / btnUndo / btnRedo / copyP / pasteP
-    // Template B (grid_extrude): btnSave2 / btnSave2x2 / btnThumb2 / btnRec2 / btnNewSeed / btnUndo / btnRedo
-    // Template C (hand-authored): btnSave / btnSave2x / btnThumb / btnRec / btnCopy / btnPaste
-    //   + noixzyLegacyControlBridge injects: btnReset / btnRandom / btnRandomForm / btnRndColor /
-    //     btnNewSeed / btnUndo / btnRedo
-    const bridge = {
-      save:     () => bridgeAction("Save",            ["save",       "btnSave2",   "btnSave"]),
-      save2x:   () => bridgeAction("Save 2×",         ["save2x",     "btnSave2x2", "btnSave2x"]),
-      thumb:    () => bridgeAction("Thumbnail",        ["thumb",      "btnThumb2",  "btnThumb"]),
-      rec:      () => bridgeAction("Record",           ["rec",        "btnRec2",    "btnRec"]),
-      pause:    () => bridgeAction("Pause",            ["pause"]),
-      reset:    () => bridgeAction("Reset",            ["reset",      "btnReset"]),
-      seed:     () => bridgeAction("New Seed",         ["newSeed",    "btnNewSeed"]),
-      rndForm:  () => bridgeAction("Random Form",      ["randomForm", "btnRandomForm"]),
-      rndColor: () => bridgeAction("Random Color",     ["randomColor","btnRndColor"]),
-      rndAll:   () => bridgeAction("Random All",       ["randomAll",  "randomUnlocked", "btnRandom"]),
-      bg:       () => bridgeAction("Transparent BG",   ["btnTransparentBg"]),
-      undo:     () => bridgeAction("Undo",             ["btnUndo"]),
-      redo:     () => bridgeAction("Redo",             ["btnRedo"]),
-      copy:     () => bridgeAction("Copy",             ["copyP",      "btnCopy"]),
-      paste:    () => bridgeAction("Paste",            ["pasteP",     "btnPaste"]),
-    };
-
-    // Navigate through visible rail buttons by delta (-1 / +1) with wrapping.
-    const getVisibleButtons = () =>
-      [...document.querySelectorAll(".moduleButton")].filter((b) => !b.hidden);
-
-    const navRail = (delta) => {
-      const buttons = getVisibleButtons();
-      if (!buttons.length) return;
-      const currentIndex = buttons.findIndex((b) => b.dataset.moduleId === activeId);
-      const base = currentIndex === -1 ? 0 : currentIndex + delta;
-      // Modulo wrap: works for both +1 and -1 without clamping.
-      const nextIndex = ((base % buttons.length) + buttons.length) % buttons.length;
-      const next = buttons[nextIndex];
-      selectModule(next.dataset.moduleId, { updateUrl: true });
-      next.scrollIntoView({ block: "nearest", inline: "nearest" });
-      next.focus();
-    };
-
-    // Wire control strip buttons
-    const bindBtn = (id, action) => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener("click", action);
-    };
-    bindBtn("cssPrev",     () => navRail(-1));
-    bindBtn("cssNext",     () => navRail(1));
-    bindBtn("cssPause",    bridge.pause);
-    bindBtn("cssReset",    bridge.reset);
-    bindBtn("cssSeed",     bridge.seed);
-    bindBtn("cssRndForm",  bridge.rndForm);
-    bindBtn("cssRndColor", bridge.rndColor);
-    bindBtn("cssRndAll",   bridge.rndAll);
-    bindBtn("cssSave",     bridge.save);
-    bindBtn("cssSave2x",   bridge.save2x);
-    bindBtn("cssThumb",    bridge.thumb);
-    bindBtn("cssRec",      bridge.rec);
-    bindBtn("cssBg",       bridge.bg);
-    bindBtn("cssUndo",     bridge.undo);
-    bindBtn("cssRedo",     bridge.redo);
-    bindBtn("cssCopy",     bridge.copy);
-    bindBtn("cssPaste",    bridge.paste);
-
-    // Search / filter module rail
-    const filterModules = (query) => {
-      const q = query.toLowerCase().trim();
-      document.querySelectorAll(".moduleButton").forEach((btn) => {
-        const id = (btn.dataset.moduleId || "").toLowerCase();
-        const title = (btn.title || "").toLowerCase();
-        btn.hidden = Boolean(q && !id.includes(q) && !title.includes(q));
-      });
-    };
-
-    if (search) {
-      search.addEventListener("input", () => filterModules(search.value));
-    }
-
-    // Global keyboard handler — bridge shortcuts + rail navigation + search
-    document.addEventListener("keydown", (e) => {
-      const tag = document.activeElement?.tagName || "";
-      const inInput = ["INPUT", "TEXTAREA", "SELECT"].includes(tag);
-      const inSearch = document.activeElement === search;
-      const isMod = e.metaKey || e.ctrlKey;
-
-      // Escape: clear search if populated, else close settings
-      if (e.key === "Escape") {
-        if (inSearch && search && search.value) {
-          search.value = "";
-          filterModules("");
-        } else {
-          closeSettingsMenu();
-        }
-        return;
-      }
-
-      // "/" focuses search
-      if (e.key === "/" && !inInput) {
-        e.preventDefault();
-        search?.focus();
-        search?.select();
-        return;
-      }
-
-      // While typing in search only allow Escape and "/" above
-      if (inSearch || (inInput && !isMod)) return;
-
-      // Rail navigation
-      if (e.key === "ArrowLeft")  { e.preventDefault(); navRail(-1); return; }
-      if (e.key === "ArrowRight") { e.preventDefault(); navRail(1);  return; }
-
-      // Bridge keyboard shortcuts
-      if (isMod) {
-        if (e.key === "z" && !e.shiftKey) { e.preventDefault(); bridge.undo();  return; }
-        if (e.key === "z" && e.shiftKey)  { e.preventDefault(); bridge.redo();  return; }
-        if (e.key === "s")                { e.preventDefault(); bridge.save();  return; }
-        return;
-      }
-
-      // Single-key shortcuts (no modifier, not in input)
-      switch (e.key) {
-        case " ": e.preventDefault(); bridge.pause();   break;
-        case "r": bridge.reset();   break;
-        case "n": bridge.seed();    break;
-        case "f": bridge.rndForm(); break;
-        case "a": bridge.rndAll();  break;
-        case "b": bridge.bg();      break;
-        case "s": bridge.save();    break;
-        case "t": bridge.thumb();   break;
-      }
-    });
-  };
-
   initSettings();
   init();
-  initBridge();
 })();
 </script>
 </body>

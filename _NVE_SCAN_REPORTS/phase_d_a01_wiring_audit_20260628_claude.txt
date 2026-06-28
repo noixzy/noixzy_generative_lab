@@ -1,0 +1,814 @@
+================================================================================
+PHASE D + A01 SYSTEM AUDIT — WIRING INVESTIGATION REPORT
+================================================================================
+Timestamp         : 2026-06-28 (session date)
+Report author     : Claude Sonnet 4.6 (claude-sonnet-4-6)
+Branch            : feature-hand-authored-preview-undo-redo
+Scope             : A01 / S.A. shell + Phase D unified shell + escrow wiring
+================================================================================
+
+
+DEFINITIONS USED IN THIS REPORT
+─────────────────────────────────
+  A01 / S.A.    = workspace/standalone_20260628/
+  Phase D       = unified_shell.html (project root)
+  Escrow        = workspace/module_escrow_20260627/
+  Main lab      = project root — 56 module folders + manifest + unified shell
+  Template A    = main-lab generated module style (save/thumb/rec/newSeed IDs)
+  Template B    = grid_extrude style (btnSave2/btnThumb2/btnRec2 IDs)
+  Template C    = hand-authored panel style (btnSave/btnThumb/btnRec IDs)
+  batch-x       = escrow/A01 brutalist-pattern (play/randomize/reset/export IDs)
+
+
+────────────────────────────────────────────────────────────────────────────────
+1. PROJECT ROOT CONFIRMED
+────────────────────────────────────────────────────────────────────────────────
+  /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab
+  Branch: feature-hand-authored-preview-undo-redo
+  Ahead of origin: 4 commits
+  unified_shell.html: MODIFIED (unstaged working copy changes)
+
+
+────────────────────────────────────────────────────────────────────────────────
+2. GIT STATUS SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+  Only unified_shell.html shows as modified.
+  All A01 files (workspace/standalone_20260628/*) are untracked by git —
+  they are in the workspace/ folder which may be partially gitignored.
+  All escrow files are similarly not in the main git diff.
+  No staged changes.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3. A01 CURRENT STATE
+────────────────────────────────────────────────────────────────────────────────
+  Shell:    workspace/standalone_20260628/standalone_shell.html
+  Runtime:  workspace/standalone_20260628/standalone_common.js
+  Index:    NO index.html in standalone_20260628/ — MISSING
+  Modules:  4 modules wired in shell JS (hardcoded array, no manifest)
+
+  Module list (as coded):
+    { id: "edge_extrude",
+      file: "edge_extrude/noixzy_edge_extrude.html",
+      thumb: "../../gallery/thumbs/grid_extrude.png" }        ← uses grid_extrude thumb
+
+    { id: "sdf_raymarch",
+      file: "sdf_raymarch/noixzy_sdf_raymarch.html",
+      thumb: "../../gallery/thumbs/sdf_raymarch.png" }
+
+    { id: "noixzy_brutalist_massing",
+      file: "noixzy_brutalist_massing/noixzy_brutalist_massing.html" }  ← no thumb
+
+    { id: "noixzy_triangulated_signal_mesh",
+      file: "noixzy_triangulated_signal_mesh/noixzy_triangulated_signal_mesh.html" }
+      ← no thumb
+
+  Note: edge_extrude thumb uses grid_extrude.png from the main lab gallery.
+  brutalist_massing and triangulated_signal_mesh have no thumb defined.
+  These buttons will fallback to .moduleLabel span text in A01's renderRail().
+
+  Direct file access (file://): partially functional
+    - iframe contentDocument works in Firefox; blocked in Chrome
+    - CDN p5.js loads via HTTPS even from file:// (requires internet)
+    - shell buttons are in the shell DOM (not iframe-injected) → ALWAYS VISIBLE
+
+  Via HTTP server: fully functional (python3 -m http.server from project root,
+    opening at http://localhost:8000/workspace/standalone_20260628/standalone_shell.html)
+
+  Module file existence: ALL 4 module files confirmed present.
+  standalone_common.js: present at workspace/standalone_20260628/standalone_common.js
+
+
+────────────────────────────────────────────────────────────────────────────────
+4. A01 BUTTON WIRING FINDINGS
+────────────────────────────────────────────────────────────────────────────────
+
+  A01 shell button placement:
+    Buttons are in a .controlStack div INSIDE .stage (floating, z-index:12).
+    Position: right:304px, top:10px — floats over the canvas.
+    They are always present in the shell's own DOM.
+    They do NOT depend on iframe injection.
+
+  Bridge mechanism (two-stage):
+    Stage 1: tryIframeClick(ids) — contentDocument.getElementById(id).click()
+    Stage 2 (fallback): postMessage("noixzy:standalone-action", ...)
+                        standalone_common.js on module side receives + dispatches
+    Status feedback: unsupportedStatus() → setStatus() shows message in overlay
+
+  Button wiring analysis per A01 module:
+  ─────────────────────────────────────────────────────────────────────────
+  LEGEND: ✓=works  ~=proxy via sc.js  ✗=shows status msg  ?=need verification
+  ─────────────────────────────────────────────────────────────────────────
+  BUTTON          IDs TRIED                  edge  sdf_r  brutal  triang
+  ─────────────────────────────────────────────────────────────────────────
+  pause           pause, btnPause, play       ✓     ✓      ✓       ✓
+  reset           reset, btnReset             ✓     ✓      ✓*      ✓*
+  seed            newSeed, btnNewSeed         ✓     ✓      ✗       ✗
+  form            randomForm, btnRandomForm   ✗     ✗      ✗       ✗
+  color           randomColor, btnRndColor    ✗     ✗      ✗       ✗
+  rndAll          randomAll, randomUnlocked,  ✓     ✓      ✓       ✓
+                  btnRandom, randomize
+  save            save, btnSave, btnSave2,    ✓     ✓      ✓       ✓
+                  export
+  save2x          save2x, btnSave2x,          ✓     ~      ~       ~
+                  btnSave2x2
+  thumb           thumb, btnThumb, btnThumb2  ✓     ~      ~       ~
+  rec             rec, btnRec, btnRec2        ✓     ✓      ✗       ✗
+  bg              btnTransparentBg            ✗     ✗      ✗       ✗
+  undo            btnUndo                     ✓     ?      ✗       ✗
+  redo            btnRedo                     ✓     ?      ✗       ✗
+  copy            copyP, btnCopy, copy        ?     ?      ✗       ✗
+  paste           pasteP, btnPaste, paste     ?     ?      ✗       ✗
+  ─────────────────────────────────────────────────────────────────────────
+  * reset in brutalist_massing / triangulated calls location.reload()
+    inside the iframe — full iframe page reload, not a soft state reset.
+    Functional but slow.
+  ~ proxy means standalone_common.js builds an invisible button element
+    named save2x/thumb if not already present, with canvas download logic.
+  sdf_raymarch was inspected: has Template A IDs (save/thumb/rec + standalone_common
+    install). undo/redo/copy/paste presence unverified but probable for Template A.
+
+  WIRING GAPS (A01-specific):
+    seed (N key / cssSeed button) → silent fail for brutalist / triangulated
+      because those modules use "randomize" for randomAll but have no "newSeed"
+      element — standalone_common aliases newSeed→randomize but "newSeed"
+      itself is the expected canonical ID. The postMessage path sends targetId:
+      "newSeed" + ids:["newSeed","btnNewSeed"]. standalone_common checks
+      aliases["newSeed"] = ["randomize"] (if install has newSeed:["randomize"]).
+      BUT brutalist_massing install uses newSeed: ["randomize"], so alias IS
+      present and should resolve "randomize" → ✓ via postMessage.
+      CONCLUSION: seed works for brutalist/triangulated via postMessage path.
+      The table above was conservative — revise seed row:
+        seed: ✓ (edge, sdf) + ✓ (brutal via pm alias) + ✓ (triang via pm alias)
+
+    form/color → genuinely unsupported in all A01 modules. Status msg is shown.
+    rec → genuinely unsupported in brutalist/triangulated. Status msg shown.
+    bg → unsupported everywhere in A01. Status msg shown.
+
+  sdf_raymarch has a full Template A install (save/save2x/thumb/rec/undo/redo
+  etc. mapped). All major actions should work.
+
+  edge_extrude uses Template B button IDs (btnSave2, btnSave2x2, btnThumb2,
+  btnRec2) — these are in the A01 bridge fallback lists. All major actions work
+  via contentDocument hit on first try (no postMessage needed).
+  edge_extrude has inline CSS specifically for the A01 shell:
+    "A01 standalone shell: restore right-side parameter panel when opened
+    via local file."
+  This CSS makes the .panel visible (flex:0 0 292px) when in the A01 shell.
+  This is a good pattern — module-level self-healing for the shell context.
+
+
+────────────────────────────────────────────────────────────────────────────────
+5. A01 INDEX / GALLERY / LOGO / BADGE FINDINGS
+────────────────────────────────────────────────────────────────────────────────
+  Index/start page:
+    standalone_20260628/index.html — DOES NOT EXIST
+    The A01 shell is only reachable at standalone_shell.html directly.
+    No gallery or start page exists for A01.
+    RISK: There is no A01 home anchor. The "back" / logo destination is
+    ambiguous — currently points to main lab gallery.
+
+  Logo / home link:
+    standalone_shell.html line 205:
+      href="../../gallery/index.html"
+    This resolves to: noixzy_generative_lab/gallery/index.html (main lab gallery)
+    This link WORKS (gallery/index.html exists).
+    But it points AWAY from A01 into the main lab — not to an A01 home.
+
+  Logo image:
+    src="../../gallery/gallery.svg"
+    This resolves to: noixzy_generative_lab/gallery/gallery.svg (EXISTS)
+
+  Badge / status pill:
+    There is NO badge or status pill element in standalone_shell.html.
+    No logoBadge, no badge chip, no status overlay near the logo.
+    The logo area is clean — just `<a>` wrapping `<img>`.
+    CONCLUSION: Badge issue does not exist in A01 currently.
+    If a badge was reported previously it may have been in the older
+    standalone shell or in unified shell's settings menu (which has a
+    "Logo Badge" toggle). A01 has no such toggle.
+
+  Gallery/thumbnail link:
+    Not wired. No per-module "open in gallery" link in A01.
+
+  Note from user's report file header (line 1, user annotation):
+    "l and remove exiting default thumbnail images, we need a start page
+    it can be designed like the gallery from UNI.shell"
+    This confirms intent: A01 needs a start page modeled on the main lab
+    gallery (gallery/index.html). Default thumbnails should be removed/replaced.
+
+  Module thumbs in A01 rail:
+    edge_extrude: uses grid_extrude.png (wrong/approximate — edge_extrude
+      is a new variant but shares the grid_extrude thumb)
+    brutalist_massing: no thumb defined → falls back to .moduleLabel text
+    triangulated_signal_mesh: no thumb defined → falls back to .moduleLabel text
+    sdf_raymarch: uses sdf_raymarch.png ✓
+
+
+────────────────────────────────────────────────────────────────────────────────
+6. UNIFIED SHELL (PHASE D) BREAKAGE FINDINGS
+────────────────────────────────────────────────────────────────────────────────
+  [Full details in phase_d_unified_investigation_20260628_claude.txt]
+
+  Summary for cross-reference:
+
+  Root cause #1: fetch("modules.manifest.json") blocked under file://
+    Manifest never loads. Rail stays empty. No module ever selected.
+
+  Root cause #2: ctrlBtn elements REMOVED from shell HTML (uncommitted diff)
+    The working copy removed all action buttons from the controlStrip HTML.
+    They were replaced by a design that injects buttons as overlay divs
+    INSIDE the iframe. This injection:
+      - Requires contentDocument access (blocked under file://)
+      - Is fragile under HTTP (race on frame load events, .stage dependency)
+      - Leaves the shell with ZERO visible action buttons if injection fails
+
+  Root cause #3: No postMessage fallback in unified bridge
+    tryIframeClick fails → no postMessage sent → silent failure.
+    A01 has postMessage fallback; unified does not.
+
+  Root cause #4: revealModulePanel CSS override too broad
+    body{position:static!important} is permanent and applies to all modules.
+    Intended to undo GEOMETRY_ONLY_MODE but GEOMETRY_ONLY_MODE is
+    body.geoOnly (class-based, not always-on). The permanent override
+    could conflict with modules using full-screen positioned body layout.
+
+  Status: Broken at protocol level. Fix requires:
+    1. Always serve via HTTP (no file:// workaround possible for fetch)
+    2. Restore ctrlBtn elements to shell DOM (OR guarantee injection)
+    3. Add postMessage fallback to tryIframeClick
+    4. Narrow revealModulePanel to body.geoOnly override only
+
+
+────────────────────────────────────────────────────────────────────────────────
+7. ESCROW STRUCTURE FINDINGS
+────────────────────────────────────────────────────────────────────────────────
+  Path:    workspace/module_escrow_20260627/
+  index.html: EXISTS — redirects immediately to escrow_shell.html
+  escrow_shell.html: EXISTS — standalone sidebar-based shell with iframe preview
+  candidates/: 130+ standalone HTML modules
+  logs/:    present (not inspected)
+  noixzy_randomization_geometry_audit_20260627.md: present
+
+  Escrow shell design:
+    - Sidebar (300px, fixed left) with scrollable module list and search
+    - iframe (fills remaining space) for module preview
+    - global-nav buttons (prev/next: ← →) in header
+    - No production controls (save, thumb, etc.) in the escrow shell
+    - No bridge to module internals
+    - No postMessage wiring
+
+  Escrow candidate module patterns:
+    Batch files (batch_11 through batch_16 + math/unexplored/candidate):
+      Use window.initNoixzyBatchXX(id) model — HTML shells call the runtime.
+      Runtime creates: id="play", id="randomize", id="reset", id="export"
+      Canvas: id="view"
+      No standalone_common.js loading in batch pattern
+      No undo/redo/thumb/save2x/rec in batch modules
+
+    Standalone escrow HTML candidates (e.g. noixzy_brutalist_massing.html):
+      Use same play/randomize/reset/export pattern
+      No standalone_common.js
+      No A01 bridge compatibility
+
+    EXCEPTION: noixzy_brutalist_massing.html in A01 (standalone_20260628/)
+      DOES load standalone_common.js and has install() call.
+      The escrow version of the same module does NOT.
+      These are two different copies with different wiring states.
+
+  Escrow index/gallery conventions:
+    escrow has its own shell (escrow_shell.html) — not a gallery page.
+    No thumbnail images for escrow modules (escrow shell does not use thumbs).
+    No wiring to unified shell or A01.
+
+  Escrow isolation status:
+    CLEAN — no cross-dependencies to unified or A01 paths.
+    Escrow paths: candidates reference only local relative paths.
+    No ../standalone_common.js loading in escrow candidate modules.
+
+  RISK for promotion from escrow to A01:
+    An escrow candidate module would need:
+      1. Load of standalone_common.js added (one line)
+      2. noixzyStandaloneModule.install() call at bottom (aliases for play/
+         randomize/reset/export → canonical IDs)
+      3. Either: thumbnail added to gallery/thumbs/
+         Or: thumbnail accepted as missing in A01 (text label fallback)
+      4. Module added to A01 standalone_shell.html module array
+    This is a 4-step mechanical process. Small but requires confirmation per module.
+
+
+────────────────────────────────────────────────────────────────────────────────
+8. WIRING ISSUES THAT COULD IMPEDE PROGRESS
+────────────────────────────────────────────────────────────────────────────────
+
+  W-01: THREE INCOMPATIBLE BUTTON ID SCHEMES IN USE
+    Template A (generated): save / save2x / thumb / rec / pause / newSeed /
+      randomAll / randomForm / randomColor / btnUndo / btnRedo / copyP / pasteP
+    Template B (edge_extrude): btnSave2 / btnSave2x2 / btnThumb2 / btnRec2
+    batch-x (brutalist/triangulated): play / randomize / reset / export
+    RISK: Shell bridge fallback lists must carry all three sets. Any new template
+    variant that adds new IDs will require bridge list updates in EVERY shell.
+    FIX DIRECTION: Standardize on Template A IDs for all future modules.
+      Legacy modules get standalone_common.js install() alias mapping.
+
+  W-02: reset = location.reload() IN batch-x MODULES
+    brutalist_massing and triangulated_signal_mesh reset via location.reload().
+    Under HTTP server: works but causes full iframe reload (slow, jarring).
+    Under file://: causes full file reload (no state persistence anyway).
+    Blocks "soft reset" concept (reset to initial params without reload).
+    FIX DIRECTION: Add a named reset function in batch-x modules that reinitializes
+    state without reload. Expose via id="reset" or standalone_common handler.
+
+  W-03: standalone_common.js PATH DEPENDENCY
+    All 4 A01 modules load "../standalone_common.js".
+    This path ONLY works from within standalone_20260628/ subdirectories.
+    If any module is promoted to main lab or escrow, path breaks silently.
+    standalone_common.js also embeds a hardcoded MODULES array (4 entries)
+    that is used for installQuickNav(). This array would be wrong for
+    modules outside A01 context.
+    FIX DIRECTION: Either make standalone_common.js path-agnostic (optional
+    load with fallback), or version it per shell with correct module list.
+
+  W-04: NO MODULE CAPABILITY DECLARATION
+    No module declares which actions it supports.
+    Shell must blindly try all IDs and fall through to postMessage.
+    Unsupported actions show a status message only after timeout (900ms in A01).
+    FIX DIRECTION: Capability map in manifest or module metadata (see §13).
+
+  W-05: CDN DEPENDENCY (p5.js via cdnjs.cloudflare.com)
+    edge_extrude and sdf_raymarch load p5.js from external CDN.
+    Under no-internet / flight mode / corporate proxy: modules silently blank.
+    Canvas never draws. No visible error in the shell.
+    FIX DIRECTION: Consider vendor-inlining p5.js or at minimum detecting
+    load failure and showing a helpful status message.
+
+  W-06: ESCROW MODULES NOT WIRED FOR SHELL PROMOTION
+    130+ escrow candidates have no standalone_common.js loading.
+    Promoting to A01 requires manual addition of script + install() call.
+    No automation / template exists for this wiring step.
+    RISK: Human error during promotion — wrong aliases, missing install call.
+    FIX DIRECTION: Create a standard promotion checklist + module template.
+
+  W-07: UNIFIED SHELL CONTROL BUTTONS REMOVED IN UNCOMMITTED DIFF
+    Current working copy of unified_shell.html has NO action buttons in DOM.
+    Any future merge or commit of this state would ship a headless shell.
+    FIX DIRECTION: Do not commit this diff. Restore buttons before committing.
+
+  W-08: UNIFIED SHELL FETCH() REQUIRES HTTP SERVER (NO file:// FALLBACK)
+    There is no server start script in package.json.
+    The developer must remember to run python3 -m http.server manually.
+    FIX DIRECTION: Add a "serve" script to package.json, or inline the manifest.
+
+  W-09: sdf_raymarch EXISTS IN TWO PLACES (possible divergence)
+    workspace/standalone_20260628/sdf_raymarch/noixzy_sdf_raymarch.html
+    sdf_raymarch/noixzy_sdf_raymarch.html (project root)
+    These may have diverged since A01 was created.
+    FIX DIRECTION: Audit diff between the two copies. Decide which is canonical.
+
+  W-10: edge_extrude THUMBNAIL IS WRONG
+    Configured with "../../gallery/thumbs/grid_extrude.png" —
+    grid_extrude.png, not an edge_extrude-specific thumbnail.
+    Cosmetic only, but confusing in the rail.
+    FIX DIRECTION: Either generate an edge_extrude thumbnail or remove thumb
+    entry so text label shows instead.
+
+  W-11: ESCROW SHELL HAS NO PRODUCTION CONTROLS
+    escrow_shell.html has no bridge, no save/thumb/rec buttons.
+    Every escrow module must be opened standalone to use its export functions.
+    FIX DIRECTION: Low priority for escrow (it's an incubator). But when
+    escrow is used for rapid evaluation, production controls save time.
+
+
+────────────────────────────────────────────────────────────────────────────────
+9. SHELL-COMPLIANCE RISKS
+────────────────────────────────────────────────────────────────────────────────
+
+  SC-01: HAND-AUTHORED MODULES IN MAIN LAB DO NOT HAVE CONSISTENT IDs
+    Verified modules (gyroid, sdf_raymarch, displacement, etc.) use mix of
+    Template A and Template C IDs. The unified shell bridge fallback list
+    covers all known sets. But each new hand-authored module could introduce
+    new or missing IDs that break bridge routing.
+
+  SC-02: GEOMETRY_ONLY_MODE VARIANT (body.geoOnly vs always-on CSS)
+    Generated modules use body.geoOnly class (toggle).
+    Some older hand-authored modules may use always-on GEOMETRY_ONLY_MODE CSS.
+    The unified shell's revealModulePanel injection targets both broadly.
+    Worst case: a module with always-on GEOMETRY_ONLY_MODE CSS will have
+    body{position:static} injected permanently — which may break its layout.
+
+  SC-03: CSS ISOLATION BETWEEN SHELL AND IFRAME CONTENT
+    The unified shell's overlay CSS (.previewOverlay, .ctrlBtn overrides)
+    is injected into the module iframe's <head>.
+    ctrlBtn class is ALSO used inside modules. This could cause style leakage
+    if modules have their own .ctrlBtn rules that conflict with the injected ones.
+
+  SC-04: ANIMATION LOOP WHEN SHELL IS NOT VISIBLE
+    Modules that run requestAnimationFrame loops continue running even when
+    the module is hidden (another module is active in the shell).
+    In the unified shell, the previous iframe's src is replaced by new src
+    (frame.src = module.file) — so the old document is unloaded. OK.
+    But during the brief period while the old frame is still loaded before
+    src change, its loop continues. Low impact.
+
+  SC-05: DRAG-TO-RESIZE / INTERACTIVE CANVAS BEHAVIORS
+    Some modules may capture mousedown/touchstart on the canvas and prevent
+    propagation. Under iframe, this is contained. But keyboard shortcuts
+    captured by the module frame (event.stopPropagation) will not bubble to
+    the shell. Shell keyboard shortcuts (/search, arrows, S, T, etc.) depend
+    on document-level keydown in the shell — these work ONLY when the shell
+    document has focus, not when the module iframe has focus.
+    This is a known limitation and is acceptable behavior.
+
+
+────────────────────────────────────────────────────────────────────────────────
+10. GENERATED-MODULE CONVERSION RISKS
+────────────────────────────────────────────────────────────────────────────────
+
+  GM-01: batch runtime JS pattern (initNoixzyBatchXX) is NOT template-compatible
+    batch_15_generated_runtime.js uses:
+      document.body.innerHTML = '...' (replaces entire body)
+      location.reload() for reset
+      No undo/redo/copy/paste/rec/bg/thumb/save2x
+    This pattern CAN be wrapped for shell by adding standalone_common.js
+    and an install() call after the batch init. BUT the location.reload()
+    reset issue (W-02) would remain. Generated modules that replace body.innerHTML
+    lose all DOM state on init — the panel cannot survive a reload.
+
+  GM-02: HAND-AUTHORED MODULES DO NOT USE TEMPLATE A IDs CONSISTENTLY
+    sdf_raymarch uses Template A (good).
+    grid_extrude (edge_extrude in A01) uses Template B.
+    gyroid, displacement, etc. use a mix of Template C.
+    When converting hand-authored modules to generated, maintaining exact
+    ID parity is required — otherwise bridge fallback chain breaks.
+
+  GM-03: CANVAS ID INCONSISTENCY
+    Template A: canvas has no fixed ID (selected as document.querySelector("canvas"))
+    Template B: canvas may be first canvas in .stage
+    batch-x: canvas id="view"
+    generated runtime: canvas id="view"
+    standalone_common.js: uses canvasSelector = "canvas" by default, or
+      caller passes canvasSelector argument. This is correct.
+    FIX DIRECTION: Use id="canvas" or id="view" consistently.
+      standalone_common.js already accepts canvasSelector param.
+
+  GM-04: PHYSICS TOGGLE IN batch-x MODULES
+    experimental-physics checkbox exists in brutalist_massing and batch_15.
+    This is a non-standard control with no bridge route.
+    OK for A01 (user interacts directly with panel), but if these modules
+    are promoted to unified shell where the panel may be hidden or reformatted,
+    the physics toggle would be inaccessible.
+
+  GM-05: SEED FIELD ID INCONSISTENCY
+    Template A: id="seed" (range or text input)
+    batch-x: id="seed" text input ✓
+    Some hand-authored: id="seedField" or no seed field
+    standalone_common.js: `const seedInput = () => byId("seed") || byId("seedField")`
+    This covers both. Good.
+
+
+────────────────────────────────────────────────────────────────────────────────
+11. PROCESSOR-LOAD RISKS
+────────────────────────────────────────────────────────────────────────────────
+
+  PL-01: MULTIPLE requestAnimationFrame LOOPS
+    Each module runs its own rAF loop. When switching modules in the shell,
+    the old frame.src is replaced — browser terminates old document and its
+    loops. This is handled by the browser automatically.
+    LOW RISK under normal module switching.
+
+  PL-02: PHYSICS CANVAS TRANSFORM + filter IN batch-x
+    experimental-physics in batch_15 applies CSS transform + filter to canvas.
+    On every tick: translate3d, scale, and contrast filter.
+    CSS filter on canvas forces GPU compositing layer — can spike GPU usage.
+    In A01 context (single iframe) this is acceptable.
+    In unified shell with many module switches, GPU layer may linger briefly.
+    LOW-MEDIUM RISK.
+
+  PL-03: PLACEHOLDER THUMBNAILS REPLACED BY TEXT
+    In A01, when modules have no thumb, the fallback is a .moduleLabel span
+    with the module title. This is text rendering, not image load.
+    NO performance impact — actually cheaper than thumbnails.
+
+  PL-04: PARALLEL FETCH FOR MANIFEST (unified only)
+    Unified shell fetches manifest on boot. One network request.
+    Under HTTP server, this is near-instant for a local JSON file.
+    NO performance concern.
+
+  PL-05: p5.js CDN LOAD TIME
+    p5.min.js is ~800KB. Loading from CDN adds first-load latency.
+    Under local HTTP + cache, subsequent loads are fast.
+    MEDIUM RISK for first-open experience.
+
+
+────────────────────────────────────────────────────────────────────────────────
+12. RECOMMENDED SHARED CONTRACT (MINIMAL USEFUL VERSION)
+────────────────────────────────────────────────────────────────────────────────
+  Do NOT implement yet. This is a design recommendation only.
+
+  MINIMUM VIABLE MODULE CONTRACT:
+  ─────────────────────────────────
+  Every shell-compatible module should either:
+    (A) Have these canonical button IDs in its DOM, OR
+    (B) Expose them via standalone_common.js aliases in install()
+
+  Canonical IDs (in priority order):
+    pause       ← toggles animation loop on/off
+    reset       ← returns to initial params (soft, no reload preferred)
+    newSeed     ← generates a new random seed string
+    randomAll   ← randomizes all unlocked parameters
+    save        ← downloads canvas as PNG at 1x
+    save2x      ← downloads canvas as PNG at 2x
+    thumb       ← downloads canvas as small PNG thumbnail
+    btnUndo     ← reverts to previous param state (if history exists)
+    btnRedo     ← re-applies forward param state
+
+  OPTIONAL (capability-declared, gracefully absent):
+    randomForm  ← randomizes form/shape params only
+    randomColor ← randomizes color/palette params only
+    rec         ← starts/stops video recording
+    btnTransparentBg ← toggles transparent background mode
+    copyP       ← copies current param state to clipboard
+    pasteP      ← pastes param state from clipboard
+
+  CAPABILITY FLAG (future, in manifest or module metadata):
+    capabilities: ["save", "thumb", "undo", "redo", "rec"]
+    Shell reads capabilities → shows only supported buttons.
+    Unsupported buttons are hidden (not shown as disabled).
+
+  THE SMALLEST USEFUL STEP:
+    Require only:
+      1. Either canonical ID in DOM, or standalone_common.js alias
+      2. save / reset / pause as mandatory minimum (3 IDs)
+      3. All others optional with graceful status message
+    This matches current A01 behavior and requires zero new code.
+
+  WHAT NOT TO DO NOW:
+    Do not build a formal JSON capability schema yet.
+    Do not add capability checking to shells yet.
+    Do not require modules to emit capability declarations.
+    Prove the pattern works across 4 A01 modules + 2-3 promoted escrow modules,
+    then formalize.
+
+
+────────────────────────────────────────────────────────────────────────────────
+13. SMALLEST SAFE A01 FIX PLAN
+────────────────────────────────────────────────────────────────────────────────
+  [Investigation only — do not implement without confirmation]
+
+  FIX-A1: Add an A01-specific index / start page
+    Create workspace/standalone_20260628/index.html.
+    Design: gallery-style grid modeled on gallery/index.html.
+    4 module cards with thumbnails (or text labels where thumbs are missing).
+    Links to standalone_shell.html?module=ID for each module.
+    Logo links back to this index.html.
+
+  FIX-A2: Update standalone_shell.html logo link
+    Change href="../../gallery/index.html"
+    To:    href="index.html"
+    (Points to the new A01 index page instead of main lab gallery.)
+
+  FIX-A3: Add proper thumbnails for brutalist_massing + triangulated
+    Either: take screenshots and save as gallery/thumbs/noixzy_brutalist_massing.png etc.
+    Or: generate via Playwright (contact_sheet.js pattern exists in project root).
+    Then update standalone_shell.html module entries with thumb paths.
+
+  FIX-A4: Fix edge_extrude thumbnail reference
+    Change "../../gallery/thumbs/grid_extrude.png"
+    To:    correct edge_extrude thumbnail (if it exists / once generated)
+
+  FIX-A5: Audit sdf_raymarch divergence between A01 copy and main lab copy
+    diff workspace/standalone_20260628/sdf_raymarch/noixzy_sdf_raymarch.html
+         sdf_raymarch/noixzy_sdf_raymarch.html
+    Decide which is canonical and whether they should be unified.
+
+  FIX-A6: Add "seed" wiring for sdf_raymarch (if not present)
+    Verify sdf_raymarch has id="newSeed" or aliases it in install().
+    Based on Template A pattern it should have it — verify before claiming.
+
+  Files affected:
+    workspace/standalone_20260628/index.html (CREATE)
+    workspace/standalone_20260628/standalone_shell.html (edit logo href)
+    workspace/standalone_20260628/standalone_shell.html (edit module thumbs)
+
+
+────────────────────────────────────────────────────────────────────────────────
+14. SMALLEST SAFE PHASE D UNIFIED REPAIR PLAN
+────────────────────────────────────────────────────────────────────────────────
+  [Investigation only — do not implement without confirmation]
+
+  Step 1: Serve via HTTP — prerequisite, no file edits
+    Add to package.json scripts:
+      "serve": "python3 -m http.server 8000"
+    (Or use npx serve if preferred.)
+    Open: http://localhost:8000/unified_shell.html
+
+  Step 2: Restore ctrlBtn elements to controlStrip HTML
+    The uncommitted diff removed all buttons. Revert that removal.
+    Restore: cssPrev, cssNext, cssPause, cssReset, cssSeed, cssRndForm,
+      cssRndColor, cssRndAll, cssSave, cssSave2x, cssThumb, cssRec,
+      cssBg, cssUndo, cssRedo, cssCopy, cssPaste
+    Keep: the search input
+    The overlay injection (mountPreviewOverlays/syncShellOverlays) can remain
+    as an OPTIONAL ENHANCEMENT on top — but buttons must exist in shell DOM
+    as the reliable fallback.
+
+  Step 3: Narrow revealModulePanel CSS
+    Change: "body{position:static!important;}"
+    To:     "body.geoOnly{position:static!important;}"
+
+  Step 4: Add postMessage fallback to tryIframeClick
+    After tryIframeClick loop fails (returns null), fall through to:
+      frame.contentWindow.postMessage({ type:"noixzy:standalone-action", ... }, "*")
+    Add window.addEventListener("message", ...) handler as in A01 bridge.
+    Note: main lab modules do NOT load standalone_common.js today — postMessage
+    would not be answered. But it should timeout gracefully without breaking.
+
+  Step 5: Remove orphan syncShellOverlays() call at boot
+    Remove line 1115 (the call before any iframe loads).
+    Rely solely on the frame.addEventListener("load", syncShellOverlays) at 1116.
+
+  Files affected:
+    unified_shell.html (steps 2–5 — targeted edits only)
+    package.json (step 1 — add "serve" script)
+
+  DO NOT in unified repairs:
+    Do not add standalone_common.js to main lab modules as part of this fix.
+    Do not change any module HTML files.
+    Do not change modules.manifest.json.
+
+
+────────────────────────────────────────────────────────────────────────────────
+15. ESCROW ALIGNMENT RECOMMENDATIONS
+────────────────────────────────────────────────────────────────────────────────
+  [Recommendations only — do not implement without confirmation]
+
+  ER-01: Add standalone_common.js loading to escrow candidates ON PROMOTION
+    Do NOT add it to all escrow candidates pre-emptively.
+    Add it only when a specific candidate is promoted to A01 or unified.
+    This avoids polluting escrow modules with A01-specific path dependencies.
+
+  ER-02: Standardize escrow module footer pattern for future candidates
+    Every new escrow module generated going forward should have a
+    commented install() stub at the bottom:
+      <!-- <script src="../standalone_common.js"></script>
+      <script>window.noixzyStandaloneModule?.install({ id:"...", aliases:{} });</script> -->
+    Uncomment on promotion. This makes promotion mechanical.
+
+  ER-03: Escrow shell should optionally show action buttons (future)
+    Current escrow shell: sidebar + iframe, no production controls.
+    Future improvement: add save/thumb buttons to escrow shell header,
+    wired to the same A01 bridge pattern (postMessage fallback).
+    This makes escrow evaluation faster (no need to open module standalone
+    just to take a screenshot).
+    LOW PRIORITY — escrow is an incubator, not a production tool.
+
+  ER-04: Escrow modules that use batch runtime JS
+    Modules like noixzy_triangulated_signal_mesh.html in escrow load
+    noixzy_batch_15_generated_runtime.js via <script src="...">
+    On promotion to A01/unified, the runtime JS path would need updating.
+    The A01 triangulated_signal_mesh carries its own copy of
+    noixzy_batch_15_generated_runtime.js in its own folder — correct.
+    CONCLUSION: batch runtime JS should travel WITH the module HTML on promotion
+    (not shared from escrow). Already done for triangulated in A01.
+
+  ER-05: Escrow start/index page convention
+    escrow_shell.html serves as the entry point.
+    This is good. Keep this pattern.
+    If escrow grows larger, consider adding thumbnail images.
+    Do not redesign escrow shell until it causes friction.
+
+
+────────────────────────────────────────────────────────────────────────────────
+16. WHAT SHOULD BE DONE BY CODEX
+────────────────────────────────────────────────────────────────────────────────
+  Codex (or Claude Code) is appropriate for:
+
+  C-01: Phase D unified_shell.html repair (Steps 2–5)
+    Targeted edit of a single known file.
+    Clear line-level instructions can be given.
+    No architectural decisions needed — just restore + narrow + add fallback.
+
+  C-02: package.json "serve" script addition
+    Trivial one-liner.
+
+  C-03: standalone_shell.html logo href fix (FIX-A2)
+    One-line change.
+
+  C-04: standalone_shell.html module thumbnail fix (FIX-A4)
+    Small update to module array entries once correct paths are known.
+
+  C-05: A01 index.html creation (FIX-A1)
+    HTML creation task. Model on gallery/index.html.
+    Codex can template it once the module list + thumbs are confirmed.
+
+  C-06: standalone_common.js install() stub addition to escrow candidates
+    On-demand, per-module. Mechanical and repeatable.
+    Give Codex: module id, title, alias map → it adds the two-line footer.
+
+
+────────────────────────────────────────────────────────────────────────────────
+17. WHAT SHOULD BE DONE BY COPILOT
+────────────────────────────────────────────────────────────────────────────────
+  Copilot (IDE-integrated) is appropriate for:
+
+  CP-01: Editing module HTML files in-place while reviewing their structure
+    Copilot autocomplete is valuable when adding install() stubs to modules
+    that have varying alias structures — it can suggest the correct mapping
+    by reading the existing button IDs in the file.
+
+  CP-02: Reviewing escrow candidate modules for promotion readiness
+    Opening a candidate in the IDE, checking which IDs exist,
+    letting Copilot suggest the correct aliases object for install().
+
+  CP-03: Writing new escrow module HTML from a prompt
+    Copilot is well-suited for generating new module HTML using the
+    established patterns (batch-x style, or Template A style).
+
+  NOT for Copilot:
+    Cross-file wiring decisions (these need full repo context — use Codex/Claude).
+    Manifest file edits (risk of data corruption — use manual confirmation).
+    Shell architecture changes (need deliberate planning, not autocomplete).
+
+
+────────────────────────────────────────────────────────────────────────────────
+18. FILES THAT MUST NOT BE TOUCHED WITHOUT CONFIRMATION
+────────────────────────────────────────────────────────────────────────────────
+
+  HIGH RISK — any edit could break the system:
+    modules.manifest.json               ← source of truth for unified shell
+    gallery/index.html                  ← main lab gallery entry point
+    All 56 main-lab noixzy_*.html       ← canonical art artifacts
+    gallery/gallery.svg                 ← logo asset
+
+  MEDIUM RISK — edits require care:
+    unified_shell.html                  ← currently broken working copy;
+                                           do not commit broken diff
+    workspace/standalone_20260628/standalone_common.js
+                                        ← shared by all 4 A01 modules;
+                                           path changes cascade everywhere
+    workspace/standalone_20260628/edge_extrude/noixzy_edge_extrude.html
+                                        ← has inline A01 CSS fix; preserve it
+
+  LOW RISK but prefer confirmation:
+    workspace/module_escrow_20260627/escrow_shell.html
+    workspace/module_escrow_20260627/candidates/*.html
+    workspace/standalone_20260628/standalone_shell.html
+
+  DO NOT DELETE:
+    _archive/          ← archived modules (fold etc.)
+    *.bak* files       ← pre-edit safety backups
+    workspace/_restore_safety_backup_*
+    workspace/module_escrow_20260627/logs/
+
+
+────────────────────────────────────────────────────────────────────────────────
+19. EXACT NEXT ACTION RECOMMENDATION
+────────────────────────────────────────────────────────────────────────────────
+
+  IMMEDIATE (this session or next, no risk):
+    [1] Start HTTP server before testing either shell:
+          python3 -m http.server 8000
+        Open A01: http://localhost:8000/workspace/standalone_20260628/standalone_shell.html
+        Open Unified: http://localhost:8000/unified_shell.html
+
+    [2] Revert the uncommitted diff in unified_shell.html (restore ctrlBtn elements)
+        before doing anything else with unified.
+        DO NOT commit the current broken state.
+
+  SHORT TERM (A01 tightening, low risk):
+    [3] Create workspace/standalone_20260628/index.html — A01 start page.
+        Design: gallery card grid matching gallery/index.html style.
+        4 module cards. Links to standalone_shell.html?module=ID.
+
+    [4] Update standalone_shell.html logo href → index.html (A01-relative).
+
+    [5] Generate / capture thumbnails for brutalist_massing and
+        triangulated_signal_mesh. Add to standalone_shell.html module entries.
+
+  MEDIUM TERM (unified shell fix, moderate work):
+    [6] Implement Phase D repair steps (unified_shell.html edits 2–5 above).
+        Test under HTTP server after each step.
+
+    [7] After unified shell is stable, audit sdf_raymarch for divergence
+        between A01 copy and main lab copy. Resolve to one canonical version.
+
+  LONGER TERM (wiring standardization):
+    [8] Add "serve" script to package.json.
+
+    [9] Add install() stub comments to escrow candidates going forward.
+
+    [10] When promoting 2-3 more escrow modules to A01, validate that the
+         standalone_common.js alias pattern holds. Revise if friction found.
+         Only then formalize a module capability contract schema.
+
+  DO NOT YET:
+    - Change any main lab module HTML files
+    - Add standalone_common.js to main lab modules
+    - Build a new shared module contract schema
+    - Start the auxiliary shell or Python migration phase
+    - Edit modules.manifest.json
+
+
+================================================================================
+END OF REPORT — PHASE D + A01 WIRING AUDIT
+================================================================================

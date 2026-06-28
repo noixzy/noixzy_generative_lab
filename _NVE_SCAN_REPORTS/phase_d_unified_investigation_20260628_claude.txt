@@ -1,0 +1,427 @@
+l and remove exiting default thumbnail images, we need a start page it can be designed like the gallery from UNI.shell
+================================================================================
+PHASE D — UNIFIED SHELL INVESTIGATION REPORT
+================================================================================
+Timestamp         : 2026-06-28 (session date)
+Report author     : Claude Sonnet 4.6 (claude-sonnet-4-6)
+Phase             : D (unified shell investigation / repair path)
+Branch            : feature-hand-authored-preview-undo-redo
+--------------------------------------------------------------------------------
+
+
+1. UNIFIED SHELL PATH CONFIRMED
+────────────────────────────────
+  /Users/noixzy.macbookpro/Downloads/noixzy_generative_lab/unified_shell.html
+  File exists: YES
+  Size:        ~1194 lines (full IIFE JS block at bottom)
+  Manifest:    modules.manifest.json (same directory)
+  Gallery:     gallery/gallery.svg EXISTS
+  Thumbs:      gallery/thumbs/ EXISTS — 60 PNGs present
+
+
+2. GIT STATUS SUMMARY (unified-related files)
+──────────────────────────────────────────────
+  Branch:   feature-hand-authored-preview-undo-redo
+  Ahead of origin: 4 commits
+
+  unified_shell.html — MODIFIED (unstaged)
+
+  The working copy diverges significantly from the last commit.
+  Key diff summary (working copy vs last commit):
+
+  REMOVED from HTML:
+    All ctrlBtn elements previously in the controlStrip:
+      #cssPrev, #cssNext, #cssPause, #cssReset, #cssSeed, #cssRndForm,
+      #cssRndColor, #cssRndAll, #cssSave, #cssSave2x, #cssThumb, #cssRec,
+      #cssBg, #cssUndo, #cssRedo, #cssCopy, #cssPaste
+    The controlStrip now contains ONLY the search input.
+
+  ADDED to CSS:
+    .previewOverlay, .previewNavOverlay, .previewExportOverlay + their
+    child .ctrlBtn overrides — intended to style buttons injected INSIDE
+    the iframe document.
+
+  CHANGED in JS:
+    shellUiDockId renamed → shellPreviewOverlayId + shellNavOverlayId +
+    shellExportOverlayId.
+    New functions: revealModulePanel(), mountPreviewOverlays(),
+    syncShellOverlays() — all attempt iframe DOM injection.
+
+
+3. WHETHER DIRECT OPEN WORKS (file://)
+────────────────────────────────────────
+  RESULT: BROKEN — two separate failure modes before a single module renders.
+
+  Failure A — fetch() blocked:
+    The shell boots with:
+      fetch("modules.manifest.json", { cache: "no-store" })
+    Chrome/Safari block fetch() across file:// URLs by default (CORS).
+    The catch block fires; setStatus() shows:
+      "Unable to load modules.manifest.json: Failed to fetch"
+    Rail never populates. No module is ever selected.
+
+  Failure B — iframe contentDocument blocked:
+    Even if manifest were inlined, all iframe bridge functions:
+      revealModulePanel(), hideModuleChrome(),
+      mountPreviewOverlays(), syncShellOverlays()
+    attempt: frame.contentDocument || frame.contentWindow?.document
+    Chrome treats file:// iframes as cross-origin. This throws a
+    SecurityError, silently caught by try {} catch (_) {}.
+    Result: all injection silently no-ops. No buttons ever appear.
+
+  Firefox: more permissive on file://, but fetch() still typically blocked.
+
+
+4. WHETHER LOCAL SERVER OPEN WORKS
+────────────────────────────────────
+  No local dev server is currently running.
+  Port scan (8080, 3000, 5000, 8000): no matches.
+  package.json has no "serve" or "start" script.
+  Only dependency listed: playwright ^1.61.1.
+
+  To test via server, user would need:
+    python3 -m http.server 8000
+    → open http://localhost:8000/unified_shell.html
+
+  Under a local server:
+    - fetch("modules.manifest.json") WOULD SUCCEED (same origin HTTP)
+    - iframe src points to relative paths (e.g. "flow_field/noixzy_flow_field.html")
+      — also same origin — so contentDocument access WOULD SUCCEED
+    - BUT: the control buttons were removed from the shell HTML and are
+      only expected to exist as injected overlay nodes inside the iframe.
+      If mountPreviewOverlays() fails for any reason (no .stage in iframe,
+      timing race on load event), NO buttons appear and the shell is
+      non-interactive.
+
+  BOTTOM LINE: Even under a server, the shell is partially broken due to
+  the removed buttons and the fragile overlay injection approach.
+
+
+5. CONSOLE ERRORS EXPECTED
+────────────────────────────
+  Under file://:
+    TypeError / DOMException on fetch() → caught, shown in status bar
+    SecurityError on frame.contentDocument → silently caught
+
+  Under HTTP server:
+    No hard JS syntax errors found in the source.
+    Runtime errors depend on whether .stage exists in each module iframe.
+    If .stage is missing: mountPreviewOverlays() returns early, no buttons.
+    If overlay injection races with load: buttons may appear then vanish.
+
+
+6. BROKEN PATHS / FILES FOUND
+───────────────────────────────
+  Zero broken manifest paths detected.
+  Python verification: all 56 enabled module files EXIST on disk.
+  All 56 thumbs EXIST in gallery/thumbs/.
+  gallery/gallery.svg EXISTS.
+  fold module: correctly marked enabledInShell:false / archived.
+
+  CONCLUSION: The file system is clean. Breakage is NOT caused by
+  missing files. It is caused by architectural/protocol issues in the JS.
+
+
+7. MANIFEST / MODULE REGISTRY FINDINGS
+────────────────────────────────────────
+  modules.manifest.json — HEALTHY
+    schemaVersion: "1.0.0"
+    58 total entries (56 enabled, 1 archived fold, 1 unlisted sdf)
+    missingFileCount: 0 / missingThumbCount: 0 (per manifest summary field)
+    Python cross-check confirms both: 0 missing files, 0 missing thumbs.
+
+  galleryOrder array in unified shell JS:
+    56 IDs listed. All match enabled module IDs in manifest.
+    Sort function is correct: by galleryOrder index, then manifestIndex.
+
+  Manifest fetch logic:
+    enabledInShell filter applied before sort — correct.
+    First module selected as fallback if URL param missing — correct.
+
+  CONCLUSION: Manifest wiring is logically sound. The issue is protocol,
+  not data integrity.
+
+
+8. IFRAME / PREVIEW FINDINGS
+──────────────────────────────
+  frame.src is set to module.file (e.g. "grid_extrude/noixzy_grid_extrude.html")
+  These are relative paths. Under file://, each iframe is a separate
+  file:// origin — Chrome treats them as cross-origin.
+
+  revealModulePanel() intention:
+    Injects a <style> into the iframe head to override GEOMETRY_ONLY_MODE.
+    Targets: body{position:static!important} + .stage/panel visibility.
+    Issue 1: contentDocument access blocked under file://.
+    Issue 2: Under HTTP, the injection is overly broad — body position
+    override may conflict with modules that legitimately use positioned body.
+    Issue 3: GEOMETRY_ONLY_MODE in generated modules is body.geoOnly
+    (class-based, only active during thumbnail capture). The injection is
+    permanent. Low risk but unnecessary.
+
+  mountPreviewOverlays() intention:
+    Finds doc.querySelector(".stage") inside the iframe.
+    Appends .previewOverlay > .previewNavOverlay + .previewExportOverlay.
+    Issue: Requires iframe DOM access (blocked under file://).
+    Issue: .stage selector must match the module's DOM. ALL inspected
+    modules (flow_field, gyroid) use .stage — this is consistent.
+
+  syncShellOverlays() intention:
+    Recreates/updates buttons inside the injected overlay divs.
+    Called immediately at boot (line 1115) AND on every frame load.
+    Issue at boot: overlay doesn't exist yet, function silently no-ops.
+    Issue on load: timing — if the overlay is not yet mounted when
+    syncShellOverlays runs, it also no-ops.
+    No retry / MutationObserver — purely event-driven, race-prone.
+
+
+9. NAV / MODULE RAIL FINDINGS
+───────────────────────────────
+  The module rail (thumbRail) is dynamically populated by renderRail()
+  after manifest fetch. Under file://, fetch fails → rail is empty.
+
+  Rail buttons use aria-selected, tabIndex roving, and scrollIntoView.
+  Logic is correct and mirrors A01 pattern.
+
+  galleryOrder sort: correct. 56 modules would appear in the right order
+  once manifest loads.
+
+  Search filter: correct. Filters by id and title.
+
+  popstate handler: present for browser back/forward.
+
+  CONCLUSION: Rail logic is sound. Its only failure is upstream (fetch).
+
+
+10. RIGHT PANEL / CONTROL FINDINGS
+─────────────────────────────────────
+  STATUS: CRITICALLY BROKEN in working copy.
+
+  The controlStrip now has ZERO action buttons in the HTML — only the
+  search input. All buttons were removed in the uncommitted diff.
+
+  The new design expects buttons to live inside the iframe overlay.
+  initBridge() (called at boot, line 1189) calls syncShellOverlays()
+  which silently no-ops (no iframe loaded yet, no overlay mounted).
+  frame.addEventListener("load", syncShellOverlays) registers a future
+  sync — this runs after each iframe load.
+
+  Under HTTP server: if mountPreviewOverlays() succeeds on frame load,
+  then syncShellOverlays() on that same load event would find the
+  overlay and inject buttons. However, execution order within a single
+  load handler depends on listener registration order:
+    line 979:  frame.addEventListener("load", revealModulePanel)
+    line 979:  frame.addEventListener("load", hideModuleChrome)
+    line 979:  frame.addEventListener("load", mountPreviewOverlays)
+    line 1116: frame.addEventListener("load", syncShellOverlays)
+  mountPreviewOverlays runs before syncShellOverlays — so overlay exists
+  when syncShellOverlays fires. This part of the sequence is CORRECT.
+
+  BUT: overlay buttons' actions (bridge.undo etc.) use tryIframeClick
+  which also accesses contentDocument. Under file:// this is blocked.
+  Under HTTP, it should work.
+
+  KEYBOARD SHORTCUTS: All remain functional (they call bridge.xxx()
+  which calls tryIframeClick). These work only under HTTP.
+
+  Prev/Next rail navigation:
+    navRail() function is intact. But the buttons "cssPrev"/"cssNext"
+    are no longer in the HTML. They exist in the overlay only after
+    successful iframe injection. So keyboard ← → works; on-screen
+    prev/next buttons only appear if overlay injection succeeds.
+
+
+11. EXPORT / SAVE FINDINGS
+────────────────────────────
+  Export wiring uses bridge.save / bridge.save2x / bridge.thumb etc.
+  These call tryIframeClick with multiple ID fallbacks:
+    save:    ["save", "btnSave2", "btnSave"]
+    save2x:  ["save2x", "btnSave2x2", "btnSave2x"]
+    thumb:   ["thumb", "btnThumb2", "btnThumb"]
+  These IDs exist in generated modules (Template A/B/C comment block
+  in unified_shell JS is accurate).
+
+  The unified shell does NOT use postMessage as a fallback (unlike A01).
+  If tryIframeClick fails (SecurityError or missing element), setStatus
+  shows an "unsupported" message. No postMessage attempt is made.
+
+  CONCLUSION: Export is correctly wired but fragile — depends entirely
+  on contentDocument access succeeding (requires HTTP server).
+
+
+12. A01 PATTERNS WORTH BORROWING
+──────────────────────────────────
+  A01 = workspace/standalone_20260628/standalone_shell.html
+
+  A. postMessage bridge (CRITICAL to borrow):
+     A01 tries contentDocument first, then falls back to postMessage:
+       target.postMessage({ type: "noixzy:standalone-action", ... }, "*")
+     This handles the case where contentDocument access fails or where
+     modules implement the standalone_common.js listener.
+     Unified shell has NO postMessage fallback — all bridge calls silently
+     fail if contentDocument throws.
+
+  B. cleanupModuleUi() CSS injection (WORTH BORROWING):
+     A01 injects a comprehensive layout reset:
+       body:has(>main+aside) { display:grid; grid-template-columns: 1fr 292px }
+       .app { display:flex; height:100vh }
+       .stage { position:relative; flex:1 }
+       .panel { display:flex; flex:0 0 292px; height:100vh }
+     This is more targeted than unified shell's revealModulePanel().
+     It handles both the body layout AND the panel width in one pass.
+     The :has() selector is modern but has broad browser support now.
+
+  C. Button placement (STRONG RECOMMENDATION):
+     A01 puts all action buttons in a fixed .controlStack div INSIDE
+     the shell's own DOM — not injected into the iframe.
+     This approach:
+       - Does not require iframe DOM access
+       - Always visible regardless of iframe load state
+       - Survives iframe navigation without re-injection
+     Unified shell's overlay-injection approach provides zero benefit
+     over shell-DOM buttons and adds significant fragility.
+
+  D. Fallback label on thumb img onerror (already in unified shell):
+     A01 pattern: img.onerror = () => img.replaceWith(span with title)
+     Unified shell uses server-level onerror on the <img> tag.
+     Both are equivalent. No change needed.
+
+  DO NOT BORROW from A01:
+    - The hardcoded MODULES array (unified shell uses manifest — correct)
+    - The standalone_common.js loading approach (not applicable to main lab)
+    - The ../../gallery/ relative path prefix (different directory depth)
+
+
+13. LIKELY ROOT CAUSES (RANKED)
+─────────────────────────────────
+  #1 — PROTOCOL: fetch() blocked under file:// (Chrome/Safari)
+       Impact: Complete boot failure. Rail empty. No module loads.
+       Fix category: infrastructure — must run a local HTTP server OR
+       inline the manifest directly in the shell JS.
+
+  #2 — UNCOMMITTED CHANGE: ctrlBtn elements removed from shell HTML
+       Impact: No visible action buttons exist in the shell's own DOM.
+       Even under HTTP, if overlay injection fails for any reason,
+       the shell is non-interactive (cannot save, undo, navigate, etc.).
+       Fix category: revert to shell-DOM buttons OR guarantee injection.
+
+  #3 — IFRAME INJECTION FRAGILITY (overlay approach)
+       Impact: mountPreviewOverlays() silently no-ops if .stage missing
+       or if contentDocument is blocked.
+       Fix category: architectural — reconsider overlay approach vs.
+       returning buttons to shell DOM.
+
+  #4 — NO postMessage FALLBACK IN BRIDGE
+       Impact: bridge actions silently fail for any module where
+       contentDocument is blocked or getElementById returns null.
+       Fix category: add postMessage path (like A01).
+
+  #5 — revealModulePanel BODY OVERRIDE TOO BROAD
+       Impact: body{position:static!important} may break modules that
+       rely on positioned body for full-screen canvas layout.
+       Fix category: narrow the selector to body.geoOnly override only.
+
+  #6 — syncShellOverlays RACE AT BOOT
+       Impact: called immediately before any iframe is loaded — harmless
+       no-op but confusing. Not a hard bug.
+       Fix category: remove the immediate call at line 1115; rely solely
+       on the load event listener.
+
+
+14. SMALLEST SAFE FIX PLAN
+────────────────────────────
+  This is a RECOMMENDATION only — do not implement without confirmation.
+
+  Step 1 (unblock boot):
+    Start a local HTTP server before opening the shell:
+      python3 -m http.server 8000
+    Open: http://localhost:8000/unified_shell.html
+    This unblocks the fetch() and contentDocument access simultaneously.
+    No file edits required for this step.
+
+  Step 2 (restore control buttons to shell DOM):
+    Restore the ctrlBtn elements to the controlStrip in the HTML
+    (revert the uncommitted deletions for those buttons).
+    This decouples button visibility from iframe injection success.
+    The overlay injection can remain as an ENHANCEMENT on top.
+
+  Step 3 (fix revealModulePanel selector):
+    Change: "body{position:static!important;}"
+    To:     "body.geoOnly{position:static!important;}"
+    This targets only the GEOMETRY_ONLY_MODE state, not normal layout.
+
+  Step 4 (add postMessage fallback in tryIframeClick):
+    After the getElementById loop fails, fall through to postMessage
+    using the A01 protocol (noixzy:standalone-action).
+    This future-proofs the bridge for modules that implement the listener.
+
+  Step 5 (remove boot-time syncShellOverlays call):
+    Remove the orphan call at line 1115 (before any iframe loads).
+    Rely on the load event listener registered at line 1116.
+
+
+15. FILES THAT WOULD NEED EDITING (if fix is implemented)
+────────────────────────────────────────────────────────────
+  PRIMARY:
+    unified_shell.html — all four JS/HTML/CSS fixes above
+      Sections affected:
+        HTML: controlStrip (restore buttons)
+        CSS:  revealModulePanel injection string (narrow selector)
+        JS:   tryIframeClick (add postMessage fallback)
+        JS:   initBridge boot section (remove orphan syncShellOverlays call)
+
+  SECONDARY (optional, if postMessage path added):
+    No module files need editing for postMessage to work — the shell
+    would send the message and timeout gracefully if not answered.
+    If full postMessage support desired: modules would need
+    standalone_common.js or equivalent listener — but this is out of
+    scope for a minimal fix.
+
+  NOT NEEDED:
+    modules.manifest.json — clean, no changes needed
+    Individual module HTML files — no changes needed
+    gallery/* — no changes needed
+
+
+16. FILES THAT MUST NOT BE TOUCHED WITHOUT CONFIRMATION
+────────────────────────────────────────────────────────
+  ALL module art files (the ~56 noixzy_*.html files):
+    These are the canonical art artifacts.
+    Do not touch without explicit user instruction.
+
+  modules.manifest.json:
+    Accurately reflects disk state. Do not regenerate blindly.
+
+  gallery/index.html (if it exists):
+    Not inspected in this scan but likely the gallery entrypoint.
+
+  _archive/ directory:
+    Contains archived modules (fold). Do not delete contents.
+
+  Any *.bak* files (e.g. grid_extrude/*.bak*):
+    These are pre-edit backups. Leave in place.
+
+
+17. IMPLEMENTER RECOMMENDATION
+────────────────────────────────
+  CODEX or COPILOT?
+
+  Recommend: CODEX (or Claude Code directly in a focused edit session).
+
+  Reasoning:
+  - The fix is surgical: ~4 targeted changes in a single file.
+  - No new architecture needed — the pattern already exists in A01.
+  - The diff is small and reviewable.
+  - Copilot is better for IDE-integrated autocomplete during active
+    development; Codex is better for batch instruction-following on a
+    known patch target.
+  - Claude Code can execute the fix in one pass if given Steps 1-5 above
+    as explicit instructions with line-number references.
+
+  CAUTION: Do not have any AI tool auto-generate a "complete rewrite"
+  of unified_shell.html. The outer structure, manifest wiring, rail logic,
+  settings system, and galleryOrder sort are all correct. Only the four
+  issues identified above need targeted edits.
+
+================================================================================
+END OF REPORT — PHASE D
+================================================================================

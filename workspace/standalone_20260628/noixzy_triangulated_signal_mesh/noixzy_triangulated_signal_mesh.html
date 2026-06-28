@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>noixzy triangulated signal mesh</title>
+<style>
+  aside,.panel,[data-zone="right-panel"]{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+  body{display:block!important;}
+  main{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;}
+  canvas{display:block!important;width:100%!important;height:100%!important;}
+</style>
+</head>
+<body>
+<script src="noixzy_batch_15_generated_runtime.js"></script>
+<script src="../standalone_common.js"></script>
+<script>
+initNoixzyBatch15("triangulated");
+window.noixzyStandaloneModule?.install({
+  id: "noixzy_triangulated_signal_mesh",
+  title: "noixzy triangulated signal mesh",
+  aliases: {
+    pause: ["play"],
+    reset: ["reset"],
+    newSeed: ["randomize"],
+    randomAll: ["randomize"],
+    save: ["export"]
+  }
+});
+</script>
+</body>
+</html>
